@@ -202,9 +202,20 @@ def main():
     logger.info(f"Per-video metrics saved to: {per_video_output}")
     logger.info(f"Columns: {list(merged_df.columns)}")
 
+    # Determine score type from clipvqa data
+    score_type = "clip"  # default
+    if metric_dfs.get("clipvqa") is not None and "score_type" in metric_dfs["clipvqa"].columns:
+        score_type = metric_dfs["clipvqa"]["score_type"].iloc[0]
+
+    # Rename score column to be explicit about type (clip_score or vqa_score)
+    if "clip_or_vqa_score" in merged_df.columns:
+        explicit_score_name = f"{score_type}_score"
+        merged_df = merged_df.rename(columns={"clip_or_vqa_score": explicit_score_name})
+        logger.info(f"Score column renamed: clip_or_vqa_score -> {explicit_score_name}")
+
     # Identify metric columns for summary
     metric_cols = [
-        "clip_or_vqa_score",
+        f"{score_type}_score",  # clip_score or vqa_score
         "vbench_temporal_score",
         "flicker_mean",
         "niqe_mean",
@@ -259,7 +270,7 @@ def main():
 
     # Format for display
     display_cols = ["group", "n_videos"]
-    for col in ["clip_or_vqa_score", "vbench_temporal_score", "flicker", "niqe"]:
+    for col in [f"{score_type}_score", "vbench_temporal_score", "flicker", "niqe"]:
         mean_col = f"{col}_mean"
         std_col = f"{col}_std"
         if mean_col in summary_df.columns:
@@ -268,8 +279,9 @@ def main():
     print(summary_df[display_cols].to_string(index=False))
 
     # Print metric directions
+    score_type_upper = score_type.upper()
     logger.info("\nMetric Directions:")
-    logger.info("  ↑ clip_or_vqa_score: Higher is better (text-video alignment)")
+    logger.info(f"  ↑ {score_type}_score: Higher is better ({score_type_upper} text-video alignment)")
     logger.info("  ↑ vbench_temporal_score: Higher is better (temporal quality)")
     logger.info("  ↓ flicker: Lower is better (temporal stability)")
     logger.info("  ↓ niqe: Lower is better (visual quality)")

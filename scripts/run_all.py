@@ -14,11 +14,15 @@ Usage:
 """
 
 import argparse
+import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import yaml
 
 logging.basicConfig(
     level=logging.INFO,
@@ -207,6 +211,87 @@ def run_script(
         return False
 
 
+def copy_outputs_to_frontend(config_path: str) -> bool:
+    """
+    Copy evaluation outputs to frontend/public/data/ for the LaTeX table generator.
+
+    This copies:
+    - group_summary.csv (or custom experiment_output name)
+    - Updates manifest.json with available files
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    try:
+        # Load config to get output paths
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        paths_config = config.get("paths", {})
+        output_dir = Path(paths_config.get("output_dir", "./outputs"))
+
+        # Frontend data directory
+        frontend_data_dir = PROJECT_ROOT / "frontend" / "public" / "data"
+        frontend_data_dir.mkdir(parents=True, exist_ok=True)
+
+        copied_files = []
+
+        # Copy group_summary.csv
+        group_summary = output_dir / paths_config.get("group_summary", "group_summary.csv")
+        if group_summary.exists():
+            dest = frontend_data_dir / group_summary.name
+            shutil.copy2(group_summary, dest)
+            copied_files.append(group_summary.name)
+            logger.info(f"  Copied: {group_summary.name}")
+
+        # Copy custom experiment output if configured
+        experiment_output = paths_config.get("experiment_output")
+        if experiment_output:
+            exp_file = output_dir / experiment_output
+            if exp_file.exists():
+                dest = frontend_data_dir / exp_file.name
+                shutil.copy2(exp_file, dest)
+                copied_files.append(exp_file.name)
+                logger.info(f"  Copied: {exp_file.name}")
+
+        # Copy per_video_metrics.csv
+        per_video = output_dir / paths_config.get("per_video_metrics", "per_video_metrics.csv")
+        if per_video.exists():
+            dest = frontend_data_dir / per_video.name
+            shutil.copy2(per_video, dest)
+            copied_files.append(per_video.name)
+            logger.info(f"  Copied: {per_video.name}")
+
+        # Update manifest.json
+        manifest_path = frontend_data_dir / "manifest.json"
+        existing_files = set()
+
+        # Load existing manifest
+        if manifest_path.exists():
+            try:
+                with open(manifest_path, "r") as f:
+                    manifest = json.load(f)
+                    existing_files = set(manifest.get("files", []))
+            except (json.JSONDecodeError, KeyError):
+                existing_files = set()
+
+        # Add new files
+        all_files = existing_files.union(set(copied_files))
+
+        # Write updated manifest
+        manifest = {"files": sorted(list(all_files))}
+        with open(manifest_path, "w") as f:
+            json.dump(manifest, f, indent=2)
+
+        logger.info(f"  Updated manifest.json with {len(all_files)} files")
+
+        return True
+
+    except Exception as e:
+        logger.warning(f"Failed to copy outputs to frontend: {e}")
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run complete T2V evaluation pipeline"
@@ -334,6 +419,10 @@ def main():
     logger.info("\n[Step 7/7] Generating summary...")
     run_script("summarize.py", config_path, extra_args)
 
+    # Step 8: Copy outputs to frontend
+    logger.info("\n[Step 8] Copying outputs to frontend...")
+    copy_outputs_to_frontend(config_path)
+
     # Done
     logger.info("\n" + "=" * 60)
     logger.info("Pipeline completed!")
@@ -341,6 +430,7 @@ def main():
     logger.info(f"\nOutput files:")
     logger.info(f"  - outputs/per_video_metrics.csv")
     logger.info(f"  - outputs/group_summary.csv")
+    logger.info(f"  - frontend/public/data/ (for LaTeX table generator)")
 
 
 if __name__ == "__main__":
