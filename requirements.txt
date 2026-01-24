@@ -1,0 +1,55 @@
+# =============================================================================
+# T2V-Eval Dependencies
+# =============================================================================
+
+# Core dependencies
+numpy>=1.21.0
+pandas>=1.3.0
+PyYAML>=6.0
+tqdm>=4.62.0
+Pillow>=8.0.0
+
+# HuggingFace
+datasets>=2.14.0
+huggingface_hub>=0.16.0
+
+# Video processing (choose one)
+decord>=0.6.0  # Recommended: faster video reading
+opencv-python>=4.5.0  # Fallback if decord unavailable
+
+# PyTorch ecosystem
+torch>=2.0.0
+torchvision>=0.15.0
+
+# CLIP/VQA evaluation
+open_clip_torch>=2.20.0
+transformers>=4.30.0
+
+# Image quality metrics
+pyiqa>=0.1.7  # Recommended: comprehensive IQA metrics including NIQE
+# scikit-video>=1.1.11  # Alternative for NIQE (uncomment if pyiqa unavailable)
+
+# =============================================================================
+# Optional: VBench dependencies (installed separately)
+# =============================================================================
+# VBench has its own requirements. After initializing submodule, run:
+#   pip install -r third_party/VBench/requirements.txt
+#
+# Key VBench dependencies include:
+# - einops
+# - ftfy
+# - easydict
+# - pytorch-lightning
+
+# =============================================================================
+# Optional: t2v_metrics dependencies (installed separately)
+# =============================================================================
+# t2v_metrics may have additional requirements. Check:
+#   third_party/t2v_metrics/requirements.txt
+
+# =============================================================================
+# Development dependencies (optional)
+# =============================================================================
+# black>=22.0.0
+# flake8>=4.0.0
+# pytest>=7.0.0
