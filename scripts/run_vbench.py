@@ -184,37 +184,40 @@ def run_vbench_evaluation(
             if result_file.exists():
                 with open(result_file) as f:
                     subtask_data = json.load(f)
-                # Parse VBench result format
-                # Format varies: {dimension: [[video_info, score], ...]} or {dimension: [{"video_path": ..., "score": ...}, ...]}
+                # VBench output format: {dimension: [avg_score, [{"video_path": ..., "video_results": ...}, ...]]}
                 if subtask in subtask_data:
                     count_before = len(results)
-                    for item in subtask_data[subtask]:
-                        video_id = None
-                        score = None
+                    dimension_data = subtask_data[subtask]
 
-                        if isinstance(item, (list, tuple)) and len(item) >= 2:
-                            # Format: [video_info, score] where video_info can be str or dict
-                            video_info, score = item[0], item[1]
-                            if isinstance(video_info, str):
-                                video_id = Path(video_info).stem
-                            elif isinstance(video_info, dict):
-                                # video_info is a dict with video_path or video_name key
-                                vp = video_info.get("video_path", video_info.get("video_name", video_info.get("video_list", [""])[0] if "video_list" in video_info else ""))
-                                if isinstance(vp, list):
-                                    vp = vp[0] if vp else ""
-                                video_id = Path(vp).stem if vp else None
-                        elif isinstance(item, dict):
-                            # Format: {"video_path": ..., "score": ...}
-                            vp = item.get("video_path", item.get("video_name", ""))
-                            score = item.get("score", item.get("value", None))
-                            video_id = Path(vp).stem if vp else None
+                    # Handle format: [avg_score, [per_video_results]]
+                    if isinstance(dimension_data, list) and len(dimension_data) >= 2:
+                        per_video_list = dimension_data[1]  # Second element is the list of per-video results
+                        if isinstance(per_video_list, list):
+                            for item in per_video_list:
+                                if isinstance(item, dict):
+                                    vp = item.get("video_path", item.get("video_name", ""))
+                                    score = item.get("video_results", item.get("score", None))
+                                    if vp and score is not None:
+                                        video_id = Path(vp).stem
+                                        results.append({
+                                            "video_id": video_id,
+                                            "subtask": subtask,
+                                            "score": float(score),
+                                        })
+                    # Fallback: handle other formats
+                    elif isinstance(dimension_data, list):
+                        for item in dimension_data:
+                            if isinstance(item, dict):
+                                vp = item.get("video_path", item.get("video_name", ""))
+                                score = item.get("video_results", item.get("score", None))
+                                if vp and score is not None:
+                                    video_id = Path(vp).stem
+                                    results.append({
+                                        "video_id": video_id,
+                                        "subtask": subtask,
+                                        "score": float(score),
+                                    })
 
-                        if video_id and score is not None:
-                            results.append({
-                                "video_id": video_id,
-                                "subtask": subtask,
-                                "score": float(score) if isinstance(score, (int, float)) else None,
-                            })
                     logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
             else:
                 logger.warning(f"Result file not found: {result_file}")
