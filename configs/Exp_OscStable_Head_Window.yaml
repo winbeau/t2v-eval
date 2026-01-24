@@ -111,12 +111,11 @@ metrics:
   vbench:
     enabled: true
     temporal_only: true          # Focus on temporal metrics
+    # Note: subject_consistency often fails with ZeroDivisionError on custom videos
+    # temporal_style may also fail depending on video content
     subtasks:
       - "temporal_flickering"
       - "motion_smoothness"
-      - "temporal_style"
-      - "subject_consistency"
-    cache_dir: "./vbench_cache"
 
   flicker:
     method: "l1"                 # Difference method: l1, l2

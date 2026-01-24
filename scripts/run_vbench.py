@@ -107,31 +107,52 @@ def run_vbench_evaluation(
         "temporal_flickering",
         "motion_smoothness",
     ])
-    cache_dir = Path(vbench_config.get("cache_dir", "./vbench_cache"))
-    cache_dir.mkdir(parents=True, exist_ok=True)
 
-    # Results directory for VBench output
-    results_dir = output_dir / "vbench_results"
+    # Results directory for VBench output (must be absolute path)
+    results_dir = (output_dir / "vbench_results").resolve()
     results_dir.mkdir(parents=True, exist_ok=True)
+
+    # VBench requires full_info_dir to be a JSON file path (not directory)
+    # Use the bundled VBench_full_info.json from the VBench submodule
+    vbench_full_info = VBENCH_ROOT / "vbench" / "VBench_full_info.json"
+    if not vbench_full_info.exists():
+        logger.warning(f"VBench full info not found: {vbench_full_info}")
+        logger.warning("Will use custom_input mode without full_info")
+        vbench_full_info_str = str(results_dir / "dummy_info.json")
+        # Create a dummy empty JSON for custom_input mode
+        with open(vbench_full_info_str, "w") as f:
+            f.write("[]")
+    else:
+        vbench_full_info_str = str(vbench_full_info.resolve())
 
     # Prepare video paths for VBench
     # VBench expects a specific format: list of video paths or a directory
     video_paths = [r["video_path"] for r in video_records]
 
-    # Create a temporary file listing all videos for VBench
-    video_list_file = output_dir / "vbench_video_list.txt"
-    with open(video_list_file, "w") as f:
-        for vp in video_paths:
-            f.write(f"{vp}\n")
+    # Create a directory with symlinks to all videos for VBench
+    # VBench custom_input mode expects a directory of videos
+    video_dir = results_dir / "input_videos"
+    video_dir.mkdir(parents=True, exist_ok=True)
+    for vp in video_paths:
+        src = Path(vp)
+        dst = video_dir / src.name
+        if not dst.exists() and src.exists():
+            try:
+                dst.symlink_to(src.resolve())
+            except OSError:
+                # If symlink fails, try copying
+                import shutil
+                shutil.copy2(src, dst)
+    video_dir_str = str(video_dir.resolve())
 
     results = []
 
     # Initialize VBench
     try:
-        # VBench requires output_path parameter for saving results
+        # VBench requires full_info_dir (JSON file path) and output_path (directory)
         vbench = VBench(
             device=device,
-            full_info_dir=str(cache_dir),
+            full_info_dir=vbench_full_info_str,
             output_path=str(results_dir),
         )
     except Exception as e:
@@ -147,26 +168,49 @@ def run_vbench_evaluation(
         logger.info(f"Evaluating subtask: {subtask}")
         try:
             # VBench evaluate method
-            # Note: The exact API depends on VBench version
-            # This follows the official VBench interface
-            subtask_results = vbench.evaluate(
-                videos_path=video_paths,
+            # Use mode='custom_input' since we're providing custom videos
+            # (not following VBench's standard naming convention)
+            vbench.evaluate(
+                videos_path=video_dir_str,  # VBench expects directory path for custom_input
                 name=subtask,
                 dimension_list=[subtask],
                 local=True,
                 read_frame=False,
+                mode='custom_input',
             )
 
-            # Store results per video
-            for video_path, score in zip(video_paths, subtask_results.get(subtask, [])):
-                video_id = Path(video_path).stem
-                results.append({
-                    "video_id": video_id,
-                    "subtask": subtask,
-                    "score": score,
-                })
+            # VBench saves results to {output_path}/{name}_eval_results.json
+            result_file = results_dir / f"{subtask}_eval_results.json"
+            if result_file.exists():
+                with open(result_file) as f:
+                    subtask_data = json.load(f)
+                # Parse VBench result format: {dimension: [[video_path, score], ...]}
+                if subtask in subtask_data:
+                    for item in subtask_data[subtask]:
+                        if isinstance(item, (list, tuple)) and len(item) >= 2:
+                            video_path, score = item[0], item[1]
+                            video_id = Path(video_path).stem
+                            results.append({
+                                "video_id": video_id,
+                                "subtask": subtask,
+                                "score": float(score) if score is not None else None,
+                            })
+                        elif isinstance(item, dict):
+                            video_path = item.get("video_path", item.get("video_name", ""))
+                            score = item.get("score", item.get("value", None))
+                            video_id = Path(video_path).stem
+                            results.append({
+                                "video_id": video_id,
+                                "subtask": subtask,
+                                "score": float(score) if score is not None else None,
+                            })
+                logger.info(f"Parsed {len(subtask_data.get(subtask, []))} results for {subtask}")
+            else:
+                logger.warning(f"Result file not found: {result_file}")
         except Exception as e:
             logger.warning(f"Failed to run subtask {subtask}: {e}")
+            import traceback
+            logger.warning(traceback.format_exc())
             continue
 
     # Convert to DataFrame and pivot
