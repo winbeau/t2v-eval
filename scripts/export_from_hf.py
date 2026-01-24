@@ -189,7 +189,7 @@ def find_prompt_row(
             prompt_row = prompt_df.iloc[prompt_index_by_stem[stem]]
     if prompt_row is None and prompt_index_by_index:
         import re
-        match = re.search(r"(\\d+)(?!.*\\d)", str(candidate_id))
+        match = re.search(r"(\d+)(?!.*\d)", str(candidate_id))
         if match:
             idx_key = int(match.group(1))
             if idx_key in prompt_index_by_index:
