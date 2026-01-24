@@ -102,13 +102,17 @@ def run_vbench_evaluation(
     # VBench configuration
     vbench_config = config.get("metrics", {}).get("vbench", {})
     temporal_only = vbench_config.get("temporal_only", True)
+    # Default to safe subtasks (subject_consistency often fails with ZeroDivisionError)
     subtasks = vbench_config.get("subtasks", [
         "temporal_flickering",
         "motion_smoothness",
-        "temporal_style",
     ])
     cache_dir = Path(vbench_config.get("cache_dir", "./vbench_cache"))
     cache_dir.mkdir(parents=True, exist_ok=True)
+
+    # Results directory for VBench output
+    results_dir = output_dir / "vbench_results"
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     # Prepare video paths for VBench
     # VBench expects a specific format: list of video paths or a directory
@@ -124,7 +128,12 @@ def run_vbench_evaluation(
 
     # Initialize VBench
     try:
-        vbench = VBench(device=device, full_info_dir=str(cache_dir))
+        # VBench requires output_path parameter for saving results
+        vbench = VBench(
+            device=device,
+            full_info_dir=str(cache_dir),
+            output_path=str(results_dir),
+        )
     except Exception as e:
         logger.error(f"Failed to initialize VBench: {e}")
         logger.error("This may be due to missing model weights.")
@@ -249,14 +258,38 @@ def run_vbench_cli_fallback(
         try:
             with open(result_file) as f:
                 data = json.load(f)
-                # Parse based on VBench output format
-                for video_name, scores in data.items():
-                    if isinstance(scores, dict):
-                        for dim, score in scores.items():
+
+                # VBench outputs different formats depending on version/mode
+                # Handle list format: [{"video_name": "...", "dimension": "...", "score": ...}, ...]
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict):
+                            video_name = item.get("video_name", item.get("video_path", ""))
+                            dimension = item.get("dimension", item.get("name", ""))
+                            score = item.get("score", item.get("value", None))
+                            if video_name and score is not None:
+                                results.append({
+                                    "video_id": Path(video_name).stem,
+                                    "subtask": dimension,
+                                    "score": score,
+                                })
+                # Handle dict format: {"video_name": {"dimension": score, ...}, ...}
+                elif isinstance(data, dict):
+                    for video_name, scores in data.items():
+                        if isinstance(scores, dict):
+                            for dim, score in scores.items():
+                                results.append({
+                                    "video_id": Path(video_name).stem,
+                                    "subtask": dim,
+                                    "score": score,
+                                })
+                        elif isinstance(scores, (int, float)):
+                            # Single score format
+                            dim = result_file.stem  # Use filename as dimension
                             results.append({
                                 "video_id": Path(video_name).stem,
                                 "subtask": dim,
-                                "score": score,
+                                "score": scores,
                             })
         except Exception as e:
             logger.warning(f"Failed to parse {result_file}: {e}")
