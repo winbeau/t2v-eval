@@ -154,7 +154,7 @@ paths:
   # Custom experiment output filename (optional)
   # If set, group_summary will be saved as this name instead
   # Example: "frame_head_72_21_WindowLength.csv"
-  experiment_output: null
+  experiment_output: "Exp_OscStable_Head_Window.csv"
 
 # -----------------------------------------------------------------------------
 # Logging Configuration
