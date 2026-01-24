@@ -370,7 +370,7 @@ async function loadSampleData() {
 }
 
 .tab-content {
-  @apply min-h-[400px];
+  @apply min-h-0;
 }
 
 .empty-code {

@@ -36,18 +36,6 @@ function renderHeader(metric: MetricConfig): string {
   }
 }
 
-// Render method name with KaTeX (textsc for small caps effect)
-function renderMethodName(name: string): string {
-  const formatted = formatGroupName(name);
-  // Use \textsf for sans-serif method names (common in papers)
-  const latex = `\\textsf{${formatted}}`;
-  try {
-    return katex.renderToString(latex, { throwOnError: false });
-  } catch {
-    return formatted;
-  }
-}
-
 // Format cell value with KaTeX
 function formatCell(
   mean: number | undefined,
@@ -104,7 +92,7 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
           <thead>
             <tr class="toprule">
               <th class="method-header">
-                <span v-html="katex.renderToString('\\textbf{Method}', { throwOnError: false })"></span>
+                <span class="method-header-text">Method</span>
               </th>
               <th
                 v-for="metric in metrics"
@@ -121,7 +109,9 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
               :key="row.group"
               :class="{ 'first-row': index === 0 }"
             >
-              <td class="method-cell" v-html="renderMethodName(row.group)" />
+              <td class="method-cell">
+                <span class="method-text">{{ formatGroupName(row.group) }}</span>
+              </td>
               <td
                 v-for="metric in metrics"
                 :key="`${row.group}-${metric.key}`"
@@ -137,6 +127,12 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
           </tbody>
           <!-- Bottom rule (thick) - handled by CSS -->
         </table>
+
+        <!-- Caption area (optional) -->
+        <div class="table-caption">
+          <span class="caption-label">Table 1:</span>
+          <span class="caption-text">Quantitative comparison of different methods. Best results are highlighted in <strong>bold</strong>.</span>
+        </div>
       </div>
 
       <div v-else class="empty-state">
@@ -148,12 +144,6 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
         <p class="empty-title">No data to display</p>
         <p class="empty-subtitle">Upload a CSV file to see the LaTeX table preview</p>
       </div>
-    </div>
-
-    <!-- Caption area (optional) -->
-    <div v-if="data.length > 0" class="table-caption">
-      <span class="caption-label">Table 1:</span>
-      <span class="caption-text">Quantitative comparison of different methods. Best results are highlighted in <strong>bold</strong>.</span>
     </div>
   </div>
 </template>
@@ -172,23 +162,26 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
 }
 
 .latex-table-wrapper {
-  @apply p-4;
-  min-width: fit-content;
+  @apply px-4 pt-4 pb-2;
+  display: inline-block;
+  width: max-content;
+  min-width: 100%;
 }
 
 /* Main table - booktabs style */
 .latex-table {
-  @apply w-full;
   border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
   font-family: 'Times New Roman', Times, serif;
   font-size: 0.9rem;
-  line-height: 1.3;
+  line-height: 1.15;
 }
 
 /* No vertical borders - booktabs style */
 .latex-table th,
 .latex-table td {
-  @apply px-3 py-1.5;
+  @apply px-2 py-1;
   border: none;
   text-align: center;
   vertical-align: middle;
@@ -201,21 +194,25 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
 }
 
 .latex-table thead th {
-  @apply py-2;
+  @apply py-1.5;
   font-weight: normal; /* KaTeX handles bold */
   letter-spacing: 0.01em;
+}
+
+.method-header-text {
+  font-weight: 700;
 }
 
 /* Method column left-aligned */
 .latex-table .method-header,
 .latex-table .method-cell {
   text-align: left;
-  padding-left: 0.5rem;
+  padding-left: 0.35rem;
 }
 
 /* First data row has midrule above it (via header border-bottom) */
 .latex-table tbody tr.first-row td {
-  padding-top: 0.5rem;
+  padding-top: 0.35rem;
 }
 
 /* Bottom rule on last row */
@@ -224,7 +221,7 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
 }
 
 .latex-table tbody tr:last-child td {
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
 }
 
 /* Value cells */
@@ -254,10 +251,11 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
 
 /* Caption styling - academic paper style */
 .table-caption {
-  @apply mt-2 px-2 text-center;
+  @apply mt-2 text-center;
   font-family: 'Times New Roman', Times, serif;
   font-size: 0.85rem;
   color: #333;
+  white-space: nowrap;
 }
 
 .caption-label {
