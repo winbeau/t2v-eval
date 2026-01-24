@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import katex from 'katex';
+import html2canvas from 'html2canvas';
 import type { GroupSummary, MetricConfig } from '../types/metrics';
 import { findBestValue, formatGroupName } from '../utils/latexGenerator';
 
@@ -12,6 +13,34 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// Ref for the table element
+const tableRef = ref<HTMLElement | null>(null);
+const isDownloading = ref(false);
+
+// Download table as PNG
+async function downloadAsPng() {
+  if (!tableRef.value || isDownloading.value) return;
+
+  isDownloading.value = true;
+  try {
+    const canvas = await html2canvas(tableRef.value, {
+      backgroundColor: '#ffffff',
+      scale: 2, // Higher resolution
+      useCORS: true,
+      logging: false,
+    });
+
+    const link = document.createElement('a');
+    link.download = 'table_preview.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (error) {
+    console.error('Failed to download PNG:', error);
+  } finally {
+    isDownloading.value = false;
+  }
+}
 
 // Find best values for highlighting
 const bestValues = computed(() => {
@@ -85,7 +114,24 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
 <template>
   <div class="latex-table-container">
     <!-- Paper-style wrapper -->
-    <div class="paper-background">
+    <div class="paper-background" ref="tableRef">
+      <!-- Download button (top right) -->
+      <button
+        v-if="data.length > 0 && metrics.length > 0"
+        class="download-btn"
+        @click="downloadAsPng"
+        :disabled="isDownloading"
+        title="Download as PNG"
+      >
+        <svg v-if="!isDownloading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="download-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="download-icon animate-spin">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </button>
+
       <div v-if="data.length > 0 && metrics.length > 0" class="latex-table-wrapper">
         <table class="latex-table">
           <!-- Top rule (thick) -->
@@ -156,9 +202,42 @@ function isBestValue(metricKey: string, value: number | undefined): boolean {
 
 /* Paper-like background */
 .paper-background {
-  @apply bg-white rounded-lg shadow-md overflow-x-auto;
+  @apply bg-white rounded-lg shadow-md overflow-x-auto relative;
   background: linear-gradient(to bottom, #fefefe 0%, #f9f9f9 100%);
   border: 1px solid #e5e5e5;
+}
+
+/* Download button - top right corner */
+.download-btn {
+  @apply absolute top-2 right-2 p-2 rounded-lg transition-all duration-200;
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700;
+  @apply opacity-0 z-10;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.paper-background:hover .download-btn {
+  @apply opacity-100;
+}
+
+.download-btn:hover {
+  @apply shadow-sm;
+}
+
+.download-icon {
+  @apply w-5 h-5;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .latex-table-wrapper {
