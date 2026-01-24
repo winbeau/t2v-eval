@@ -4,8 +4,8 @@ import type { GroupSummary, MetricConfig, LatexTableOptions } from '../types/met
 export const DEFAULT_METRICS: MetricConfig[] = [
   {
     key: 'clip_or_vqa_score',
-    label: 'CLIP/VQA Score',
-    shortLabel: 'CLIP/VQA',
+    label: 'CLIPScore',  // Default to CLIP (change to VQAScore if using VQA mode)
+    shortLabel: 'CLIP',
     direction: 'higher',
     precision: 2,
   },
