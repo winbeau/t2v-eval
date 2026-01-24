@@ -53,9 +53,15 @@ groups:
   - name: "stable_long_21"
     description: "Stable attention (long window), 21 frames"
     num_frames: 21
+  - name: "stable_long_72"
+    description: "Stable attention (long window), 72 frames"
+    num_frames: 72
   - name: "stable_short_21"
     description: "Stable attention (short window), 21 frames"
     num_frames: 21
+  - name: "stable_short_72"
+    description: "Stable attention (short window), 72 frames"
+    num_frames: 72
 
 # Group categories for analysis
 group_categories:
@@ -63,15 +69,15 @@ group_categories:
     frame: ["frame_baseline_21", "frame_baseline_72"]
     head: ["head_baseline_21", "head_baseline_72"]
     oscillating: ["osc_long_21", "osc_long_72", "osc_short_21", "osc_short_72"]
-    stable: ["stable_long_21", "stable_short_21"]
+    stable: ["stable_long_21", "stable_long_72", "stable_short_21", "stable_short_72"]
 
   by_num_frames:
     short_21: ["frame_baseline_21", "head_baseline_21", "osc_long_21", "osc_short_21", "stable_long_21", "stable_short_21"]
-    long_72: ["frame_baseline_72", "head_baseline_72", "osc_long_72", "osc_short_72"]
+    long_72: ["frame_baseline_72", "head_baseline_72", "osc_long_72", "osc_short_72", "stable_long_72", "stable_short_72"]
 
   by_window_size:
-    long_window: ["osc_long_21", "osc_long_72", "stable_long_21"]
-    short_window: ["osc_short_21", "osc_short_72", "stable_short_21"]
+    long_window: ["osc_long_21", "osc_long_72", "stable_long_21", "stable_long_72"]
+    short_window: ["osc_short_21", "osc_short_72", "stable_short_21", "stable_short_72"]
 
 # -----------------------------------------------------------------------------
 # Unified Evaluation Protocol
