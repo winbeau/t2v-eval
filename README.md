@@ -8,6 +8,16 @@ A unified, no-reference evaluation pipeline for **text-to-video (T2V) generation
 
 ---
 
+## Features
+
+- **Official Implementations**: VBench and t2v_metrics integrated as git submodules
+- **Multiple Metrics**: CLIPScore, VQAScore, VBench temporal, Flicker, NIQE
+- **One-click Pipeline**: Single command runs all evaluations
+- **LaTeX Table Generator**: Frontend tool to generate publication-ready tables
+- **Flexible Configuration**: YAML-based experiment configuration
+
+---
+
 ## Official Implementations
 
 This evaluation suite integrates the following official repositories as git submodules:
@@ -114,18 +124,68 @@ outputs/
 └── figs/                    # (Optional) Visualizations
 ```
 
+Results are also automatically copied to `frontend/public/data/` for the LaTeX table generator.
+
+### 6. Generate LaTeX Tables (Frontend)
+
+The project includes a web-based tool for generating publication-ready LaTeX tables:
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Then open http://localhost:5173 and:
+1. Click "Load Local Data" to select your evaluation results
+2. Choose which metrics to display
+3. Copy the generated LaTeX code
+
+---
+
+## Command Line Options
+
+### Force Recomputation
+
+Use `--force` to recompute all metrics even if results already exist:
+
+```bash
+python scripts/run_all.py --config configs/eval.yaml --force
+```
+
+### Skip Specific Metrics
+
+```bash
+# Skip VBench (if weights unavailable)
+python scripts/run_all.py --config configs/eval.yaml --skip-vbench
+
+# Skip CLIP/VQA evaluation
+python scripts/run_all.py --config configs/eval.yaml --skip-clipvqa
+```
+
+### Custom Output Filename
+
+Configure custom output filename in your YAML:
+
+```yaml
+paths:
+  experiment_output: "my_experiment_results.csv"  # Optional custom name
+```
+
 ---
 
 ## Metrics Overview
 
-| Metric | Aspect | Direction | Implementation |
-|--------|--------|-----------|----------------|
-| CLIPScore / VQAScore | Text-video alignment | ↑ Higher is better | Official t2v_metrics |
-| VBench (Temporal) | Temporal quality | ↑ Higher is better | Official VBench |
-| Temporal Flicker | Frame stability | ↓ Lower is better | Custom (this repo) |
-| NIQE | Visual quality | ↓ Lower is better | pyiqa |
-| #Frames / Duration | Generation scale | — | Metadata |
-| FPS | Inference efficiency | ↑ Higher is better | User-provided |
+| Metric | Column Name | Aspect | Direction | Implementation |
+|--------|-------------|--------|-----------|----------------|
+| CLIPScore | `clip_score` | Text-video alignment | ↑ Higher is better | Official t2v_metrics |
+| VQAScore | `vqa_score` | Text-video alignment | ↑ Higher is better | Official t2v_metrics |
+| VBench (Temporal) | `vbench_temporal_score` | Temporal quality | ↑ Higher is better | Official VBench |
+| Temporal Flicker | `flicker_mean` | Frame stability | ↓ Lower is better | Custom (this repo) |
+| NIQE | `niqe_mean` | Visual quality | ↓ Lower is better | pyiqa |
+| #Frames / Duration | `num_frames`, `duration_sec` | Generation scale | — | Metadata |
+
+> **Note**: The output uses explicit column names (`clip_score` or `vqa_score`) based on the mode configured in your YAML, eliminating ambiguity.
 
 ---
 
@@ -144,6 +204,9 @@ t2v-eval/
 │   ├── run_niqe.py            # NIQE image quality
 │   ├── summarize.py           # Aggregate results
 │   └── run_all.py             # One-click pipeline entry
+├── frontend/                  # LaTeX table generator (Vue 3)
+│   ├── src/                   # Frontend source code
+│   └── public/data/           # Evaluation results for frontend
 ├── third_party/               # Git submodules
 │   ├── VBench/                # Official VBench repo
 │   └── t2v_metrics/           # Official t2v_metrics repo

@@ -8,6 +8,16 @@
 
 ---
 
+## 功能特性
+
+- **官方实现集成**：VBench 和 t2v_metrics 以 git submodule 方式集成
+- **多维度评测**：CLIPScore、VQAScore、VBench 时序质量、Flicker、NIQE
+- **一键运行**：单条命令完成所有评测
+- **LaTeX 表格生成器**：前端工具生成论文级别的 LaTeX 表格
+- **灵活配置**：基于 YAML 的实验配置
+
+---
+
 ## 目录
 
 - [官方实现说明](#官方实现说明)
@@ -160,19 +170,68 @@ outputs/
 └── figs/                    # 可视化图表（可选）
 ```
 
+结果会自动复制到 `frontend/public/data/` 供 LaTeX 表格生成器使用。
+
+### 6. 生成 LaTeX 表格（前端工具）
+
+本项目包含一个 Web 端工具，用于生成论文级别的 LaTeX 表格：
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+然后打开 http://localhost:5173：
+1. 点击 "Load Local Data" 选择评测结果文件
+2. 选择要显示的指标
+3. 复制生成的 LaTeX 代码
+
+---
+
+## 命令行选项
+
+### 强制重新计算
+
+使用 `--force` 强制重新计算所有指标（即使结果已存在）：
+
+```bash
+python scripts/run_all.py --config configs/eval.yaml --force
+```
+
+### 跳过特定指标
+
+```bash
+# 跳过 VBench（如权重未下载）
+python scripts/run_all.py --config configs/eval.yaml --skip-vbench
+
+# 跳过 CLIP/VQA 评测
+python scripts/run_all.py --config configs/eval.yaml --skip-clipvqa
+```
+
+### 自定义输出文件名
+
+在 YAML 配置中设置自定义输出文件名：
+
+```yaml
+paths:
+  experiment_output: "my_experiment_results.csv"  # 可选的自定义文件名
+```
+
 ---
 
 ## 评测指标
 
-| 指标 | 评测维度 | 方向 | 实现来源 | 说明 |
-|------|----------|------|----------|------|
-| **CLIPScore** | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics | 基于 CLIP 的语义对齐分数 |
-| **VQAScore** | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics | 基于 VQA 模型的对齐分数 |
-| **VBench (Temporal)** | 时序质量 | ↑ 越高越好 | 官方 VBench | 时序流畅度、运动平滑度等 |
-| **Temporal Flicker** | 帧间稳定性 | ↓ 越低越好 | 本仓库实现 | 相邻帧差分统计 |
-| **NIQE** | 视觉质量 | ↓ 越低越好 | pyiqa | 无参考图像质量评估 |
-| **#Frames / Duration** | 生成规模 | — | 元数据 | 帧数和时长 |
-| **FPS** | 推理效率 | ↑ 越高越好 | 用户提供 | 生成速度 |
+| 指标 | 输出列名 | 评测维度 | 方向 | 实现来源 |
+|------|----------|----------|------|----------|
+| **CLIPScore** | `clip_score` | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics |
+| **VQAScore** | `vqa_score` | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics |
+| **VBench (Temporal)** | `vbench_temporal_score` | 时序质量 | ↑ 越高越好 | 官方 VBench |
+| **Temporal Flicker** | `flicker_mean` | 帧间稳定性 | ↓ 越低越好 | 本仓库实现 |
+| **NIQE** | `niqe_mean` | 视觉质量 | ↓ 越低越好 | pyiqa |
+| **#Frames / Duration** | `num_frames`, `duration_sec` | 生成规模 | — | 元数据 |
+
+> **注意**：输出文件使用明确的列名（`clip_score` 或 `vqa_score`），根据 YAML 配置中的 mode 自动确定，避免歧义。
 
 ### 指标详解
 
@@ -233,6 +292,9 @@ t2v-eval/
 │   ├── run_niqe.py            # NIQE 图像质量评测
 │   ├── summarize.py           # 结果汇总
 │   └── run_all.py             # 一键运行入口
+├── frontend/                  # LaTeX 表格生成器 (Vue 3)
+│   ├── src/                   # 前端源代码
+│   └── public/data/           # 评测结果（供前端使用）
 ├── third_party/               # Git 子模块
 │   ├── VBench/                # 官方 VBench 仓库
 │   └── t2v_metrics/           # 官方 t2v_metrics 仓库
