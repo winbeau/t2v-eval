@@ -1,0 +1,96 @@
+/* KaTeX styles - must be before @tailwind directives */
+@import 'katex/dist/katex.min.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #3b82f6;
+  --color-secondary: #64748b;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded hover:bg-gray-400;
+}
+
+/* Code block styling */
+.latex-code {
+  @apply font-mono text-sm bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto;
+  tab-size: 2;
+}
+
+/* Table preview styling */
+.table-preview {
+  @apply bg-white p-6 rounded-lg shadow-sm border border-gray-200 overflow-x-auto;
+}
+
+.table-preview table {
+  @apply w-full border-collapse;
+}
+
+.table-preview th,
+.table-preview td {
+  @apply border border-gray-300 px-4 py-2 text-center;
+}
+
+.table-preview th {
+  @apply bg-gray-100 font-semibold;
+}
+
+.table-preview tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+/* Metric highlighting */
+.metric-best {
+  @apply font-bold text-green-600;
+}
+
+.metric-worst {
+  @apply text-red-500;
+}
+
+/* Tooltip */
+.tooltip {
+  @apply absolute z-50 px-2 py-1 text-xs text-white bg-gray-800 rounded shadow-lg;
+}
+
+/* Animation */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Copy button animation */
+.copy-success {
+  animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}

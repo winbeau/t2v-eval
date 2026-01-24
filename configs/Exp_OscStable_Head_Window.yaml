@@ -1,0 +1,166 @@
+# =============================================================================
+# T2V-Eval Configuration - AdaHead Experiments
+# Text-to-Video Generation Evaluation Pipeline
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# HuggingFace Dataset Configuration
+# -----------------------------------------------------------------------------
+dataset:
+  repo_id: "winbeau/AdaHead"
+  split: "test"
+  video_dir: "videos/Exp_OscStable_Head_Window"  # Main experiment directory
+  # Expected structure:
+  #   videos/Exp_OscStable_Head_Window/{group_name}/*.mp4
+
+# -----------------------------------------------------------------------------
+# Experiment Groups (Exp_OscStable_Head_Window)
+# Comparing Frame-level vs Head-level, Oscillating vs Stable patterns
+# -----------------------------------------------------------------------------
+groups:
+  # Baseline comparisons
+  - name: "frame_baseline_21"
+    description: "Frame-level baseline, 21 frames"
+    num_frames: 21
+  - name: "frame_baseline_72"
+    description: "Frame-level baseline, 72 frames"
+    num_frames: 72
+  - name: "head_baseline_21"
+    description: "Head-level baseline, 21 frames"
+    num_frames: 21
+  - name: "head_baseline_72"
+    description: "Head-level baseline, 72 frames"
+    num_frames: 72
+
+  # Oscillating attention patterns
+  - name: "osc_long_21"
+    description: "Oscillating attention (long window), 21 frames"
+    num_frames: 21
+  - name: "osc_long_72"
+    description: "Oscillating attention (long window), 72 frames"
+    num_frames: 72
+  - name: "osc_short_21"
+    description: "Oscillating attention (short window), 21 frames"
+    num_frames: 21
+  - name: "osc_short_72"
+    description: "Oscillating attention (short window), 72 frames"
+    num_frames: 72
+
+  # Stable attention patterns
+  - name: "stable_long_21"
+    description: "Stable attention (long window), 21 frames"
+    num_frames: 21
+  - name: "stable_short_21"
+    description: "Stable attention (short window), 21 frames"
+    num_frames: 21
+
+# Group categories for analysis
+group_categories:
+  by_attention_type:
+    frame: ["frame_baseline_21", "frame_baseline_72"]
+    head: ["head_baseline_21", "head_baseline_72"]
+    oscillating: ["osc_long_21", "osc_long_72", "osc_short_21", "osc_short_72"]
+    stable: ["stable_long_21", "stable_short_21"]
+
+  by_num_frames:
+    short_21: ["frame_baseline_21", "head_baseline_21", "osc_long_21", "osc_short_21", "stable_long_21", "stable_short_21"]
+    long_72: ["frame_baseline_72", "head_baseline_72", "osc_long_72", "osc_short_72"]
+
+  by_window_size:
+    long_window: ["osc_long_21", "osc_long_72", "stable_long_21"]
+    short_window: ["osc_short_21", "osc_short_72", "stable_short_21"]
+
+# -----------------------------------------------------------------------------
+# Unified Evaluation Protocol
+# -----------------------------------------------------------------------------
+protocol:
+  fps_eval: 8                    # Evaluation FPS
+  num_frames: 16                 # Frames to sample for evaluation
+  resize: 256                    # Spatial resolution
+  frame_sampling: "uniform"      # Sampling strategy: uniform
+
+  # Frame handling for videos with different lengths
+  frame_padding: "loop"          # Options: loop, repeat_last, truncate
+
+# -----------------------------------------------------------------------------
+# Metrics Configuration
+# -----------------------------------------------------------------------------
+metrics:
+  enabled:
+    - "clip_or_vqa"
+    - "vbench_temporal"
+    - "flicker"
+    - "niqe"
+
+  clip_or_vqa:
+    mode: "clip"                 # Options: clip, vqa
+    model_name: "ViT-B-32"       # CLIP model variant
+    pretrained: "openai"         # Pretrained weights source
+    num_frames_for_score: 8      # Frames to sample for scoring
+    aggregation: "mean"          # How to aggregate frame scores: mean, max
+
+  vbench:
+    enabled: true
+    temporal_only: true          # Focus on temporal metrics
+    subtasks:
+      - "temporal_flickering"
+      - "motion_smoothness"
+      - "temporal_style"
+      - "subject_consistency"
+    cache_dir: "./vbench_cache"
+
+  flicker:
+    method: "l1"                 # Difference method: l1, l2
+    normalize: true              # Normalize pixel values to [0, 1]
+    compute_std: true            # Also compute std of frame differences
+    grayscale: false             # Convert to grayscale before computing
+
+  niqe:
+    enabled: true
+    num_frames_for_niqe: 8       # Frames to sample for NIQE
+    block_size: 96               # NIQE block size
+    alternative: "niqe"          # Options: niqe, brisque
+
+# -----------------------------------------------------------------------------
+# Runtime Configuration
+# -----------------------------------------------------------------------------
+runtime:
+  device: "cuda"                 # Device: cuda, cpu
+  batch_size: 1                  # Batch size for inference
+  num_workers: 4                 # DataLoader workers
+  seed: 42                       # Random seed for reproducibility
+
+# -----------------------------------------------------------------------------
+# Paths Configuration
+# -----------------------------------------------------------------------------
+paths:
+  cache_dir: "./eval_cache"
+  output_dir: "./outputs"
+  metadata_file: "metadata.csv"
+  processed_metadata: "processed_metadata.csv"
+  per_video_metrics: "per_video_metrics.csv"
+  group_summary: "group_summary.csv"
+  runtime_csv: "runtime.csv"
+  figures_dir: "./outputs/figs"
+
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
+logging:
+  level: "INFO"                  # DEBUG, INFO, WARNING, ERROR
+  log_file: "./outputs/eval.log"
+  console: true
+
+# -----------------------------------------------------------------------------
+# Ablation Studies (Optional - other directories)
+# -----------------------------------------------------------------------------
+ablation_groups:
+  - name: "ablation_baseline_sf"
+    path: "videos/ablation_baseline_sf"
+    description: "Ablation: baseline with spatial-first"
+  - name: "ablation_headkv_equal"
+    path: "videos/ablation_headkv_equal"
+    description: "Ablation: head KV with equal distribution"
+  - name: "debug_frame_baseline_72"
+    path: "videos/debug_frame_baseline_72"
+    description: "Debug: frame baseline 72 frames"

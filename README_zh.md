@@ -102,19 +102,23 @@ pip install -r third_party/VBench/requirements.txt
 
 ### 3. 配置数据集
 
-编辑 `configs/eval.yaml`：
+在 `configs/` 目录下为你的实验创建配置文件：
+
+```bash
+# 示例：configs/Exp_OscStable_Head_Window.yaml
+```
 
 ```yaml
 dataset:
-  repo_id: "YOUR_USERNAME/YOUR_DATASET"  # 你的 HuggingFace 数据集
-  split: "test"
+  repo_id: "winbeau/AdaHead"  # 你的 HuggingFace 数据集
+  video_dir: "videos/Exp_OscStable_Head_Window"
 
 # 实验组配置（根据你的对照实验修改）
 groups:
-  - name: "frame_level_baseline"
-    description: "帧级注意力基线"
-  - name: "head_level_stable_w8"
-    description: "头级注意力，稳定头，窗口=8"
+  - name: "frame_baseline_21"
+    description: "帧级注意力基线，21帧"
+  - name: "head_baseline_21"
+    description: "头级注意力基线，21帧"
   # ... 其他组
 ```
 
@@ -124,23 +128,23 @@ groups:
 |------|------|------|
 | `video` | bytes/path | 视频文件（MP4 格式） |
 | `prompt` | string | 生成该视频使用的文本提示 |
-| `group` | string | 实验组名称（6 组之一） |
+| `group` | string | 实验组名称 |
 | `video_id` | string | 唯一标识符 |
 
 ### 4. 运行完整流水线
 
 ```bash
-# 一键运行所有评测
-python scripts/run_all.py --config configs/eval.yaml
+# 一键运行所有评测（指定配置文件）
+python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml
 
 # 自动初始化子模块
-python scripts/run_all.py --config configs/eval.yaml --auto-init-submodules
+python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --auto-init-submodules
 
 # 跳过特定指标（如 VBench 权重未下载）
-python scripts/run_all.py --config configs/eval.yaml --skip-vbench
+python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --skip-vbench
 
 # 强制重新计算所有指标
-python scripts/run_all.py --config configs/eval.yaml --force
+python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --force
 ```
 
 ### 5. 查看结果
@@ -219,7 +223,7 @@ metrics:
 ```
 t2v-eval/
 ├── configs/
-│   └── eval.yaml              # 统一评测协议配置
+│   └── Exp_*.yaml            # 按实验命名的配置文件
 ├── scripts/
 │   ├── export_from_hf.py      # 从 HuggingFace 导出数据集
 │   ├── preprocess_videos.py   # 视频预处理（统一格式）
@@ -250,25 +254,25 @@ t2v-eval/
 
 ```bash
 # 步骤 1：从 HuggingFace 导出数据集
-python scripts/export_from_hf.py --config configs/eval.yaml
+python scripts/export_from_hf.py --config configs/Exp_OscStable_Head_Window.yaml
 
 # 步骤 2：预处理视频（统一 fps/分辨率/帧数）
-python scripts/preprocess_videos.py --config configs/eval.yaml
+python scripts/preprocess_videos.py --config configs/Exp_OscStable_Head_Window.yaml
 
 # 步骤 3：CLIP/VQA 评测
-python scripts/run_clip_or_vqa.py --config configs/eval.yaml --mode clip
+python scripts/run_clip_or_vqa.py --config configs/Exp_OscStable_Head_Window.yaml --mode clip
 
 # 步骤 4：VBench 评测
-python scripts/run_vbench.py --config configs/eval.yaml --skip-on-error
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --skip-on-error
 
 # 步骤 5：Flicker 评测
-python scripts/run_flicker.py --config configs/eval.yaml
+python scripts/run_flicker.py --config configs/Exp_OscStable_Head_Window.yaml
 
 # 步骤 6：NIQE 评测
-python scripts/run_niqe.py --config configs/eval.yaml
+python scripts/run_niqe.py --config configs/Exp_OscStable_Head_Window.yaml
 
 # 步骤 7：汇总结果
-python scripts/summarize.py --config configs/eval.yaml
+python scripts/summarize.py --config configs/Exp_OscStable_Head_Window.yaml
 ```
 
 ### 添加推理效率数据

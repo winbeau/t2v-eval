@@ -75,25 +75,34 @@ pip install -r third_party/VBench/requirements.txt
 
 ### 3. Configure Dataset
 
-Edit `configs/eval.yaml`:
+Create a config file for your experiment in `configs/`:
+
+```bash
+# Example: configs/Exp_OscStable_Head_Window.yaml
+```
 
 ```yaml
 dataset:
-  repo_id: "YOUR_USERNAME/YOUR_DATASET"  # Your HuggingFace dataset
-  split: "test"
+  repo_id: "winbeau/AdaHead"  # Your HuggingFace dataset
+  video_dir: "videos/Exp_OscStable_Head_Window"
+
+groups:
+  - name: "frame_baseline_21"
+    description: "Frame-level baseline, 21 frames"
+  # ... more groups
 ```
 
 ### 4. Run Full Pipeline
 
 ```bash
-# One-click evaluation
-python scripts/run_all.py --config configs/eval.yaml
+# One-click evaluation (specify your config)
+python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml
 
 # Or with auto submodule initialization
-python scripts/run_all.py --config configs/eval.yaml --auto-init-submodules
+python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --auto-init-submodules
 
 # Skip specific metrics if needed
-python scripts/run_all.py --config configs/eval.yaml --skip-vbench
+python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --skip-vbench
 ```
 
 ### 5. View Results
@@ -125,7 +134,7 @@ outputs/
 ```
 t2v-eval/
 ├── configs/
-│   └── eval.yaml              # Unified evaluation protocol
+│   └── Exp_*.yaml            # Per-experiment configs
 ├── scripts/
 │   ├── export_from_hf.py      # Export dataset from HuggingFace
 │   ├── preprocess_videos.py   # Unify video format
