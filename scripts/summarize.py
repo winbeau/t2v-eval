@@ -39,9 +39,16 @@ def load_config(config_path: str) -> dict:
 def load_metric_csv(path: Path, metric_name: str) -> Optional[pd.DataFrame]:
     """Load a metric CSV file if it exists."""
     if path.exists():
-        df = pd.read_csv(path)
-        logger.info(f"Loaded {metric_name}: {len(df)} records from {path}")
-        return df
+        try:
+            df = pd.read_csv(path)
+            if df.empty:
+                logger.warning(f"{metric_name} file is empty: {path}")
+                return None
+            logger.info(f"Loaded {metric_name}: {len(df)} records from {path}")
+            return df
+        except pd.errors.EmptyDataError:
+            logger.warning(f"{metric_name} file has no data: {path}")
+            return None
     else:
         logger.warning(f"{metric_name} not found: {path}")
         return None
