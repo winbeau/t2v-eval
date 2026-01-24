@@ -151,6 +151,13 @@ def main():
     per_video_output = output_dir / paths_config["per_video_metrics"]
     group_summary_output = output_dir / paths_config["group_summary"]
 
+    # Custom experiment output filename (if configured)
+    experiment_output = paths_config.get("experiment_output")
+    if experiment_output:
+        experiment_output_path = output_dir / experiment_output
+    else:
+        experiment_output_path = None
+
     # Check if already exists
     if per_video_output.exists() and group_summary_output.exists() and not args.force:
         logger.info("Summary files already exist. Use --force to regenerate.")
@@ -237,6 +244,11 @@ def main():
     # Save group summary
     summary_df.to_csv(group_summary_output, index=False)
     logger.info(f"Group summary saved to: {group_summary_output}")
+
+    # Save to custom experiment output path if configured
+    if experiment_output_path:
+        summary_df.to_csv(experiment_output_path, index=False)
+        logger.info(f"Experiment output saved to: {experiment_output_path}")
 
     # Print summary table
     logger.info("\n" + "=" * 80)

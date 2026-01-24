@@ -282,6 +282,7 @@ def main():
     extra_args = []
     if args.force:
         extra_args.append("--force")
+        logger.info("🔄 Force mode enabled: All metrics will be recomputed")
 
     # Step 1: Export from HuggingFace
     if not args.skip_export:

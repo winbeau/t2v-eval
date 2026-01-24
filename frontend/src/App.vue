@@ -5,6 +5,7 @@ import TablePreview from './components/TablePreview.vue';
 import CodeBlock from './components/CodeBlock.vue';
 import MetricSelector from './components/MetricSelector.vue';
 import OptionsPanel from './components/OptionsPanel.vue';
+import LocalDataModal from './components/LocalDataModal.vue';
 import { useMetricsData, useLatexGenerator } from './composables/useMetrics';
 
 const {
@@ -26,6 +27,7 @@ const {
 );
 
 const activeTab = ref<'preview' | 'latex'>('preview');
+const showLocalDataModal = ref(false);
 
 async function handleFileSelected(files: File[]) {
   const file = files[0];
@@ -36,6 +38,25 @@ async function handleFileSelected(files: File[]) {
 
 function handleClearData() {
   clearData();
+}
+
+// Load local data from public/data/
+async function handleLocalFileSelect(filename: string) {
+  try {
+    const response = await fetch(`/data/${filename}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load ${filename}`);
+    }
+    const csvText = await response.text();
+
+    // Create a File-like object for parsing
+    const blob = new Blob([csvText], { type: 'text/csv' });
+    const file = new File([blob], filename, { type: 'text/csv' });
+
+    await loadFile(file);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to load local file';
+  }
 }
 
 // Load sample data for demo
@@ -175,6 +196,17 @@ async function loadSampleData() {
 
             <button
               v-if="!fileName"
+              class="local-data-btn"
+              @click="showLocalDataModal = true"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+              </svg>
+              Load Local Data
+            </button>
+
+            <button
+              v-if="!fileName"
               class="sample-btn"
               @click="loadSampleData"
             >
@@ -293,6 +325,13 @@ async function loadSampleData() {
         T2V-Eval LaTeX Table Generator • Built with Vue 3 + TypeScript + KaTeX
       </p>
     </footer>
+
+    <!-- Local Data Modal -->
+    <LocalDataModal
+      :visible="showLocalDataModal"
+      @close="showLocalDataModal = false"
+      @select="handleLocalFileSelect"
+    />
   </div>
 </template>
 
@@ -347,6 +386,10 @@ async function loadSampleData() {
 
 .sample-btn {
   @apply mt-3 w-full py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors;
+}
+
+.local-data-btn {
+  @apply mt-3 w-full py-2 text-sm text-green-600 border border-green-200 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center;
 }
 
 .error-message {
