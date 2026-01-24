@@ -108,9 +108,30 @@ def init_submodules() -> bool:
 
     try:
         for name, path in to_init:
+            if path.exists() and (path / ".git").exists():
+                logger.info(f"Repairing submodule {name} working tree...")
+                subprocess.run(
+                    ["git", "-C", str(path), "reset", "--hard", "HEAD"],
+                    cwd=PROJECT_ROOT,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                )
+                subprocess.run(
+                    ["git", "-C", str(path), "clean", "-fd"],
+                    cwd=PROJECT_ROOT,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                )
+
+            if _submodule_ready(name, path):
+                logger.info(f"✓ Submodule {name}: OK")
+                continue
+
             logger.info(f"Fetching submodule {name}...")
             result = subprocess.run(
-                ["git", "submodule", "update", "--init", "--recursive", str(path)],
+                ["git", "submodule", "update", "--init", "--recursive", "--force", str(path)],
                 cwd=PROJECT_ROOT,
                 capture_output=True,
                 text=True,
@@ -118,6 +139,10 @@ def init_submodules() -> bool:
             )
             if result.returncode != 0:
                 logger.error(f"Submodule init failed for {name}: {result.stderr}")
+                return False
+
+            if not _submodule_ready(name, path):
+                logger.error(f"Submodule {name} still incomplete after init.")
                 return False
 
         logger.info("Submodules initialized successfully")

@@ -147,6 +147,11 @@ def build_prompt_indices(prompt_df: pd.DataFrame) -> tuple[dict[str, int], dict[
         prompt_index_by_id = {
             str(row["video_id"]): idx for idx, row in prompt_df.iterrows()
         }
+        for key, idx in prompt_index_by_id.items():
+            try:
+                prompt_index_by_index[int(key)] = idx
+            except Exception:
+                continue
     if "video_path" in prompt_df.columns:
         for idx, row in prompt_df.iterrows():
             stem = Path(str(row["video_path"])).stem
