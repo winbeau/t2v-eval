@@ -1,0 +1,118 @@
+# =============================================================================
+# T2V-Eval Configuration
+# Text-to-Video Generation Evaluation Pipeline
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# HuggingFace Dataset Configuration
+# -----------------------------------------------------------------------------
+dataset:
+  repo_id: "YOUR_USERNAME/YOUR_DATASET"  # Replace with your HF dataset repo
+  split: "test"
+  # Expected columns in dataset:
+  #   - video: video file (mp4/bytes)
+  #   - prompt: text prompt used for generation
+  #   - group: experiment group name (one of the 6 groups)
+  #   - video_id: unique identifier for each video
+
+# -----------------------------------------------------------------------------
+# Experiment Groups (6 comparison groups)
+# -----------------------------------------------------------------------------
+groups:
+  - name: "frame_level_baseline"
+    description: "Frame-level attention baseline"
+  - name: "head_level_stable_w8"
+    description: "Head-level with stable heads, window=8"
+  - name: "head_level_stable_w16"
+    description: "Head-level with stable heads, window=16"
+  - name: "head_level_oscillate_w8"
+    description: "Head-level with oscillating heads, window=8"
+  - name: "head_level_oscillate_w16"
+    description: "Head-level with oscillating heads, window=16"
+  - name: "head_level_mixed"
+    description: "Head-level with mixed head types"
+
+# -----------------------------------------------------------------------------
+# Unified Evaluation Protocol
+# -----------------------------------------------------------------------------
+protocol:
+  fps_eval: 8                    # Evaluation FPS (8 or 16)
+  num_frames: 16                 # Number of frames to sample (16/24/32)
+  resize: 256                    # Spatial resolution (256 or 224)
+  frame_sampling: "uniform"      # Sampling strategy: uniform
+
+  # Frame handling for videos with different lengths
+  frame_padding: "loop"          # Options: loop, repeat_last, truncate
+  # - loop: cycle frames if video is shorter than num_frames
+  # - repeat_last: repeat the last frame
+  # - truncate: only use available frames (may affect metrics)
+
+# -----------------------------------------------------------------------------
+# Metrics Configuration
+# -----------------------------------------------------------------------------
+metrics:
+  enabled:
+    - "clip_or_vqa"
+    - "vbench_temporal"
+    - "flicker"
+    - "niqe"
+
+  clip_or_vqa:
+    mode: "clip"                 # Options: clip, vqa
+    model_name: "ViT-B-32"       # CLIP model variant
+    pretrained: "openai"         # Pretrained weights source
+    num_frames_for_score: 8      # Frames to sample for scoring (can differ from num_frames)
+    aggregation: "mean"          # How to aggregate frame scores: mean, max
+
+  vbench:
+    enabled: true
+    temporal_only: true          # Only run temporal-related subtasks
+    subtasks:
+      - "temporal_flickering"
+      - "motion_smoothness"
+      - "temporal_style"
+      # - "subject_consistency"  # Uncomment to enable more subtasks
+    cache_dir: "./vbench_cache"
+
+  flicker:
+    method: "l1"                 # Difference method: l1, l2
+    normalize: true              # Normalize pixel values to [0, 1]
+    compute_std: true            # Also compute std of frame differences
+    grayscale: false             # Convert to grayscale before computing
+
+  niqe:
+    enabled: true
+    num_frames_for_niqe: 8       # Frames to sample for NIQE
+    block_size: 96               # NIQE block size
+    # Alternative: brisque (requires additional setup)
+    alternative: "niqe"          # Options: niqe, brisque
+
+# -----------------------------------------------------------------------------
+# Runtime Configuration
+# -----------------------------------------------------------------------------
+runtime:
+  device: "cuda"                 # Device: cuda, cpu
+  batch_size: 1                  # Batch size for inference
+  num_workers: 4                 # DataLoader workers
+  seed: 42                       # Random seed for reproducibility
+
+# -----------------------------------------------------------------------------
+# Paths Configuration
+# -----------------------------------------------------------------------------
+paths:
+  cache_dir: "./eval_cache"              # Preprocessed videos cache
+  output_dir: "./outputs"                 # Output directory
+  metadata_file: "metadata.csv"           # Raw metadata from HF export
+  processed_metadata: "processed_metadata.csv"  # After preprocessing
+  per_video_metrics: "per_video_metrics.csv"
+  group_summary: "group_summary.csv"
+  runtime_csv: "runtime.csv"              # Optional: FPS/timing data
+  figures_dir: "./outputs/figs"
+
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
+logging:
+  level: "INFO"                  # DEBUG, INFO, WARNING, ERROR
+  log_file: "./outputs/eval.log"
+  console: true

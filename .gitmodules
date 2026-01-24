@@ -1,0 +1,6 @@
+[submodule "third_party/VBench"]
+	path = third_party/VBench
+	url = https://github.com/Vchitect/VBench.git
+[submodule "third_party/t2v_metrics"]
+	path = third_party/t2v_metrics
+	url = https://github.com/linzhiqiu/t2v_metrics.git
