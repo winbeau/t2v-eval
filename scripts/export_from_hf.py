@@ -35,6 +35,108 @@ def load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
 
 
+def resolve_path(path_str: str | None, base_dir: Path) -> Path | None:
+    """Resolve a possibly-relative path against base_dir."""
+    if path_str is None:
+        return None
+    path = Path(path_str)
+    return path if path.is_absolute() else (base_dir / path)
+
+
+def extract_video_path(video_data) -> str | None:
+    """Try to extract a file path from HF video payloads."""
+    if isinstance(video_data, dict) and "path" in video_data:
+        return video_data["path"]
+    if isinstance(video_data, str) and os.path.exists(video_data):
+        return video_data
+    return None
+
+
+def infer_group_from_path(video_path: str | None, group_names: list[str]) -> str | None:
+    """Infer group name from video path using known group names."""
+    if not video_path:
+        return None
+    parts = set(Path(video_path).parts)
+    for name in group_names:
+        if name in parts:
+            return name
+    filename = Path(video_path).name
+    for name in group_names:
+        if name in filename:
+            return name
+    return None
+
+
+def load_prompt_file(prompt_path: Path) -> pd.DataFrame:
+    """
+    Load prompts from txt/csv/tsv/jsonl.
+    Supports columns: prompt, video_id, group (case-insensitive),
+    plus common aliases: text/caption, id/uid/filename/path.
+    """
+    if not prompt_path.exists():
+        raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
+
+    ext = prompt_path.suffix.lower()
+    df: pd.DataFrame
+    if ext in {".jsonl", ".json"}:
+        df = pd.read_json(prompt_path, lines=(ext == ".jsonl"))
+    else:
+        try:
+            df = pd.read_csv(prompt_path, sep=None, engine="python")
+        except Exception:
+            lines = [
+                line.strip()
+                for line in prompt_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            return pd.DataFrame({"prompt": lines})
+
+    df.columns = [str(c).strip().lower() for c in df.columns]
+    if "prompt" not in df.columns and len(df.columns) >= 2:
+        # Likely headerless CSV where first row became header; re-read with header=None.
+        if any((" " in c) or (len(c) > 24) or c.isdigit() for c in df.columns):
+            df = pd.read_csv(prompt_path, header=None)
+            df.columns = [str(c).strip().lower() for c in df.columns]
+            df = df.rename(columns={df.columns[0]: "index", df.columns[1]: "prompt"})
+
+    rename = {}
+    if "caption" in df.columns:
+        rename["caption"] = "prompt"
+    if "text" in df.columns:
+        rename["text"] = "prompt"
+    if "id" in df.columns:
+        rename["id"] = "video_id"
+    if "uid" in df.columns:
+        rename["uid"] = "video_id"
+    if "filename" in df.columns:
+        rename["filename"] = "video_id"
+    if "file" in df.columns:
+        rename["file"] = "video_id"
+    if "path" in df.columns:
+        rename["path"] = "video_path"
+    if "idx" in df.columns:
+        rename["idx"] = "index"
+    if "no" in df.columns:
+        rename["no"] = "index"
+    if "num" in df.columns:
+        rename["num"] = "index"
+    if "number" in df.columns:
+        rename["number"] = "index"
+    if rename:
+        df = df.rename(columns=rename)
+    return df
+
+
+def series_value(row: pd.Series | None, key: str) -> str | None:
+    """Safe accessor for prompt file rows."""
+    if row is None or key not in row:
+        return None
+    val = row[key]
+    if pd.isna(val):
+        return None
+    return str(val)
+
+
 def export_video_bytes(video_data, output_path: Path) -> bool:
     """
     Export video data to file.
@@ -81,28 +183,35 @@ def main():
     args = parser.parse_args()
 
     # Load configuration
-    config = load_config(args.config)
+    config_path = Path(args.config).resolve()
+    project_root = config_path.parent.parent if config_path.parent.name == "configs" else config_path.parent
+    config = load_config(str(config_path))
     dataset_config = config["dataset"]
     paths_config = config["paths"]
 
     repo_id = dataset_config["repo_id"]
     split = dataset_config.get("split", "test")
+    prompt_file = dataset_config.get("prompt_file")
+    default_group = dataset_config.get("default_group")
 
     # Setup directories
-    cache_dir = Path(args.output_dir or paths_config["cache_dir"])
+    cache_dir = resolve_path(args.output_dir or paths_config["cache_dir"], project_root)
     raw_videos_dir = cache_dir / "raw"
     raw_videos_dir.mkdir(parents=True, exist_ok=True)
 
-    output_dir = Path(paths_config["output_dir"])
+    output_dir = resolve_path(paths_config["output_dir"], project_root)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     metadata_path = output_dir / paths_config["metadata_file"]
 
     logger.info(f"Loading dataset from HuggingFace: {repo_id}")
     logger.info(f"Split: {split}")
+    hf_cache_dir = resolve_path(dataset_config.get("hf_cache_dir"), project_root) or (cache_dir / "hf")
+    hf_cache_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"HF cache dir: {hf_cache_dir}")
 
     try:
-        dataset = load_dataset(repo_id, split=split)
+        dataset = load_dataset(repo_id, split=split, cache_dir=str(hf_cache_dir))
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
         logger.error(
@@ -116,7 +225,7 @@ def main():
     logger.info(f"Dataset loaded with {len(dataset)} samples")
 
     # Validate required columns
-    required_columns = ["video", "prompt", "group", "video_id"]
+    required_columns = ["video"]
     available_columns = dataset.column_names
     missing = [c for c in required_columns if c not in available_columns]
     if missing:
@@ -124,15 +233,93 @@ def main():
         logger.error(f"Available columns: {available_columns}")
         sys.exit(1)
 
+    # Optional prompt file (used when prompt/group/video_id are missing in HF dataset)
+    prompt_df = None
+    prompt_index_by_id: dict[str, int] = {}
+    prompt_index_by_stem: dict[str, int] = {}
+    prompt_index_by_index: dict[int, int] = {}
+    prompt_index_by_pos: dict[int, int] | None = None
+    if prompt_file:
+        prompt_path = resolve_path(prompt_file, project_root)
+        try:
+            prompt_df = load_prompt_file(prompt_path)
+            logger.info(f"Loaded prompt file: {prompt_path} ({len(prompt_df)} rows)")
+        except Exception as e:
+            logger.error(f"Failed to load prompt file: {e}")
+            sys.exit(1)
+
+        if "video_id" in prompt_df.columns:
+            prompt_index_by_id = {
+                str(row["video_id"]): idx for idx, row in prompt_df.iterrows()
+            }
+        if "video_path" in prompt_df.columns:
+            for idx, row in prompt_df.iterrows():
+                stem = Path(str(row["video_path"])).stem
+                if stem:
+                    prompt_index_by_stem[stem] = idx
+        if "index" in prompt_df.columns:
+            for idx, row in prompt_df.iterrows():
+                try:
+                    prompt_index_by_index[int(row["index"])] = idx
+                except Exception:
+                    continue
+
+        if len(prompt_df) == len(dataset):
+            prompt_index_by_pos = {idx: idx for idx in range(len(prompt_df))}
+        elif not prompt_index_by_id and not prompt_index_by_stem:
+            logger.warning(
+                "Prompt file has no video_id/video_path columns and length doesn't match dataset; "
+                "will not be able to align prompts by index."
+            )
+
+    if "prompt" not in available_columns and prompt_df is None:
+        logger.error("Missing 'prompt' column and no prompt_file provided.")
+        sys.exit(1)
+
     # Export videos and collect metadata
     metadata_records = []
     samples = dataset if args.limit is None else dataset.select(range(min(args.limit, len(dataset))))
+    group_names = [g["name"] for g in config.get("groups", []) if isinstance(g, dict) and "name" in g]
 
     for idx, sample in enumerate(tqdm(samples, desc="Exporting videos")):
-        video_id = sample["video_id"]
-        group = sample["group"]
-        prompt = sample["prompt"]
         video_data = sample["video"]
+        video_path_hint = extract_video_path(video_data)
+        candidate_id = sample.get("video_id")
+        if not candidate_id and video_path_hint:
+            candidate_id = Path(video_path_hint).stem
+        if not candidate_id:
+            candidate_id = f"{idx:06d}"
+
+        prompt_row = None
+        if prompt_df is not None:
+            if prompt_index_by_id:
+                prompt_row = prompt_df.iloc[prompt_index_by_id.get(str(candidate_id), -1)] if str(candidate_id) in prompt_index_by_id else None
+        if prompt_row is None and video_path_hint and prompt_index_by_stem:
+            stem = Path(video_path_hint).stem
+            if stem in prompt_index_by_stem:
+                prompt_row = prompt_df.iloc[prompt_index_by_stem[stem]]
+        if prompt_row is None and prompt_index_by_index:
+            import re
+            match = re.search(r"(\\d+)(?!.*\\d)", str(candidate_id))
+            if match:
+                idx_key = int(match.group(1))
+                if idx_key in prompt_index_by_index:
+                    prompt_row = prompt_df.iloc[prompt_index_by_index[idx_key]]
+        if prompt_row is None and prompt_index_by_pos is not None and idx in prompt_index_by_pos:
+            prompt_row = prompt_df.iloc[prompt_index_by_pos[idx]]
+
+        video_id = sample.get("video_id") or series_value(prompt_row, "video_id") or candidate_id
+        group = sample.get("group") or series_value(prompt_row, "group")
+        if group is None:
+            group = infer_group_from_path(video_path_hint, group_names) or default_group
+        prompt = sample.get("prompt") or series_value(prompt_row, "prompt")
+
+        if group is None:
+            logger.error("Missing group information. Provide 'group' column, prompt_file with group, or default_group in config.")
+            sys.exit(1)
+        if prompt is None:
+            logger.error("Missing prompt information. Provide 'prompt' column or prompt_file.")
+            sys.exit(1)
 
         # Create group subdirectory
         group_dir = raw_videos_dir / group
