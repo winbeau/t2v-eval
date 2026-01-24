@@ -299,6 +299,7 @@ def main():
             sys.exit(1)
 
         metadata_records = []
+        skipped_groups = set()
         for idx, video_path in enumerate(tqdm(video_files, desc="Indexing local videos")):
             video_path_hint = str(video_path)
             relative = video_path.relative_to(local_dir)
@@ -307,6 +308,11 @@ def main():
             if group is None:
                 logger.error("Missing group information. Provide folder structure or default_group in config.")
                 sys.exit(1)
+
+            # Skip videos not in configured groups (if groups are specified)
+            if group_names and group not in group_names:
+                skipped_groups.add(group)
+                continue
 
             candidate_id = video_path.stem
             prompt_row = find_prompt_row(
@@ -337,6 +343,8 @@ def main():
         df.to_csv(metadata_path, index=False)
         logger.info(f"Metadata saved to: {metadata_path}")
         logger.info(f"Total videos indexed: {len(df)}")
+        if skipped_groups:
+            logger.info(f"Skipped groups (not in config): {sorted(skipped_groups)}")
         logger.info("Group distribution:")
         for group, count in df["group"].value_counts().items():
             logger.info(f"  {group}: {count}")
