@@ -84,7 +84,7 @@ group_categories:
 # -----------------------------------------------------------------------------
 protocol:
   fps_eval: 8                    # Evaluation FPS
-  num_frames: 16                 # Frames to sample for evaluation
+  num_frames: 32                 # Frames to sample for evaluation (32 frames = 4 sec)
   resize: 256                    # Spatial resolution
   frame_sampling: "uniform"      # Sampling strategy: uniform
 
@@ -105,7 +105,7 @@ metrics:
     mode: "clip"                 # Options: clip, vqa
     model_name: "ViT-B-32"       # CLIP model variant
     pretrained: "openai"         # Pretrained weights source
-    num_frames_for_score: 8      # Frames to sample for scoring
+    num_frames_for_score: 32     # Frames to sample for scoring (match protocol)
     aggregation: "mean"          # How to aggregate frame scores: mean, max
 
   vbench:
@@ -125,7 +125,7 @@ metrics:
 
   niqe:
     enabled: true
-    num_frames_for_niqe: 8       # Frames to sample for NIQE
+    num_frames_for_niqe: 32      # Frames to sample for NIQE (match protocol)
     block_size: 96               # NIQE block size
     alternative: "niqe"          # Options: niqe, brisque
 
