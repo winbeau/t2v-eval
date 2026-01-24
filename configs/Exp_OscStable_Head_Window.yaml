@@ -9,6 +9,7 @@
 dataset:
   repo_id: "winbeau/AdaHead"
   split: "train"
+  hf_cache_dir: "hf/AdaHead"
   prompt_file: "videos/Exp_OscStable_Head_Window/prompts.csv"
   video_dir: "videos/Exp_OscStable_Head_Window"  # Main experiment directory
   # Expected structure:
