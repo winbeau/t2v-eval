@@ -1,6 +1,6 @@
 # =============================================================================
-# T2V-Eval Configuration - AdaHead Experiments
-# Text-to-Video Generation Evaluation Pipeline
+# T2V-Eval Configuration - 21 Latent Frames Experiments (84 actual frames)
+# 60% sampling coverage = 50 frames
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -12,81 +12,61 @@ dataset:
   use_local_videos: true
   local_video_dir: "hf/AdaHead/videos/Exp_OscStable_Head_Window"
   prompt_file: "hf/AdaHead/videos/Exp_OscStable_Head_Window/prompts.csv"
-  video_dir: "videos/Exp_OscStable_Head_Window"  # Main experiment directory
-  # Expected structure:
-  #   videos/Exp_OscStable_Head_Window/{group_name}/*.mp4
+  video_dir: "videos/Exp_OscStable_Head_Window"
 
 # -----------------------------------------------------------------------------
-# Experiment Groups (Exp_OscStable_Head_Window)
-# Comparing Frame-level vs Head-level, Oscillating vs Stable patterns
+# Experiment Groups (21 latent frames only)
+# 6 groups: 2 baselines + 2 oscillating + 2 stable
 # -----------------------------------------------------------------------------
 groups:
   # Baseline comparisons
   - name: "frame_baseline_21"
-    description: "Frame-level baseline, 21 frames"
-    num_frames: 21
-  - name: "frame_baseline_72"
-    description: "Frame-level baseline, 72 frames"
-    num_frames: 72
+    description: "Frame-level baseline, 21 latent frames (84 actual)"
+    latent_frames: 21
+    actual_frames: 84
   - name: "head_baseline_21"
-    description: "Head-level baseline, 21 frames"
-    num_frames: 21
-  - name: "head_baseline_72"
-    description: "Head-level baseline, 72 frames"
-    num_frames: 72
+    description: "Head-level baseline, 21 latent frames (84 actual)"
+    latent_frames: 21
+    actual_frames: 84
 
   # Oscillating attention patterns
   - name: "osc_long_21"
-    description: "Oscillating attention (long window), 21 frames"
-    num_frames: 21
-  - name: "osc_long_72"
-    description: "Oscillating attention (long window), 72 frames"
-    num_frames: 72
+    description: "Oscillating attention (long window), 21 latent frames"
+    latent_frames: 21
+    actual_frames: 84
   - name: "osc_short_21"
-    description: "Oscillating attention (short window), 21 frames"
-    num_frames: 21
-  - name: "osc_short_72"
-    description: "Oscillating attention (short window), 72 frames"
-    num_frames: 72
+    description: "Oscillating attention (short window), 21 latent frames"
+    latent_frames: 21
+    actual_frames: 84
 
   # Stable attention patterns
   - name: "stable_long_21"
-    description: "Stable attention (long window), 21 frames"
-    num_frames: 21
-  - name: "stable_long_72"
-    description: "Stable attention (long window), 72 frames"
-    num_frames: 72
+    description: "Stable attention (long window), 21 latent frames"
+    latent_frames: 21
+    actual_frames: 84
   - name: "stable_short_21"
-    description: "Stable attention (short window), 21 frames"
-    num_frames: 21
-  - name: "stable_short_72"
-    description: "Stable attention (short window), 72 frames"
-    num_frames: 72
+    description: "Stable attention (short window), 21 latent frames"
+    latent_frames: 21
+    actual_frames: 84
 
 # Group categories for analysis
 group_categories:
   by_attention_type:
-    frame: ["frame_baseline_21", "frame_baseline_72"]
-    head: ["head_baseline_21", "head_baseline_72"]
-    oscillating: ["osc_long_21", "osc_long_72", "osc_short_21", "osc_short_72"]
-    stable: ["stable_long_21", "stable_long_72", "stable_short_21", "stable_short_72"]
-
-  by_num_frames:
-    short_21: ["frame_baseline_21", "head_baseline_21", "osc_long_21", "osc_short_21", "stable_long_21", "stable_short_21"]
-    long_72: ["frame_baseline_72", "head_baseline_72", "osc_long_72", "osc_short_72", "stable_long_72", "stable_short_72"]
+    frame: ["frame_baseline_21"]
+    head: ["head_baseline_21"]
+    oscillating: ["osc_long_21", "osc_short_21"]
+    stable: ["stable_long_21", "stable_short_21"]
 
   by_window_size:
-    long_window: ["osc_long_21", "osc_long_72", "stable_long_21", "stable_long_72"]
-    short_window: ["osc_short_21", "osc_short_72", "stable_short_21", "stable_short_72"]
+    long_window: ["osc_long_21", "stable_long_21"]
+    short_window: ["osc_short_21", "stable_short_21"]
 
 # -----------------------------------------------------------------------------
 # Unified Evaluation Protocol
 # -----------------------------------------------------------------------------
 protocol:
   fps_eval: 8                    # Evaluation FPS
-  num_frames: 32                 # Frames to SAMPLE for evaluation (not original video frames)
-                                 # Note: Group names like _21/_72 refer to latent frames
-                                 # Actual MP4 frames = latent × 4 (e.g., 21→84, 72→288)
+  num_frames: 50                 # 60% coverage of 84 actual frames
   resize: 256                    # Spatial resolution
   frame_sampling: "uniform"      # Sampling strategy: uniform
 
@@ -107,14 +87,13 @@ metrics:
     mode: "clip"                 # Options: clip, vqa
     model_name: "ViT-B-32"       # CLIP model variant
     pretrained: "openai"         # Pretrained weights source
-    num_frames_for_score: 32     # Frames to sample for scoring (match protocol)
+    num_frames_for_score: 50     # Match protocol sampling
     aggregation: "mean"          # How to aggregate frame scores: mean, max
 
   vbench:
     enabled: true
     temporal_only: true          # Focus on temporal metrics
     # Note: subject_consistency often fails with ZeroDivisionError on custom videos
-    # temporal_style may also fail depending on video content
     subtasks:
       - "temporal_flickering"
       - "motion_smoothness"
@@ -127,7 +106,7 @@ metrics:
 
   niqe:
     enabled: true
-    num_frames_for_niqe: 32      # Frames to sample for NIQE (match protocol)
+    num_frames_for_niqe: 50      # Match protocol sampling
     block_size: 96               # NIQE block size
     alternative: "niqe"          # Options: niqe, brisque
 
@@ -153,29 +132,13 @@ paths:
   runtime_csv: "runtime.csv"
   figures_dir: "./outputs/figs"
 
-  # Custom experiment output filename (optional)
-  # If set, group_summary will be saved as this name instead
-  # Example: "frame_head_72_21_WindowLength.csv"
-  experiment_output: "Exp_OscStable_Head_Window.csv"
+  # Custom experiment output filename
+  experiment_output: "Exp_21frames_OscStable_Head_Win.csv"
 
 # -----------------------------------------------------------------------------
 # Logging Configuration
 # -----------------------------------------------------------------------------
 logging:
-  level: "INFO"                  # DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
   log_file: "./outputs/eval.log"
   console: true
-
-# -----------------------------------------------------------------------------
-# Ablation Studies (Optional - other directories)
-# -----------------------------------------------------------------------------
-ablation_groups:
-  - name: "ablation_baseline_sf"
-    path: "videos/ablation_baseline_sf"
-    description: "Ablation: baseline with spatial-first"
-  - name: "ablation_headkv_equal"
-    path: "videos/ablation_headkv_equal"
-    description: "Ablation: head KV with equal distribution"
-  - name: "debug_frame_baseline_72"
-    path: "videos/debug_frame_baseline_72"
-    description: "Debug: frame baseline 72 frames"
