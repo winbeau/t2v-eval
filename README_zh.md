@@ -512,7 +512,7 @@ python -c "from datasets import load_dataset; load_dataset('YOUR_REPO_ID')"
 | `prompt` | 文本提示（可选） |
 | `num_frames` | 处理后帧数 |
 | `duration_sec` | 原始时长（秒） |
-| `clip_or_vqa_score` | CLIP/VQA 分数 |
+| `clip_score` 或 `vqa_score` | CLIP/VQA 分数（根据配置） |
 | `vbench_temporal_score` | VBench 时序分数 |
 | `flicker_mean` | 平均 Flicker 分数 |
 | `niqe_mean` | 平均 NIQE 分数 |
@@ -525,8 +525,8 @@ python -c "from datasets import load_dataset; load_dataset('YOUR_REPO_ID')"
 |------|------|
 | `group` | 实验组名称 |
 | `n_videos` | 该组视频数量 |
-| `clip_or_vqa_score_mean` | CLIP/VQA 均值 |
-| `clip_or_vqa_score_std` | CLIP/VQA 标准差 |
+| `clip_score_mean` 或 `vqa_score_mean` | CLIP/VQA 均值（根据配置） |
+| `clip_score_std` 或 `vqa_score_std` | CLIP/VQA 标准差 |
 | `vbench_temporal_score_mean` | VBench 均值 |
 | ... | 其他指标同理 |
 
