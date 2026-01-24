@@ -219,6 +219,18 @@ def main():
     # Compute group summary
     summary_df = compute_group_summary(merged_df, metric_cols)
 
+    # Clean up redundant column names (e.g., flicker_mean_mean -> flicker_mean)
+    rename_map = {}
+    for col in summary_df.columns:
+        # Fix double suffixes like "flicker_mean_mean" -> "flicker_mean"
+        if col.endswith("_mean_mean"):
+            rename_map[col] = col.replace("_mean_mean", "_mean")
+        elif col.endswith("_mean_std"):
+            rename_map[col] = col.replace("_mean_std", "_std")
+    if rename_map:
+        summary_df = summary_df.rename(columns=rename_map)
+        logger.info(f"Renamed columns: {rename_map}")
+
     # Sort by group name
     summary_df = summary_df.sort_values("group").reset_index(drop=True)
 
@@ -233,7 +245,7 @@ def main():
 
     # Format for display
     display_cols = ["group", "n_videos"]
-    for col in ["clip_or_vqa_score", "vbench_temporal_score", "flicker_mean", "niqe_mean"]:
+    for col in ["clip_or_vqa_score", "vbench_temporal_score", "flicker", "niqe"]:
         mean_col = f"{col}_mean"
         std_col = f"{col}_std"
         if mean_col in summary_df.columns:
@@ -245,8 +257,8 @@ def main():
     logger.info("\nMetric Directions:")
     logger.info("  ↑ clip_or_vqa_score: Higher is better (text-video alignment)")
     logger.info("  ↑ vbench_temporal_score: Higher is better (temporal quality)")
-    logger.info("  ↓ flicker_mean: Lower is better (temporal stability)")
-    logger.info("  ↓ niqe_mean: Lower is better (visual quality)")
+    logger.info("  ↓ flicker: Lower is better (temporal stability)")
+    logger.info("  ↓ niqe: Lower is better (visual quality)")
 
 
 if __name__ == "__main__":
