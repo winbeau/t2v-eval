@@ -162,6 +162,8 @@ def main():
     if per_video_output.exists() and group_summary_output.exists() and not args.force:
         logger.info("Summary files already exist. Use --force to regenerate.")
         return
+    elif (per_video_output.exists() or group_summary_output.exists()) and args.force:
+        logger.info("Force regenerating summary files")
 
     # Load base metadata
     processed_metadata = output_dir / paths_config["processed_metadata"]

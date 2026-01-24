@@ -319,6 +319,8 @@ def main():
         logger.info(f"VBench results already exist: {vbench_output}")
         logger.info("Use --force to recompute")
         return
+    elif vbench_output.exists() and args.force:
+        logger.info(f"Force recomputing: {vbench_output}")
 
     # Load video metadata
     if not processed_metadata.exists():

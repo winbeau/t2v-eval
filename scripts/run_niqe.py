@@ -236,6 +236,8 @@ def main():
         logger.info(f"Results already exist: {output_file}")
         logger.info("Use --force to recompute")
         return
+    elif output_file.exists() and args.force:
+        logger.info(f"Force recomputing: {output_file}")
 
     # Load video metadata
     if not processed_metadata.exists():
