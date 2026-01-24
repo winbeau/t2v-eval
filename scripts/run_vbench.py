@@ -221,9 +221,9 @@ def run_vbench_cli_fallback(
         cmd = [
             sys.executable,
             str(vbench_script),
-            "--videos_path", str(videos_dir),
+            "--videos_path", str(videos_dir.resolve()),
             "--dimension", subtask,
-            "--output_path", str(results_dir),
+            "--output_path", str(results_dir.resolve()),
         ]
 
         logger.info(f"Running: {' '.join(cmd)}")
@@ -231,7 +231,7 @@ def run_vbench_cli_fallback(
         try:
             result = subprocess.run(
                 cmd,
-                cwd=str(VBENCH_ROOT),
+                cwd=str(PROJECT_ROOT),
                 capture_output=True,
                 text=True,
                 timeout=3600,  # 1 hour timeout
