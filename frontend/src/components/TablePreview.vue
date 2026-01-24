@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import katex from 'katex';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import type { GroupSummary, MetricConfig } from '../types/metrics';
 import { findBestValue, formatGroupName } from '../utils/latexGenerator';
 
@@ -24,16 +24,22 @@ async function downloadAsPng() {
 
   isDownloading.value = true;
   try {
-    const canvas = await html2canvas(tableRef.value, {
+    const dataUrl = await toPng(tableRef.value, {
       backgroundColor: '#ffffff',
-      scale: 2, // Higher resolution
-      useCORS: true,
-      logging: false,
+      pixelRatio: 2, // Higher resolution
+      style: {
+        // Ensure the button is hidden in the screenshot
+        transform: 'scale(1)',
+      },
+      filter: (node) => {
+        // Hide the download button in the screenshot
+        return !node.classList?.contains('download-btn');
+      },
     });
 
     const link = document.createElement('a');
     link.download = 'table_preview.png';
-    link.href = canvas.toDataURL('image/png');
+    link.href = dataUrl;
     link.click();
   } catch (error) {
     console.error('Failed to download PNG:', error);
