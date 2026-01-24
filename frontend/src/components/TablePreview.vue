@@ -28,8 +28,10 @@ async function downloadAsPng() {
       backgroundColor: '#ffffff',
       pixelRatio: 2, // Higher resolution
       style: {
-        // Ensure the button is hidden in the screenshot
-        transform: 'scale(1)',
+        // Hide scrollbars in the screenshot
+        overflow: 'visible',
+        overflowX: 'visible',
+        overflowY: 'visible',
       },
       filter: (node) => {
         // Hide the download button in the screenshot
