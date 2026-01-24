@@ -184,27 +184,38 @@ def run_vbench_evaluation(
             if result_file.exists():
                 with open(result_file) as f:
                     subtask_data = json.load(f)
-                # Parse VBench result format: {dimension: [[video_path, score], ...]}
+                # Parse VBench result format
+                # Format varies: {dimension: [[video_info, score], ...]} or {dimension: [{"video_path": ..., "score": ...}, ...]}
                 if subtask in subtask_data:
+                    count_before = len(results)
                     for item in subtask_data[subtask]:
+                        video_id = None
+                        score = None
+
                         if isinstance(item, (list, tuple)) and len(item) >= 2:
-                            video_path, score = item[0], item[1]
-                            video_id = Path(video_path).stem
-                            results.append({
-                                "video_id": video_id,
-                                "subtask": subtask,
-                                "score": float(score) if score is not None else None,
-                            })
+                            # Format: [video_info, score] where video_info can be str or dict
+                            video_info, score = item[0], item[1]
+                            if isinstance(video_info, str):
+                                video_id = Path(video_info).stem
+                            elif isinstance(video_info, dict):
+                                # video_info is a dict with video_path or video_name key
+                                vp = video_info.get("video_path", video_info.get("video_name", video_info.get("video_list", [""])[0] if "video_list" in video_info else ""))
+                                if isinstance(vp, list):
+                                    vp = vp[0] if vp else ""
+                                video_id = Path(vp).stem if vp else None
                         elif isinstance(item, dict):
-                            video_path = item.get("video_path", item.get("video_name", ""))
+                            # Format: {"video_path": ..., "score": ...}
+                            vp = item.get("video_path", item.get("video_name", ""))
                             score = item.get("score", item.get("value", None))
-                            video_id = Path(video_path).stem
+                            video_id = Path(vp).stem if vp else None
+
+                        if video_id and score is not None:
                             results.append({
                                 "video_id": video_id,
                                 "subtask": subtask,
-                                "score": float(score) if score is not None else None,
+                                "score": float(score) if isinstance(score, (int, float)) else None,
                             })
-                logger.info(f"Parsed {len(subtask_data.get(subtask, []))} results for {subtask}")
+                    logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
             else:
                 logger.warning(f"Result file not found: {result_file}")
         except Exception as e:
