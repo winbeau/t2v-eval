@@ -9,6 +9,8 @@
 dataset:
   repo_id: "hf/AdaHead"
   split: "train"
+  use_local_videos: true
+  local_video_dir: "hf/AdaHead/videos/Exp_OscStable_Head_Window"
   prompt_file: "hf/AdaHead/videos/Exp_OscStable_Head_Window/prompts.csv"
   video_dir: "videos/Exp_OscStable_Head_Window"  # Main experiment directory
   # Expected structure:

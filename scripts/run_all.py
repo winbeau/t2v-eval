@@ -31,6 +31,25 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 
 
+def _submodule_key_file(name: str, path: Path) -> Path:
+    """Return a key file path used to validate a submodule."""
+    if name == "VBench":
+        return path / "vbench" / "__init__.py"
+    key_file = path / "t2v_metrics" / "__init__.py"
+    return key_file if key_file.exists() else (path / "t2v_metrics.py")
+
+
+def _submodule_ready(name: str, path: Path) -> bool:
+    """Check if a submodule directory looks initialized and usable."""
+    if not path.exists():
+        return False
+    git_file = path / ".git"
+    if not git_file.exists():
+        return False
+    key_file = _submodule_key_file(name, path)
+    return key_file.exists()
+
+
 def check_submodules() -> bool:
     """
     Check if git submodules are properly initialized.
@@ -46,29 +65,22 @@ def check_submodules() -> bool:
     all_ready = True
 
     for name, path in submodules:
-        # Check if directory exists and has content
         if not path.exists():
             logger.error(f"Submodule {name} directory not found: {path}")
             all_ready = False
             continue
 
-        # Check for .git file or key files
         git_file = path / ".git"
         if not git_file.exists():
             logger.error(f"Submodule {name} not initialized (no .git): {path}")
             all_ready = False
             continue
 
-        # Check for key Python files
-        if name == "VBench":
-            key_file = path / "vbench" / "__init__.py"
-        else:
-            key_file = path / "t2v_metrics" / "__init__.py"
-            if not key_file.exists():
-                key_file = path / "t2v_metrics.py"
-
+        key_file = _submodule_key_file(name, path)
         if not key_file.exists():
-            logger.warning(f"Submodule {name} may be incomplete: {key_file} not found")
+            logger.error(f"Submodule {name} incomplete: {key_file} not found")
+            all_ready = False
+            continue
 
         logger.info(f"✓ Submodule {name}: OK")
 
@@ -77,25 +89,36 @@ def check_submodules() -> bool:
 
 def init_submodules() -> bool:
     """
-    Initialize git submodules.
+    Initialize git submodules only when missing.
 
     Returns:
         True if successful, False otherwise.
     """
-    logger.info("Initializing git submodules...")
+    submodules = [
+        ("VBench", PROJECT_ROOT / "third_party" / "VBench"),
+        ("t2v_metrics", PROJECT_ROOT / "third_party" / "t2v_metrics"),
+    ]
+
+    to_init = [(name, path) for name, path in submodules if not _submodule_ready(name, path)]
+    if not to_init:
+        logger.info("All submodules already initialized; skipping.")
+        return True
+
+    logger.info("Initializing missing submodules...")
 
     try:
-        result = subprocess.run(
-            ["git", "submodule", "update", "--init", "--recursive"],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-
-        if result.returncode != 0:
-            logger.error(f"Submodule init failed: {result.stderr}")
-            return False
+        for name, path in to_init:
+            logger.info(f"Fetching submodule {name}...")
+            result = subprocess.run(
+                ["git", "submodule", "update", "--init", "--recursive", str(path)],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+            if result.returncode != 0:
+                logger.error(f"Submodule init failed for {name}: {result.stderr}")
+                return False
 
         logger.info("Submodules initialized successfully")
         return True
