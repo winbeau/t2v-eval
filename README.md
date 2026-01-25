@@ -1,7 +1,7 @@
 # T2V-Eval: Text-to-Video Evaluation with Official Implementations
 
 <p align="center">
-  <img src="docs/T2V.png" alt="T2V-Eval Logo" width="800">
+  <img src="docs/T2V.png" alt="T2V-Eval Logo" width="500">
 </p>
 
 <p align="center">
