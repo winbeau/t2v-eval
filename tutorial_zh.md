@@ -6,11 +6,31 @@
 
 ## 目录
 
-1. [YAML 配置结构](#yaml-配置结构)
-2. [配置模块详解](#配置模块详解)
-3. [CSV 输出文件](#csv-输出文件)
-4. [帧采样逻辑](#帧采样逻辑)
-5. [最佳实践](#最佳实践)
+1. [快速开始](#快速开始)
+2. [YAML 配置结构](#yaml-配置结构)
+3. [配置模块详解](#配置模块详解)
+4. [CSV 输出文件](#csv-输出文件)
+5. [帧采样逻辑](#帧采样逻辑)
+6. [最佳实践](#最佳实践)
+
+---
+
+## 快速开始
+
+使用示例模板创建你的实验配置：
+
+```bash
+# 复制模板
+cp configs/Exp_.yaml.example configs/Exp_MyExperiment.yaml
+
+# 编辑配置
+nano configs/Exp_MyExperiment.yaml
+
+# 运行评估
+python scripts/run_all.py --config configs/Exp_MyExperiment.yaml
+```
+
+模板文件 `configs/Exp_.yaml.example` 包含详细注释，解释了每个配置选项。
 
 ---
 
@@ -448,93 +468,39 @@ outputs/
 
 ---
 
-## 示例：创建新实验配置
+## 创建新实验
 
-```yaml
-# configs/Exp_MyExperiment.yaml
+### 步骤 1：复制模板
 
-dataset:
-  repo_id: "hf/MyDataset"
-  split: "train"
-  use_local_videos: true
-  local_video_dir: "data/my_videos"
-  prompt_file: "data/my_videos/prompts.csv"
-  video_dir: "data/my_videos"
-
-groups:
-  - name: "method_a_21"
-    description: "方法 A，21 潜在帧"
-    latent_frames: 21
-    actual_frames: 84
-  - name: "method_b_21"
-    description: "方法 B，21 潜在帧"
-    latent_frames: 21
-    actual_frames: 84
-
-protocol:
-  fps_eval: 8
-  num_frames: 50  # 84 的 60%
-  resize: 256
-  frame_sampling: "uniform"
-  frame_padding: "loop"
-
-metrics:
-  enabled:
-    - "clip_or_vqa"
-    - "vbench_temporal"
-    - "flicker"
-    - "niqe"
-  clip_or_vqa:
-    mode: "clip"
-    model_name: "ViT-B-32"
-    pretrained: "openai"
-    num_frames_for_score: 50
-    aggregation: "mean"
-  vbench:
-    enabled: true
-    temporal_only: true
-    subtasks:
-      - "temporal_flickering"
-      - "motion_smoothness"
-  flicker:
-    method: "l1"
-    normalize: true
-    compute_std: true
-    grayscale: false
-  niqe:
-    enabled: true
-    num_frames_for_niqe: 50
-    block_size: 96
-    alternative: "niqe"
-
-runtime:
-  device: "cuda"
-  batch_size: 1
-  num_workers: 4
-  seed: 42
-
-paths:
-  cache_dir: "./eval_cache"
-  output_dir: "./outputs"
-  metadata_file: "metadata.csv"
-  processed_metadata: "processed_metadata.csv"
-  per_video_metrics: "per_video_metrics.csv"
-  group_summary: "group_summary.csv"
-  runtime_csv: "runtime.csv"
-  figures_dir: "./outputs/figs"
-  experiment_output: "Exp_MyExperiment.csv"
-
-logging:
-  level: "INFO"
-  log_file: "./outputs/eval.log"
-  console: true
-```
-
-运行评估：
 ```bash
-python scripts/run_evaluation.py --config configs/Exp_MyExperiment.yaml
+cp configs/Exp_.yaml.example configs/Exp_YourExperiment.yaml
 ```
+
+### 步骤 2：修改关键设置
+
+根据你的实验编辑以下部分：
+
+| 配置项 | 需要修改 |
+|--------|----------|
+| `dataset.local_video_dir` | 视频目录路径 |
+| `dataset.prompt_file` | 提示词 CSV 路径 |
+| `groups` | 定义实验组 |
+| `protocol.num_frames` | 基于 60% 覆盖率设置 |
+| `paths.experiment_output` | 自定义输出文件名 |
+
+### 步骤 3：运行评估
+
+```bash
+python scripts/run_all.py --config configs/Exp_YourExperiment.yaml
+```
+
+### 步骤 4：查看结果
+
+结果将保存至：
+- `outputs/per_video_metrics.csv` - 单视频分数
+- `outputs/group_summary.csv` - 聚合统计
+- `frontend/public/data/{experiment_output}` - 用于可视化
 
 ---
 
-*最后更新：2025-01-24*
+*最后更新：2025-01-25*

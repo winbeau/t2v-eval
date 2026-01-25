@@ -1,0 +1,267 @@
+# =============================================================================
+# T2V-Eval Experiment Configuration Template
+# =============================================================================
+#
+# This is an example configuration file for running video evaluation experiments.
+# Copy this file and modify it for your specific experiment:
+#
+#   cp configs/Exp_.yaml.example configs/Exp_MyExperiment.yaml
+#
+# Run evaluation with:
+#
+#   python scripts/run_all.py --config configs/Exp_MyExperiment.yaml
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# DATASET CONFIGURATION
+# -----------------------------------------------------------------------------
+# Defines where to find videos and prompts for evaluation.
+#
+dataset:
+  # HuggingFace dataset repository ID (used when downloading from HF)
+  repo_id: "your-org/your-dataset"
+
+  # Dataset split to use
+  split: "train"
+
+  # Set to true to use local videos instead of downloading from HuggingFace
+  use_local_videos: true
+
+  # Path to local video directory (required if use_local_videos: true)
+  # Structure: {local_video_dir}/{group_name}/*.mp4
+  local_video_dir: "path/to/your/videos"
+
+  # CSV file containing prompts (columns: video_id, prompt)
+  # The video_id should match the video filename (without .mp4 extension)
+  prompt_file: "path/to/your/prompts.csv"
+
+  # Relative video directory path (used for metadata organization)
+  video_dir: "videos/experiment_name"
+
+# -----------------------------------------------------------------------------
+# EXPERIMENT GROUPS
+# -----------------------------------------------------------------------------
+# Define the groups (methods/configurations) you want to compare.
+# Each group should have a corresponding folder in local_video_dir.
+#
+# IMPORTANT: Latent frames vs Actual frames
+# - latent_frames: Number of frames in diffusion latent space
+# - actual_frames: Number of frames in output MP4 (= latent_frames × 4 after VAE decoding)
+#
+groups:
+  # Example: Short video experiments (21 latent frames = 84 actual frames)
+  - name: "method_a_21"
+    description: "Method A baseline, 21 latent frames (84 actual)"
+    latent_frames: 21
+    actual_frames: 84
+
+  - name: "method_b_21"
+    description: "Method B variant, 21 latent frames (84 actual)"
+    latent_frames: 21
+    actual_frames: 84
+
+  # Example: Long video experiments (72 latent frames = 288 actual frames)
+  - name: "method_a_72"
+    description: "Method A baseline, 72 latent frames (288 actual)"
+    latent_frames: 72
+    actual_frames: 288
+
+  - name: "method_b_72"
+    description: "Method B variant, 72 latent frames (288 actual)"
+    latent_frames: 72
+    actual_frames: 288
+
+# -----------------------------------------------------------------------------
+# GROUP CATEGORIES (Optional)
+# -----------------------------------------------------------------------------
+# Organize groups into categories for analysis and visualization.
+# This is optional but helpful for downstream analysis.
+#
+group_categories:
+  by_method:
+    method_a: ["method_a_21", "method_a_72"]
+    method_b: ["method_b_21", "method_b_72"]
+
+  by_num_frames:
+    short_21: ["method_a_21", "method_b_21"]
+    long_72: ["method_a_72", "method_b_72"]
+
+# -----------------------------------------------------------------------------
+# EVALUATION PROTOCOL
+# -----------------------------------------------------------------------------
+# Controls how frames are sampled and processed for evaluation.
+#
+protocol:
+  # Evaluation frame rate (frames per second)
+  fps_eval: 8
+
+  # Number of frames to SAMPLE for evaluation
+  # Recommendation: Use 60% coverage of actual frames
+  # - For 84 actual frames:  num_frames = round(84 × 0.60) = 50
+  # - For 288 actual frames: num_frames = round(288 × 0.60) = 173
+  num_frames: 50
+
+  # Spatial resolution (width & height in pixels)
+  resize: 256
+
+  # Frame sampling strategy
+  # - "uniform": Evenly spaced frames across video (recommended)
+  frame_sampling: "uniform"
+
+  # How to handle videos shorter than num_frames
+  # - "loop": Loop video from beginning
+  # - "repeat_last": Repeat the last frame
+  # - "truncate": Stop at available frames (may cause errors)
+  frame_padding: "loop"
+
+# -----------------------------------------------------------------------------
+# METRICS CONFIGURATION
+# -----------------------------------------------------------------------------
+# Enable and configure evaluation metrics.
+#
+metrics:
+  # List of metrics to compute
+  # Available: clip_or_vqa, vbench_temporal, flicker, niqe
+  enabled:
+    - "clip_or_vqa"      # Text-video alignment (CLIP score)
+    - "vbench_temporal"  # Temporal quality (VBench)
+    - "flicker"          # Frame-to-frame consistency
+    - "niqe"             # Perceptual image quality
+
+  # ----- CLIP / VQA Settings -----
+  # Measures text-video alignment using CLIP embeddings
+  clip_or_vqa:
+    mode: "clip"                 # Options: clip, vqa
+    model_name: "ViT-B-32"       # CLIP model: ViT-B-32, ViT-L-14, etc.
+    pretrained: "openai"         # Pretrained weights source
+    num_frames_for_score: 50     # MUST match protocol.num_frames!
+    aggregation: "mean"          # Aggregation: mean, max
+
+  # ----- VBench Settings -----
+  # Measures temporal quality using VBench benchmark
+  vbench:
+    enabled: true
+    temporal_only: true          # Focus on temporal metrics only
+
+    # Available subtasks (RECOMMENDED - these are stable):
+    #   - "temporal_flickering"  : Visual consistency over time
+    #   - "motion_smoothness"    : Motion quality and smoothness
+    #
+    # AVOID these subtasks (often fail with ZeroDivisionError):
+    #   - "subject_consistency"  : Subject tracking (unstable)
+    #   - "temporal_style"       : Style consistency (content-dependent)
+    subtasks:
+      - "temporal_flickering"
+      - "motion_smoothness"
+
+  # ----- Flicker Settings -----
+  # Measures frame-to-frame consistency (lower = more stable)
+  flicker:
+    method: "l1"                 # Difference method: l1, l2
+    normalize: true              # Normalize pixels to [0, 1]
+    compute_std: true            # Also compute std of differences
+    grayscale: false             # Convert to grayscale before computing
+
+  # ----- NIQE Settings -----
+  # Measures perceptual image quality (lower = better quality)
+  niqe:
+    enabled: true
+    num_frames_for_niqe: 50      # MUST match protocol.num_frames!
+    block_size: 96               # NIQE computation block size
+    alternative: "niqe"          # Options: niqe, brisque
+
+# -----------------------------------------------------------------------------
+# RUNTIME CONFIGURATION
+# -----------------------------------------------------------------------------
+# Hardware and execution settings.
+#
+runtime:
+  # Device for inference: cuda, cpu
+  device: "cuda"
+
+  # Batch size (reduce to 1 if CUDA out of memory)
+  batch_size: 1
+
+  # DataLoader worker processes
+  num_workers: 4
+
+  # Random seed for reproducibility
+  seed: 42
+
+# -----------------------------------------------------------------------------
+# OUTPUT PATHS
+# -----------------------------------------------------------------------------
+# Where to save evaluation results.
+#
+paths:
+  # Cache directory for model weights
+  cache_dir: "./eval_cache"
+
+  # Main output directory for all results
+  output_dir: "./outputs"
+
+  # ---- Output Files ----
+  # Raw video metadata
+  metadata_file: "metadata.csv"
+
+  # Processed metadata with resolved paths
+  processed_metadata: "processed_metadata.csv"
+
+  # Per-video evaluation scores (all metrics for each video)
+  per_video_metrics: "per_video_metrics.csv"
+
+  # Group-level aggregated statistics (mean, std per group)
+  group_summary: "group_summary.csv"
+
+  # Execution timing information
+  runtime_csv: "runtime.csv"
+
+  # Directory for visualization figures
+  figures_dir: "./outputs/figs"
+
+  # ---- Custom Experiment Output ----
+  # Set a custom filename for the group summary
+  # This file will be copied to frontend/public/data/ for visualization
+  # Use a descriptive name matching your experiment
+  experiment_output: "Exp_MyExperiment.csv"
+
+# -----------------------------------------------------------------------------
+# LOGGING CONFIGURATION
+# -----------------------------------------------------------------------------
+# Control logging verbosity and output.
+#
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Log file path
+  log_file: "./outputs/eval.log"
+
+  # Also print to console
+  console: true
+
+# =============================================================================
+# QUICK REFERENCE
+# =============================================================================
+#
+# Frame Coverage Calculation (60% recommended):
+# ┌─────────────────┬──────────────┬─────────────┬───────────────┐
+# │ Latent Frames   │ Actual Frames│ 60% Coverage│ num_frames    │
+# ├─────────────────┼──────────────┼─────────────┼───────────────┤
+# │ 21              │ 84           │ 50.4        │ 50            │
+# │ 72              │ 288          │ 172.8       │ 173           │
+# └─────────────────┴──────────────┴─────────────┴───────────────┘
+#
+# Metric Interpretation:
+# ┌─────────────────────────┬───────────┬─────────────────────────┐
+# │ Metric                  │ Range     │ Better                  │
+# ├─────────────────────────┼───────────┼─────────────────────────┤
+# │ clip_score              │ 0-1       │ Higher (better align)   │
+# │ temporal_flickering     │ 0-1       │ Higher (more stable)    │
+# │ motion_smoothness       │ 0-1       │ Higher (smoother)       │
+# │ flicker_mean            │ 0+        │ Lower (less flicker)    │
+# │ niqe_score              │ 0+        │ Lower (better quality)  │
+# └─────────────────────────┴───────────┴─────────────────────────┘
+#
+# =============================================================================

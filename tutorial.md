@@ -6,11 +6,31 @@ This tutorial explains the YAML configuration format and CSV output logic for th
 
 ## Table of Contents
 
-1. [YAML Configuration Structure](#yaml-configuration-structure)
-2. [Configuration Sections](#configuration-sections)
-3. [CSV Output Files](#csv-output-files)
-4. [Frame Sampling Logic](#frame-sampling-logic)
-5. [Best Practices](#best-practices)
+1. [Quick Start](#quick-start)
+2. [YAML Configuration Structure](#yaml-configuration-structure)
+3. [Configuration Sections](#configuration-sections)
+4. [CSV Output Files](#csv-output-files)
+5. [Frame Sampling Logic](#frame-sampling-logic)
+6. [Best Practices](#best-practices)
+
+---
+
+## Quick Start
+
+Use the example template to create your experiment configuration:
+
+```bash
+# Copy the template
+cp configs/Exp_.yaml.example configs/Exp_MyExperiment.yaml
+
+# Edit with your settings
+nano configs/Exp_MyExperiment.yaml
+
+# Run evaluation
+python scripts/run_all.py --config configs/Exp_MyExperiment.yaml
+```
+
+The template file `configs/Exp_.yaml.example` contains detailed comments explaining every configuration option.
 
 ---
 
@@ -448,93 +468,39 @@ outputs/
 
 ---
 
-## Example: Creating a New Experiment Config
+## Creating a New Experiment
 
-```yaml
-# configs/Exp_MyExperiment.yaml
+### Step 1: Copy the Template
 
-dataset:
-  repo_id: "hf/MyDataset"
-  split: "train"
-  use_local_videos: true
-  local_video_dir: "data/my_videos"
-  prompt_file: "data/my_videos/prompts.csv"
-  video_dir: "data/my_videos"
-
-groups:
-  - name: "method_a_21"
-    description: "Method A, 21 latent frames"
-    latent_frames: 21
-    actual_frames: 84
-  - name: "method_b_21"
-    description: "Method B, 21 latent frames"
-    latent_frames: 21
-    actual_frames: 84
-
-protocol:
-  fps_eval: 8
-  num_frames: 50  # 60% of 84
-  resize: 256
-  frame_sampling: "uniform"
-  frame_padding: "loop"
-
-metrics:
-  enabled:
-    - "clip_or_vqa"
-    - "vbench_temporal"
-    - "flicker"
-    - "niqe"
-  clip_or_vqa:
-    mode: "clip"
-    model_name: "ViT-B-32"
-    pretrained: "openai"
-    num_frames_for_score: 50
-    aggregation: "mean"
-  vbench:
-    enabled: true
-    temporal_only: true
-    subtasks:
-      - "temporal_flickering"
-      - "motion_smoothness"
-  flicker:
-    method: "l1"
-    normalize: true
-    compute_std: true
-    grayscale: false
-  niqe:
-    enabled: true
-    num_frames_for_niqe: 50
-    block_size: 96
-    alternative: "niqe"
-
-runtime:
-  device: "cuda"
-  batch_size: 1
-  num_workers: 4
-  seed: 42
-
-paths:
-  cache_dir: "./eval_cache"
-  output_dir: "./outputs"
-  metadata_file: "metadata.csv"
-  processed_metadata: "processed_metadata.csv"
-  per_video_metrics: "per_video_metrics.csv"
-  group_summary: "group_summary.csv"
-  runtime_csv: "runtime.csv"
-  figures_dir: "./outputs/figs"
-  experiment_output: "Exp_MyExperiment.csv"
-
-logging:
-  level: "INFO"
-  log_file: "./outputs/eval.log"
-  console: true
-```
-
-Run evaluation:
 ```bash
-python scripts/run_evaluation.py --config configs/Exp_MyExperiment.yaml
+cp configs/Exp_.yaml.example configs/Exp_YourExperiment.yaml
 ```
+
+### Step 2: Modify Key Settings
+
+Edit the following sections based on your experiment:
+
+| Section | What to Change |
+|---------|----------------|
+| `dataset.local_video_dir` | Path to your video directory |
+| `dataset.prompt_file` | Path to your prompts CSV |
+| `groups` | Define your experiment groups |
+| `protocol.num_frames` | Set based on 60% coverage |
+| `paths.experiment_output` | Custom output filename |
+
+### Step 3: Run Evaluation
+
+```bash
+python scripts/run_all.py --config configs/Exp_YourExperiment.yaml
+```
+
+### Step 4: View Results
+
+Results will be saved to:
+- `outputs/per_video_metrics.csv` - Individual video scores
+- `outputs/group_summary.csv` - Aggregated statistics
+- `frontend/public/data/{experiment_output}` - For visualization
 
 ---
 
-*Last updated: 2025-01-24*
+*Last updated: 2025-01-25*
