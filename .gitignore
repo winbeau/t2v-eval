@@ -65,6 +65,7 @@ uv.lock
 # Evaluation Cache & Outputs
 # -----------------------------------------------------------------------------
 eval_cache/
+outputs/
 outputs/*.csv
 outputs/*.log
 outputs/figs/

@@ -27,25 +27,21 @@ dependencies = [
     "pyyaml>=6.0",
     "tqdm>=4.62.0",
     "pillow>=8.0.0",
-
     # HuggingFace
     "datasets>=2.14.0",
     "huggingface-hub>=0.16.0",
-
     # Video processing
     "decord>=0.6.0",
     "opencv-python>=4.5.0",
-
     # PyTorch (user should install separately for CUDA support)
     "torch>=2.0.0",
     "torchvision>=0.15.0",
-
     # CLIP/VQA
     "open-clip-torch>=2.20.0",
     "transformers>=4.30.0",
-
     # Image quality
     "pyiqa>=0.1.7",
+    "t2v-metrics",
 ]
 
 [project.optional-dependencies]
@@ -89,6 +85,14 @@ dev-dependencies = [
     "ruff>=0.1.0",
     "pytest>=7.0.0",
 ]
+
+[tool.uv.workspace]
+members = [
+    "third_party/t2v_metrics",
+]
+
+[tool.uv.sources]
+t2v-metrics = { workspace = true, editable = true }
 
 [tool.ruff]
 line-length = 100
