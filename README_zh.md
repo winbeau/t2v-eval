@@ -1,7 +1,7 @@
 # T2V-Eval: 基于官方实现的文本生成视频评测框架
 
 <p align="center">
-  <img src="docs/T2V.png" alt="T2V-Eval Logo" width="600">
+  <img src="docs/T2V.png" alt="T2V-Eval Logo" width="800">
 </p>
 
 <p align="center">
