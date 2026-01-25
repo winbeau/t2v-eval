@@ -1,10 +1,32 @@
 # T2V-Eval: Text-to-Video Evaluation with Official Implementations
 
-[中文文档](README_zh.md) | English
+<p align="center">
+  <img src="docs/T2V.png" alt="T2V-Eval Logo" width="600">
+</p>
+
+<p align="center">
+  <a href="README_zh.md">中文文档</a> | English
+</p>
 
 A unified, no-reference evaluation pipeline for **text-to-video (T2V) generation**, with a focus on comparing different inference and acceleration strategies.
 
 > **Key Feature**: This repository uses **official implementations** of VBench and t2v_metrics via git submodules for reproducibility and credibility.
+
+---
+
+## Preview
+
+### Frontend - LaTeX Table Generator
+
+<p align="center">
+  <img src="docs/preview.png" alt="Frontend Preview" width="800">
+</p>
+
+### LaTeX Output
+
+<p align="center">
+  <img src="docs/latex_preview.png" alt="LaTeX Preview" width="600">
+</p>
 
 ---
 

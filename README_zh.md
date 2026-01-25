@@ -1,10 +1,32 @@
 # T2V-Eval: 基于官方实现的文本生成视频评测框架
 
-[English](README.md) | 中文文档
+<p align="center">
+  <img src="docs/T2V.png" alt="T2V-Eval Logo" width="600">
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> | 中文文档
+</p>
 
 统一的、无参考视频的 **文本生成视频 (T2V)** 评测流水线，专注于对比不同推理策略的生成质量与效率。
 
 > **核心特性**：本仓库通过 git submodule 集成 **VBench 和 t2v_metrics 官方实现**，确保评测结果的可复现性与学术可信度。
+
+---
+
+## 预览
+
+### 前端 - LaTeX 表格生成器
+
+<p align="center">
+  <img src="docs/preview.png" alt="前端预览" width="800">
+</p>
+
+### LaTeX 输出效果
+
+<p align="center">
+  <img src="docs/latex_preview.png" alt="LaTeX 预览" width="600">
+</p>
 
 ---
 
