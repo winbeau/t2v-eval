@@ -42,6 +42,7 @@ dependencies = [
     # Image quality
     "pyiqa>=0.1.7",
     "t2v-metrics",
+    "gdown>=5.2.1",
 ]
 
 [project.optional-dependencies]
