@@ -1,0 +1,102 @@
+# =============================================================================
+# VBench Official Sampled Videos - Sanity Check Config
+# =============================================================================
+# Goal: run VBench on official sampled videos and compare with official results.
+# This config assumes you download and unzip official sampled videos locally.
+#
+# Recommended structure after unzip (per_dimension pack):
+#   hf/VBench_sampled_video/per_dimension/
+#     lavie/appearance_style/*.mp4
+#     modelscope/temporal_flickering/*.mp4
+#     ...
+#
+# Run (VBench only, no preprocessing):
+#   python scripts/run_all.py --config configs/Check_VBench_Official_Sanity.yaml \
+#     --skip-preprocess --skip-clipvqa --skip-flicker --skip-niqe
+# or run just:
+#   python scripts/run_vbench.py --config configs/Check_VBench_Official_Sanity.yaml
+# =============================================================================
+
+dataset:
+  # Official HF dataset repo (gated; used for reference only).
+  repo_id: "Vchitect/VBench_sampled_video"
+  split: "train"
+
+  # Use local videos (recommended for official sampled videos).
+  use_local_videos: true
+
+  # Root folder that contains group folders (model names) under per_dimension.
+  # Example: ./hf/VBench_sampled_video/per_dimension
+  local_video_dir: "./hf/VBench_sampled_video/per_dimension"
+
+  # Prompt mapping CSV (required by export_from_hf.py).
+  # Columns supported: prompt, video_id, group, video_path (any subset is OK).
+  # Suggested: build from filenames, e.g., "prompts_from_filenames.csv".
+  prompt_file: "./hf/VBench_sampled_video/prompts_from_filenames.csv"
+
+  # If group cannot be inferred, use this fallback.
+  default_group: "unknown"
+
+  # Optional: for metadata organization only
+  video_dir: "videos/vbench_sampled"
+
+groups:
+  # List the model folders you actually downloaded (edit as needed).
+  - name: "lavie"
+  - name: "modelscope"
+  - name: "cogvideo"
+  - name: "videocrafter-09"
+  - name: "show-1"
+  - name: "videocrafter-1"
+  - name: "pika-all-dimension"
+  - name: "gen-2-all-dimension"
+
+protocol:
+  # These are unused if you skip preprocessing.
+  fps_eval: 8
+  num_frames: 16
+  resize: 256
+  frame_sampling: "uniform"
+  frame_padding: "loop"
+
+metrics:
+  enabled:
+    - "vbench_temporal"
+  vbench:
+    enabled: true
+    temporal_only: false
+    subtasks:
+      - "subject_consistency"
+      - "background_consistency"
+      - "temporal_flickering"
+      - "motion_smoothness"
+      - "dynamic_degree"
+      - "aesthetic_quality"
+      - "imaging_quality"
+      - "object_class"
+      - "multiple_objects"
+      - "human_action"
+      - "color"
+      - "spatial_relationship"
+      - "scene"
+      - "temporal_style"
+      - "appearance_style"
+      - "overall_consistency"
+
+runtime:
+  device: "cuda"
+  batch_size: 1
+  num_workers: 4
+  seed: 42
+
+paths:
+  cache_dir: "./eval_cache"
+  output_dir: "./outputs/Check_VBench_Official_Sanity"
+  metadata_file: "metadata.csv"
+  # Point processed_metadata to metadata.csv to avoid preprocessing.
+  processed_metadata: "metadata.csv"
+  per_video_metrics: "per_video_metrics.csv"
+  group_summary: "group_summary.csv"
+  runtime_csv: "runtime.csv"
+  figures_dir: "./outputs/Check_VBench_Official_Sanity/figs"
+  experiment_output: "Check_VBench_Official_Sanity.csv"
