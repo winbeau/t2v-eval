@@ -89,6 +89,11 @@ def main() -> None:
         action="store_true",
         help="Print planned downloads without fetching",
     )
+    parser.add_argument(
+        "--ignore-failures",
+        action="store_true",
+        help="Continue on download failures and exit 0",
+    )
     args = parser.parse_args()
 
     try:
@@ -125,13 +130,29 @@ def main() -> None:
 
     import gdown
 
+    failures = []
     for model, file_id, out_path in planned:
         if out_path.exists():
             print(f"Skip existing: {out_path.name}")
             continue
         url = f"https://drive.google.com/uc?id={file_id}"
         print(f"Downloading {model} -> {out_path}")
-        gdown.download(url, str(out_path), quiet=False)
+        try:
+            gdown.download(url, str(out_path), quiet=False)
+        except Exception as exc:
+            failures.append((model, file_id, str(exc)))
+            print(f"Failed: {model} ({file_id})")
+            print(f"  Error: {exc}")
+            continue
+
+    if failures:
+        print("\nSome downloads failed:")
+        for model, file_id, err in failures:
+            print(f"  - {model} (id={file_id})")
+        print("\nTip: open the Google Drive link in a browser and download manually,")
+        print("then place the file in the destination folder with the exact name.")
+        if not args.ignore_failures:
+            raise SystemExit(2)
 
     print("Done.")
 
