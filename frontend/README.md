@@ -74,7 +74,7 @@ Metric columns follow the pattern:
 \label{tab:results}
 \begin{tabular}{lccc}
 \toprule
-Method & CLIP/VQA ↑ & VBench ↑ & Flicker ↓ \\
+Method & CLIP/VQA ↑ & Temporal ↑ & Flicker ↓ \\
 \midrule
 Frame Level Baseline & 28.45 $\pm$ 3.21 & 0.752 $\pm$ 0.045 & 0.023 $\pm$ 0.009 \\
 Head Level Stable W8 & \textbf{29.12} $\pm$ 2.98 & \textbf{0.789} $\pm$ 0.038 & \textbf{0.020} $\pm$ 0.008 \\

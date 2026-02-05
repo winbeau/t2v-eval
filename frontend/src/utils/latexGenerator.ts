@@ -11,8 +11,8 @@ export const DEFAULT_METRICS: MetricConfig[] = [
   },
   {
     key: 'vbench_temporal_score',
-    label: 'VBench Temporal',
-    shortLabel: 'VBench',
+    label: 'Temporal (2D)',
+    shortLabel: 'Temporal',
     direction: 'higher',
     precision: 3,
   },
