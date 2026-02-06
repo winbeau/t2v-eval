@@ -1,18 +1,19 @@
 # T2V-Eval 简要使用说明
 
-## 0. Node.js / pnpm 安装（前端必需，npx 方式）
+## 0. Node.js / pnpm 安装（前端必需）
 
-> 说明：`npx` 方式适合“已有 `npm`、但还没全局装好 Node 管理器或 pnpm”的场景。
+> 说明：为避免系统仓库里的 `npm` 版本过旧，建议直接安装 Node.js LTS（自带较新 `npm`）。
 
 ```bash
-# 安装/切换到 Node.js LTS（通过 n 包）
-sudo npx -y n lts
+# 安装 Node.js LTS（Ubuntu/Debian，NodeSource）
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt install -y nodejs
 node -v
 npm -v
 
 # 安装并激活 pnpm（通过 Corepack）
-sudo npx -y corepack@latest enable
-sudo npx -y corepack@latest prepare pnpm@latest --activate
+corepack enable
+corepack prepare pnpm@latest --activate
 pnpm -v
 ```
 
