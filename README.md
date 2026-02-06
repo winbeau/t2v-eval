@@ -59,140 +59,47 @@ This evaluation suite integrates the following official repositories as git subm
 
 ## Quick Start
 
-### 1. Clone with Submodules
+### 1. Initialize Submodules
 
 ```bash
-# Clone with submodules (recommended)
-git clone --recurse-submodules https://github.com/YOUR_USERNAME/t2v-eval.git
-cd t2v-eval
-
-# Or if already cloned, initialize submodules
 git submodule update --init --recursive
 ```
 
-### 2. Install Dependencies (using uv)
-
-We recommend using [uv](https://github.com/astral-sh/uv) for fast, reliable Python package management.
+### 2. Install Environment (uv)
 
 ```bash
-# Install uv (if not installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Create virtual environment and install dependencies
 uv venv --python 3.10
-source .venv/bin/activate  # Linux/macOS
-# or: .venv\Scripts\activate  # Windows
-
-# Install project dependencies
-uv pip install -e .
-
-# Install VBench dependencies
-uv pip install -r third_party/VBench/requirements.txt
-
-# (Optional) Install development dependencies
-uv pip install -e ".[dev]"
-```
-
-<details>
-<summary>Alternative: Using pip</summary>
-
-```bash
-python -m venv .venv
+uv sync
 source .venv/bin/activate
-pip install -e .
-pip install -r third_party/VBench/requirements.txt
 ```
 
-</details>
-
-### 3. Configure Dataset
-
-Create a config file for your experiment in `configs/`:
+### 3. Run Evaluation
 
 ```bash
-# Example: configs/Exp_OscStable_Head_Window.yaml
+# Core metrics (non-VBench)
+python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
+
+# VBench-Long (recommended 6 dimensions)
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
 ```
 
-```yaml
-dataset:
-  repo_id: "winbeau/AdaHead"  # Your HuggingFace dataset
-  video_dir: "videos/Exp_OscStable_Head_Window"
-
-groups:
-  - name: "frame_baseline_21"
-    description: "Frame-level baseline, 21 frames"
-  # ... more groups
-```
-
-### 4. Run Full Pipeline
-
-```bash
-# One-click evaluation (specify your config)
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# Or with auto submodule initialization
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --auto-init-submodules
-
-# Skip specific metrics if needed
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --skip-vbench
-```
-
-### 5. View Results
-
-```
-outputs/
-├── per_video_metrics.csv    # Per-video scores
-├── group_summary.csv        # Group-level mean ± std
-└── figs/                    # (Optional) Visualizations
-```
-
-Results are also automatically copied to `frontend/public/data/` for the LaTeX table generator.
-
-### 6. Generate LaTeX Tables (Frontend)
-
-The project includes a web-based tool for generating publication-ready LaTeX tables:
+### 4. Launch Frontend
 
 ```bash
 cd frontend
 pnpm install
-pnpm dev
+pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
 ```
 
-Then open http://localhost:5173 and:
-1. Click "Load Local Data" to select your evaluation results
-2. Choose which metrics to display
-3. Copy the generated LaTeX code
+Open `http://<your_host>:5173`.
 
 ---
 
-## Command Line Options
+## Usage Guide
 
-### Force Recomputation
+For complete and up-to-date instructions (Node/pnpm setup, dependency troubleshooting, local dataset workflow, VBench commands, and frontend data sync), see:
 
-Use `--force` to recompute all metrics even if results already exist:
-
-```bash
-python scripts/run_all.py --config configs/eval.yaml --force
-```
-
-### Skip Specific Metrics
-
-```bash
-# Skip VBench (if weights unavailable)
-python scripts/run_all.py --config configs/eval.yaml --skip-vbench
-
-# Skip CLIP/VQA evaluation
-python scripts/run_all.py --config configs/eval.yaml --skip-clipvqa
-```
-
-### Custom Output Filename
-
-Configure custom output filename in your YAML:
-
-```yaml
-paths:
-  experiment_output: "my_experiment_results.csv"  # Optional custom name
-```
+- `docs/USAGE.md`
 
 ---
 
@@ -202,7 +109,7 @@ paths:
 |--------|-------------|--------|-----------|----------------|
 | CLIPScore | `clip_score` | Text-video alignment | ↑ Higher is better | Official t2v_metrics |
 | VQAScore | `vqa_score` | Text-video alignment | ↑ Higher is better | Official t2v_metrics |
-| VBench (Temporal) | `vbench_temporal_score` | Temporal quality | ↑ Higher is better | Official VBench |
+| VBench-Long (6 dimensions) | `subject_consistency`, `background_consistency`, `motion_smoothness`, `dynamic_degree`, `imaging_quality`, `aesthetic_quality` | Long consistency & temporal quality | ↑ Higher is better | Official VBench |
 | Temporal Flicker | `flicker_mean` | Frame stability | ↓ Lower is better | Custom (this repo) |
 | NIQE | `niqe_mean` | Visual quality | ↓ Lower is better | pyiqa |
 | #Frames / Duration | `num_frames`, `duration_sec` | Generation scale | — | Metadata |
@@ -221,11 +128,12 @@ t2v-eval/
 │   ├── export_from_hf.py      # Export dataset from HuggingFace
 │   ├── preprocess_videos.py   # Unify video format
 │   ├── run_clip_or_vqa.py     # CLIPScore/VQAScore via t2v_metrics
-│   ├── run_vbench.py          # VBench temporal evaluation
+│   ├── run_vbench.py          # VBench-Long evaluation (6 dimensions)
 │   ├── run_flicker.py         # Temporal flicker score
 │   ├── run_niqe.py            # NIQE image quality
 │   ├── summarize.py           # Aggregate results
-│   └── run_all.py             # One-click pipeline entry
+│   ├── run_eval_core.py       # Core evaluation pipeline (non-VBench)
+│   └── run_all.py             # Legacy alias of run_eval_core.py
 ├── frontend/                  # LaTeX table generator (Vue 3)
 │   ├── src/                   # Frontend source code
 │   └── public/data/           # Evaluation results for frontend

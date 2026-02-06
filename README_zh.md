@@ -74,171 +74,47 @@
 
 ## 快速开始
 
-### 1. 克隆仓库（含子模块）
+### 1. 初始化子模块
 
 ```bash
-# 推荐：克隆时同时拉取子模块
-git clone --recurse-submodules https://github.com/YOUR_USERNAME/t2v-eval.git
-cd t2v-eval
-
-# 或者：已克隆后初始化子模块
 git submodule update --init --recursive
 ```
 
-### 2. 安装依赖（使用 uv）
-
-我们推荐使用 [uv](https://github.com/astral-sh/uv) 进行 Python 包管理，速度快且可靠。
+### 2. 安装环境（uv）
 
 ```bash
-# 安装 uv（如果尚未安装）
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 创建虚拟环境
 uv venv --python 3.10
-source .venv/bin/activate  # Linux/macOS
-# 或: .venv\Scripts\activate  # Windows
-
-# 安装项目依赖
-uv pip install -e .
-
-# 安装 VBench 依赖
-uv pip install -r third_party/VBench/requirements.txt
-
-# （可选）安装开发依赖
-uv pip install -e ".[dev]"
-```
-
-<details>
-<summary>备选方案：使用 pip</summary>
-
-```bash
-python -m venv .venv
+uv sync
 source .venv/bin/activate
-pip install -e .
-pip install -r third_party/VBench/requirements.txt
 ```
 
-</details>
-
-<details>
-<summary>备选方案：使用 conda</summary>
+### 3. 运行评测
 
 ```bash
-conda create -n t2v-eval python=3.10
-conda activate t2v-eval
-pip install -e .
-pip install -r third_party/VBench/requirements.txt
+# 核心指标（不含 VBench）
+python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
+
+# VBench-Long（推荐 6 维）
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
 ```
 
-</details>
-
-### 3. 配置数据集
-
-在 `configs/` 目录下为你的实验创建配置文件：
-
-```bash
-# 示例：configs/Exp_OscStable_Head_Window.yaml
-```
-
-```yaml
-dataset:
-  repo_id: "winbeau/AdaHead"  # 你的 HuggingFace 数据集
-  video_dir: "videos/Exp_OscStable_Head_Window"
-
-# 实验组配置（根据你的对照实验修改）
-groups:
-  - name: "frame_baseline_21"
-    description: "帧级注意力基线，21帧"
-  - name: "head_baseline_21"
-    description: "头级注意力基线，21帧"
-  # ... 其他组
-```
-
-**HuggingFace 数据集格式要求**：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `video` | bytes/path | 视频文件（MP4 格式） |
-| `prompt` | string | 生成该视频使用的文本提示 |
-| `group` | string | 实验组名称 |
-| `video_id` | string | 唯一标识符 |
-
-### 4. 运行完整流水线
-
-```bash
-# 一键运行所有评测（指定配置文件）
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# 自动初始化子模块
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --auto-init-submodules
-
-# 跳过特定指标（如 VBench 权重未下载）
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --skip-vbench
-
-# 强制重新计算所有指标
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml --force
-```
-
-### 5. 查看结果
-
-```
-outputs/
-├── per_video_metrics.csv    # 每视频评分
-├── group_summary.csv        # 分组汇总 (mean ± std)
-├── clipvqa_per_video.csv    # CLIP/VQA 详细结果
-├── vbench_per_video.csv     # VBench 详细结果
-├── flicker_per_video.csv    # Flicker 详细结果
-├── niqe_per_video.csv       # NIQE 详细结果
-└── figs/                    # 可视化图表（可选）
-```
-
-结果会自动复制到 `frontend/public/data/` 供 LaTeX 表格生成器使用。
-
-### 6. 生成 LaTeX 表格（前端工具）
-
-本项目包含一个 Web 端工具，用于生成论文级别的 LaTeX 表格：
+### 4. 启动前端
 
 ```bash
 cd frontend
 pnpm install
-pnpm dev
+pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
 ```
 
-然后打开 http://localhost:5173：
-1. 点击 "Load Local Data" 选择评测结果文件
-2. 选择要显示的指标
-3. 复制生成的 LaTeX 代码
+打开 `http://<your_host>:5173`。
 
 ---
 
-## 命令行选项
+## 详细使用指南
 
-### 强制重新计算
+完整且持续更新的安装、依赖排障、数据准备、VBench 命令和前端同步说明，请以以下文档为准：
 
-使用 `--force` 强制重新计算所有指标（即使结果已存在）：
-
-```bash
-python scripts/run_all.py --config configs/eval.yaml --force
-```
-
-### 跳过特定指标
-
-```bash
-# 跳过 VBench（如权重未下载）
-python scripts/run_all.py --config configs/eval.yaml --skip-vbench
-
-# 跳过 CLIP/VQA 评测
-python scripts/run_all.py --config configs/eval.yaml --skip-clipvqa
-```
-
-### 自定义输出文件名
-
-在 YAML 配置中设置自定义输出文件名：
-
-```yaml
-paths:
-  experiment_output: "my_experiment_results.csv"  # 可选的自定义文件名
-```
+- `docs/USAGE.md`
 
 ---
 
@@ -248,7 +124,7 @@ paths:
 |------|----------|----------|------|----------|
 | **CLIPScore** | `clip_score` | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics |
 | **VQAScore** | `vqa_score` | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics |
-| **VBench (Temporal)** | `vbench_temporal_score` | 时序质量 | ↑ 越高越好 | 官方 VBench |
+| **VBench-Long（6维）** | `subject_consistency` / `background_consistency` / `motion_smoothness` / `dynamic_degree` / `imaging_quality` / `aesthetic_quality` | 长一致性与时序质量 | ↑ 越高越好 | 官方 VBench |
 | **Temporal Flicker** | `flicker_mean` | 帧间稳定性 | ↓ 越低越好 | 本仓库实现 |
 | **NIQE** | `niqe_mean` | 视觉质量 | ↓ 越低越好 | pyiqa |
 | **#Frames / Duration** | `num_frames`, `duration_sec` | 生成规模 | — | 元数据 |
@@ -292,10 +168,13 @@ metrics:
 
 #### VBench 子任务
 
-默认只运行时序相关子任务：
-- `temporal_flickering`：时序闪烁检测
+当前默认运行 VBench-Long 6 维度：
+- `subject_consistency`：主体一致性
+- `background_consistency`：背景一致性
 - `motion_smoothness`：运动平滑度
-- `temporal_style`：时序风格一致性
+- `dynamic_degree`：动态强度
+- `imaging_quality`：成像质量
+- `aesthetic_quality`：美学质量
 
 ---
 
@@ -309,11 +188,12 @@ t2v-eval/
 │   ├── export_from_hf.py      # 从 HuggingFace 导出数据集
 │   ├── preprocess_videos.py   # 视频预处理（统一格式）
 │   ├── run_clip_or_vqa.py     # CLIPScore/VQAScore 评测
-│   ├── run_vbench.py          # VBench 时序评测
+│   ├── run_vbench.py          # VBench-Long 6 维评测
 │   ├── run_flicker.py         # 时序闪烁评测
 │   ├── run_niqe.py            # NIQE 图像质量评测
 │   ├── summarize.py           # 结果汇总
-│   └── run_all.py             # 一键运行入口
+│   ├── run_eval_core.py       # 核心评测入口（不含 VBench）
+│   └── run_all.py             # run_eval_core.py 旧别名
 ├── frontend/                  # LaTeX 表格生成器 (Vue 3)
 │   ├── src/                   # 前端源代码
 │   └── public/data/           # 评测结果（供前端使用）
@@ -323,67 +203,9 @@ t2v-eval/
 ├── outputs/                   # 评测结果输出
 ├── eval_cache/                # 预处理视频缓存
 ├── pyproject.toml             # 项目配置（uv/pip）
-├── requirements.txt           # 依赖列表（备用）
 ├── README.md                  # 英文文档
 └── README_zh.md               # 中文文档（本文件）
 ```
-
----
-
-## 详细使用指南
-
-### 分步执行
-
-如果需要分步执行或调试，可以单独运行各脚本：
-
-```bash
-# 步骤 1：从 HuggingFace 导出数据集
-python scripts/export_from_hf.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# 步骤 2：预处理视频（统一 fps/分辨率/帧数）
-python scripts/preprocess_videos.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# 步骤 3：CLIP/VQA 评测
-python scripts/run_clip_or_vqa.py --config configs/Exp_OscStable_Head_Window.yaml --mode clip
-
-# 步骤 4：VBench 评测
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --skip-on-error
-
-# 步骤 5：Flicker 评测
-python scripts/run_flicker.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# 步骤 6：NIQE 评测
-python scripts/run_niqe.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# 步骤 7：汇总结果
-python scripts/summarize.py --config configs/Exp_OscStable_Head_Window.yaml
-```
-
-### 添加推理效率数据
-
-如果你有推理时间/FPS 数据，可以创建 `outputs/runtime.csv` 并合并到汇总表：
-
-```csv
-video_id,group,fps,inference_time_sec
-video_001,frame_level_baseline,2.5,12.8
-video_002,head_level_stable_w8,4.2,7.6
-...
-```
-
-然后重新运行汇总：
-```bash
-python scripts/summarize.py --config configs/eval.yaml --force
-```
-
-### 测试运行（限制样本数）
-
-```bash
-# 只处理前 10 个视频（用于测试）
-python scripts/export_from_hf.py --config configs/eval.yaml --limit 10
-python scripts/preprocess_videos.py --config configs/eval.yaml --limit 10
-```
-
----
 
 ## 评测协议
 
@@ -475,10 +297,11 @@ git submodule update --init --recursive
 
 **解决**：
 1. 参考 VBench 官方文档下载权重：https://github.com/Vchitect/VBench#model-weights
-2. 或跳过 VBench 评测：
+2. 先跑核心评测（不含 VBench）：
    ```bash
-   python scripts/run_all.py --skip-vbench
+   python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
    ```
+3. VBench-Long 的安装与排障以 `docs/USAGE.md` 为准（`clip` / `pyiqa` / `PyAV` / `setuptools` 等依赖问题）。
 
 ### CUDA 内存不足
 
@@ -535,7 +358,12 @@ python -c "from datasets import load_dataset; load_dataset('YOUR_REPO_ID')"
 | `num_frames` | 处理后帧数 |
 | `duration_sec` | 原始时长（秒） |
 | `clip_score` 或 `vqa_score` | CLIP/VQA 分数（根据配置） |
-| `vbench_temporal_score` | VBench 时序分数 |
+| `subject_consistency` | VBench 主体一致性分数 |
+| `background_consistency` | VBench 背景一致性分数 |
+| `motion_smoothness` | VBench 运动平滑度分数 |
+| `dynamic_degree` | VBench 动态强度分数 |
+| `imaging_quality` | VBench 成像质量分数 |
+| `aesthetic_quality` | VBench 美学质量分数 |
 | `flicker_mean` | 平均 Flicker 分数 |
 | `niqe_mean` | 平均 NIQE 分数 |
 
@@ -549,7 +377,7 @@ python -c "from datasets import load_dataset; load_dataset('YOUR_REPO_ID')"
 | `n_videos` | 该组视频数量 |
 | `clip_score_mean` 或 `vqa_score_mean` | CLIP/VQA 均值（根据配置） |
 | `clip_score_std` 或 `vqa_score_std` | CLIP/VQA 标准差 |
-| `vbench_temporal_score_mean` | VBench 均值 |
+| `<vbench_dim>_mean` | VBench 各维度均值（6 维） |
 | ... | 其他指标同理 |
 
 ---
