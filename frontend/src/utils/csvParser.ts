@@ -79,6 +79,92 @@ export function parseGroupSummary(data: unknown[]): GroupSummary[] {
   });
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function aggregatePerVideoToGroupSummary(data: unknown[]): GroupSummary[] {
+  type GroupAccumulator = {
+    nVideos: number;
+    sums: Record<string, number>;
+    sumsSq: Record<string, number>;
+    counts: Record<string, number>;
+  };
+
+  const byGroup = new Map<string, GroupAccumulator>();
+  const ignoredColumns = new Set(['group', 'video_id', 'video_path', 'prompt', 'n_videos']);
+
+  for (const row of data) {
+    const r = row as Record<string, unknown>;
+    const group = String(r.group || '').trim();
+    if (!group) continue;
+
+    if (!byGroup.has(group)) {
+      byGroup.set(group, {
+        nVideos: 0,
+        sums: {},
+        sumsSq: {},
+        counts: {},
+      });
+    }
+
+    const acc = byGroup.get(group)!;
+    acc.nVideos += 1;
+
+    for (const [key, value] of Object.entries(r)) {
+      if (ignoredColumns.has(key)) continue;
+      if (!isFiniteNumber(value)) continue;
+
+      acc.sums[key] = (acc.sums[key] || 0) + value;
+      acc.sumsSq[key] = (acc.sumsSq[key] || 0) + value * value;
+      acc.counts[key] = (acc.counts[key] || 0) + 1;
+    }
+  }
+
+  const results: GroupSummary[] = [];
+  for (const [group, acc] of byGroup.entries()) {
+    const summary: GroupSummary = {
+      group,
+      n_videos: acc.nVideos,
+    };
+
+    for (const metric of Object.keys(acc.counts)) {
+      const count = acc.counts[metric];
+      if (!count) continue;
+
+      const mean = acc.sums[metric] / count;
+      const variance = Math.max(0, acc.sumsSq[metric] / count - mean * mean);
+      const std = Math.sqrt(variance);
+
+      summary[`${metric}_mean`] = mean;
+      summary[`${metric}_std`] = std;
+    }
+
+    results.push(summary);
+  }
+
+  return results;
+}
+
+export function parseCsvAsGroupSummary(data: unknown[]): GroupSummary[] {
+  if (data.length === 0) return [];
+
+  const sample = data[0] as Record<string, unknown>;
+  const columns = Object.keys(sample);
+  const hasMeanColumns = columns.some((c) => c.endsWith('_mean'));
+  const hasGroupColumn = columns.includes('group');
+
+  if (hasMeanColumns) {
+    return parseGroupSummary(data).filter((row) => row.group.trim().length > 0);
+  }
+
+  if (hasGroupColumn) {
+    return aggregatePerVideoToGroupSummary(data);
+  }
+
+  return parseGroupSummary(data).filter((row) => row.group.trim().length > 0);
+}
+
 export function getAvailableMetrics(data: GroupSummary[]): string[] {
   if (data.length === 0) return [];
 

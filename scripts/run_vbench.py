@@ -732,6 +732,7 @@ def extract_subtask_scores(
         per_video_items = [item for item in dimension_data if isinstance(item, dict)]
 
     parsed_items = []
+    unresolved_count = 0
     for item in per_video_items:
         if not isinstance(item, dict):
             continue
@@ -739,12 +740,20 @@ def extract_subtask_scores(
         score = item.get("video_results", item.get("score"))
         if not video_path or score is None:
             continue
+        resolved_video_id = resolve_video_id(str(video_path), valid_video_ids)
+        if resolved_video_id not in valid_video_ids:
+            unresolved_count += 1
+            continue
         parsed_items.append(
             {
-                "video_id": resolve_video_id(str(video_path), valid_video_ids),
+                "video_id": resolved_video_id,
                 "subtask": subtask,
                 "score": float(score),
             }
+        )
+    if unresolved_count > 0:
+        logger.info(
+            f"[{subtask}] skipped {unresolved_count} unresolved video ids from raw VBench output"
         )
 
     if not long_mode:

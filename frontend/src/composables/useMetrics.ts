@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue';
 import type { GroupSummary, MetricConfig, LatexTableOptions } from '../types/metrics';
-import { loadCSV, parseGroupSummary, getAvailableMetrics } from '../utils/csvParser';
+import { loadCSV, parseCsvAsGroupSummary, getAvailableMetrics } from '../utils/csvParser';
 import { generateLatexTable, DEFAULT_METRICS } from '../utils/latexGenerator';
 
 export function useMetricsData() {
@@ -20,7 +20,7 @@ export function useMetricsData() {
 
     try {
       const data = await loadCSV<Record<string, unknown>>(file);
-      rawData.value = parseGroupSummary(data);
+      rawData.value = parseCsvAsGroupSummary(data);
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load CSV file';
       rawData.value = [];
