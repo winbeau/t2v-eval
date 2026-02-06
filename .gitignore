@@ -101,6 +101,10 @@ hf/AdaHead/
 *.zip
 *.7z
 
+# Track frontend output data for table UI
+!frontend/public/data/
+!frontend/public/data/**
+
 # -----------------------------------------------------------------------------
 # Logs
 # -----------------------------------------------------------------------------
