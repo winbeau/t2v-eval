@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-run_all.py (legacy alias)
+run_eval_pipeline.py (legacy alias)
 
 Deprecated: use `scripts/run_eval_core.py`.
 """
@@ -10,7 +10,7 @@ import warnings
 
 def main():
     warnings.warn(
-        "`scripts/run_all.py` is deprecated; use `scripts/run_eval_core.py` instead.",
+        "`scripts/run_eval_pipeline.py` is deprecated; use `scripts/run_eval_core.py` instead.",
         DeprecationWarning,
         stacklevel=2,
     )

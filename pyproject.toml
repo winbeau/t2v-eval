@@ -78,7 +78,7 @@ Repository = "https://github.com/YOUR_USERNAME/t2v-eval"
 Documentation = "https://github.com/YOUR_USERNAME/t2v-eval#readme"
 
 [project.scripts]
-t2v-eval = "scripts.run_all:main"
+t2v-eval = "scripts.run_eval_core:main"
 
 [build-system]
 requires = ["hatchling"]
