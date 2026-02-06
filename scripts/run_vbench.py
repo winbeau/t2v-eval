@@ -724,6 +724,63 @@ def resolve_video_id(video_path: str, valid_video_ids: set[str]) -> str:
     return stem
 
 
+def apply_long_consistency_prefix_fallback(
+    parsed_items: list[dict],
+    unresolved_items: list[tuple[str, float]],
+    subtask: str,
+    valid_video_ids: set[str],
+) -> list[dict]:
+    """
+    Fallback for VBench-Long subject/background id truncation.
+
+    Some upstream outputs collapse video ids to coarse prefixes
+    (e.g. frame/head/osc/stable). When this happens, expand prefix
+    scores to all matching video_ids in current dataset.
+    """
+    if subtask not in {"subject_consistency", "background_consistency"}:
+        return parsed_items
+    if not unresolved_items:
+        return parsed_items
+
+    prefix_to_video_ids: dict[str, list[str]] = {}
+    for video_id in sorted(valid_video_ids):
+        prefix = video_id.split("_", 1)[0].lower()
+        prefix_to_video_ids.setdefault(prefix, []).append(video_id)
+
+    prefix_scores: dict[str, list[float]] = {}
+    for video_path, score in unresolved_items:
+        stem = Path(str(video_path)).stem.lower()
+        prefix = stem.split("_", 1)[0]
+        if prefix in prefix_to_video_ids:
+            prefix_scores.setdefault(prefix, []).append(float(score))
+
+    if not prefix_scores:
+        return parsed_items
+
+    existing_video_ids = {item["video_id"] for item in parsed_items}
+    added = 0
+    for prefix, scores in prefix_scores.items():
+        mean_score = float(sum(scores) / len(scores))
+        for video_id in prefix_to_video_ids[prefix]:
+            if video_id in existing_video_ids:
+                continue
+            parsed_items.append(
+                {
+                    "video_id": video_id,
+                    "subtask": subtask,
+                    "score": mean_score,
+                }
+            )
+            existing_video_ids.add(video_id)
+            added += 1
+
+    logger.warning(
+        f"[{subtask}] fallback prefix mapping applied: added {added} videos "
+        f"from prefixes {sorted(prefix_scores.keys())}"
+    )
+    return parsed_items
+
+
 def extract_subtask_scores(
     dimension_data,
     subtask: str,
@@ -742,6 +799,7 @@ def extract_subtask_scores(
 
     parsed_items = []
     unresolved_count = 0
+    unresolved_items: list[tuple[str, float]] = []
     for item in per_video_items:
         if not isinstance(item, dict):
             continue
@@ -752,6 +810,7 @@ def extract_subtask_scores(
         resolved_video_id = resolve_video_id(str(video_path), valid_video_ids)
         if resolved_video_id not in valid_video_ids:
             unresolved_count += 1
+            unresolved_items.append((str(video_path), float(score)))
             continue
         parsed_items.append(
             {
@@ -760,6 +819,15 @@ def extract_subtask_scores(
                 "score": float(score),
             }
         )
+
+    if long_mode:
+        parsed_items = apply_long_consistency_prefix_fallback(
+            parsed_items=parsed_items,
+            unresolved_items=unresolved_items,
+            subtask=subtask,
+            valid_video_ids=valid_video_ids,
+        )
+
     if unresolved_count > 0:
         logger.info(
             f"[{subtask}] skipped {unresolved_count} unresolved video ids from raw VBench output"
