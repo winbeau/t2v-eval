@@ -80,9 +80,10 @@ python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
 
 3. 仅跑 VBench-Long 6 维度（当前配置）：
 ```bash
-# 先确保已完成导出与预处理（或之前已跑过）
+# 下载并准备好本地数据集后即可直接运行（不要求先预处理）
 python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
 ```
+运行结束后会自动把结果同步到 `frontend/public/data/`（并更新 `manifest.json`）。
 
 4. 官方 VBench-Long 直跑 6 维度命令（可选）：
 ```bash

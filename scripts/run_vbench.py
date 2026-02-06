@@ -5,6 +5,10 @@ Run VBench evaluation using the official VBench implementation.
 
 This script wraps the official VBench repository (https://github.com/Vchitect/VBench)
 to evaluate temporal quality of generated videos.
+It can run from:
+1) `processed_metadata.csv` (preferred), or
+2) `metadata.csv`, or
+3) direct local video folders configured in `dataset.local_video_dir`.
 
 Usage:
     python scripts/run_vbench.py --config configs/eval.yaml
@@ -68,6 +72,257 @@ def get_video_list(metadata_path: Path) -> list:
     """Get list of video paths from metadata."""
     df = pd.read_csv(metadata_path)
     return df.to_dict("records")
+
+
+def resolve_path(path_str: str | None) -> Path | None:
+    """Resolve path against project root when relative."""
+    if not path_str:
+        return None
+    path = Path(path_str)
+    return path if path.is_absolute() else (PROJECT_ROOT / path)
+
+
+def infer_group_from_path(video_path: Path, group_names: list[str]) -> str | None:
+    """Infer group by folder name or filename."""
+    if group_names:
+        parts = set(video_path.parts)
+        for name in group_names:
+            if name in parts:
+                return name
+        filename = video_path.name
+        for name in group_names:
+            if name in filename:
+                return name
+    if len(video_path.parts) > 1:
+        return video_path.parent.name
+    return None
+
+
+def load_prompt_map(prompt_path: Path) -> tuple[dict[str, str], dict[str, str], list[str]]:
+    """Load prompt mapping by video_id/stem and ordered fallback list."""
+    prompt_df = pd.read_csv(prompt_path, sep=None, engine="python")
+    prompt_df.columns = [str(c).strip().lower() for c in prompt_df.columns]
+
+    rename = {}
+    if "caption" in prompt_df.columns:
+        rename["caption"] = "prompt"
+    if "text" in prompt_df.columns:
+        rename["text"] = "prompt"
+    if "id" in prompt_df.columns:
+        rename["id"] = "video_id"
+    if "uid" in prompt_df.columns:
+        rename["uid"] = "video_id"
+    if "filename" in prompt_df.columns:
+        rename["filename"] = "video_id"
+    if "path" in prompt_df.columns:
+        rename["path"] = "video_path"
+    if rename:
+        prompt_df = prompt_df.rename(columns=rename)
+
+    if "prompt" not in prompt_df.columns and len(prompt_df.columns) >= 1:
+        prompt_df = prompt_df.rename(columns={prompt_df.columns[-1]: "prompt"})
+
+    prompt_by_id = {}
+    prompt_by_stem = {}
+    ordered_prompts = []
+
+    if "prompt" in prompt_df.columns:
+        ordered_prompts = [str(v) for v in prompt_df["prompt"].fillna("").tolist()]
+        if "video_id" in prompt_df.columns:
+            for _, row in prompt_df.iterrows():
+                video_id = str(row.get("video_id", "")).strip()
+                prompt = str(row.get("prompt", "")).strip()
+                if video_id and prompt:
+                    prompt_by_id[video_id] = prompt
+        if "video_path" in prompt_df.columns:
+            for _, row in prompt_df.iterrows():
+                video_path = str(row.get("video_path", "")).strip()
+                prompt = str(row.get("prompt", "")).strip()
+                if video_path and prompt:
+                    prompt_by_stem[Path(video_path).stem] = prompt
+
+    return prompt_by_id, prompt_by_stem, ordered_prompts
+
+
+def build_video_list_from_local_dataset(config: dict) -> list:
+    """Build video records from local dataset folders (no preprocess required)."""
+    dataset_config = config.get("dataset", {})
+    local_video_dir = dataset_config.get("local_video_dir") or dataset_config.get("video_dir")
+    local_dir = resolve_path(local_video_dir)
+    if local_dir is None or not local_dir.exists():
+        raise FileNotFoundError(f"Local video dir not found: {local_video_dir}")
+
+    groups = config.get("groups", [])
+    group_names = [g["name"] for g in groups if isinstance(g, dict) and "name" in g]
+    default_group = dataset_config.get("default_group")
+
+    prompt_by_id = {}
+    prompt_by_stem = {}
+    ordered_prompts = []
+    prompt_file = dataset_config.get("prompt_file")
+    if prompt_file:
+        prompt_path = resolve_path(prompt_file)
+        if prompt_path and prompt_path.exists():
+            prompt_by_id, prompt_by_stem, ordered_prompts = load_prompt_map(prompt_path)
+            logger.info(f"Loaded prompts from: {prompt_path} ({len(ordered_prompts)} rows)")
+        else:
+            logger.warning(f"Prompt file not found, fallback to filename prompt: {prompt_file}")
+
+    video_files = sorted(local_dir.rglob("*.mp4"))
+    if not video_files:
+        raise FileNotFoundError(f"No mp4 videos found under: {local_dir}")
+
+    records = []
+    for idx, video_path in enumerate(video_files):
+        candidate_id = video_path.stem
+
+        relative = video_path.relative_to(local_dir)
+        group = relative.parts[0] if len(relative.parts) > 1 else None
+        if not group or (group_names and group not in group_names):
+            group = infer_group_from_path(video_path, group_names)
+        if group_names and group not in group_names:
+            continue
+        if group is None:
+            group = default_group or "default"
+
+        prompt = (
+            prompt_by_id.get(candidate_id)
+            or prompt_by_stem.get(candidate_id)
+            or (ordered_prompts[idx] if idx < len(ordered_prompts) else None)
+            or candidate_id
+        )
+
+        records.append(
+            {
+                "video_id": candidate_id,
+                "group": group,
+                "prompt": prompt,
+                "video_path": str(video_path),
+            }
+        )
+
+    if not records:
+        raise RuntimeError("No usable videos matched configured groups under local dataset directory.")
+    return records
+
+
+def load_video_records_for_vbench(config: dict, output_dir: Path, paths_config: dict) -> list:
+    """Load records from processed metadata / raw metadata / local dataset."""
+    processed_metadata = output_dir / paths_config.get("processed_metadata", "processed_metadata.csv")
+    metadata_file = output_dir / paths_config.get("metadata_file", "metadata.csv")
+
+    if processed_metadata.exists():
+        logger.info(f"Using processed metadata: {processed_metadata}")
+        return get_video_list(processed_metadata)
+
+    if metadata_file.exists():
+        logger.info(f"Using raw metadata: {metadata_file}")
+        return get_video_list(metadata_file)
+
+    logger.info("Metadata not found, building video list from local dataset paths...")
+    return build_video_list_from_local_dataset(config)
+
+
+def copy_outputs_to_frontend(output_dir: Path, paths_config: dict, vbench_output: Path) -> bool:
+    """Copy outputs to frontend/public/data and update manifest."""
+    try:
+        frontend_data_dir = PROJECT_ROOT / "frontend" / "public" / "data"
+        frontend_data_dir.mkdir(parents=True, exist_ok=True)
+
+        copied_files = []
+
+        if vbench_output.exists():
+            dst = frontend_data_dir / vbench_output.name
+            import shutil
+
+            shutil.copy2(vbench_output, dst)
+            copied_files.append(vbench_output.name)
+            logger.info(f"  Copied: {vbench_output.name}")
+
+        for key, default_name in [
+            ("group_summary", "group_summary.csv"),
+            ("per_video_metrics", "per_video_metrics.csv"),
+            ("experiment_output", None),
+        ]:
+            file_name = paths_config.get(key, default_name)
+            if not file_name:
+                continue
+            src = output_dir / file_name
+            if src.exists():
+                dst = frontend_data_dir / src.name
+                import shutil
+
+                shutil.copy2(src, dst)
+                copied_files.append(src.name)
+                logger.info(f"  Copied: {src.name}")
+
+        manifest_path = frontend_data_dir / "manifest.json"
+        existing_files = set()
+        if manifest_path.exists():
+            try:
+                with open(manifest_path, "r") as f:
+                    manifest = json.load(f)
+                    existing_files = set(manifest.get("files", []))
+            except (json.JSONDecodeError, KeyError):
+                existing_files = set()
+
+        all_files = sorted(existing_files.union(set(copied_files)))
+        with open(manifest_path, "w") as f:
+            json.dump({"files": all_files}, f, indent=2)
+        logger.info(f"  Updated manifest.json with {len(all_files)} files")
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to copy outputs to frontend: {e}")
+        return False
+
+
+def ensure_moviepy_editor_compat() -> None:
+    """
+    Ensure `moviepy.editor` import path works for VBench-Long.
+
+    Some MoviePy versions expose `VideoFileClip` without the legacy
+    `moviepy.editor` module path. VBench-Long imports `moviepy.editor`.
+    """
+    try:
+        import moviepy.editor  # noqa: F401
+        return
+    except ModuleNotFoundError as e:
+        if e.name == "moviepy":
+            raise ModuleNotFoundError(
+                "moviepy is not installed in current Python env. "
+                "Please run: python -m pip install \"moviepy<2\""
+            ) from e
+        if e.name != "moviepy.editor":
+            raise
+
+    try:
+        import moviepy  # noqa: F401
+    except Exception as e:
+        raise ModuleNotFoundError(
+            "moviepy is not installed in current Python env. "
+            "Please run: python -m pip install \"moviepy<2\""
+        ) from e
+
+    try:
+        from moviepy import VideoFileClip
+    except Exception:
+        try:
+            from moviepy.video.io.VideoFileClip import VideoFileClip
+        except Exception as e:
+            raise ModuleNotFoundError(
+                "moviepy is installed but VideoFileClip is unavailable. "
+                "Try: python -m pip install --upgrade \"moviepy<2\""
+            ) from e
+
+    import types
+
+    editor_module = types.ModuleType("moviepy.editor")
+    editor_module.VideoFileClip = VideoFileClip
+    sys.modules["moviepy.editor"] = editor_module
+    logger.warning(
+        "Applied compatibility shim for `moviepy.editor` "
+        "(VBench-Long expects legacy import path)."
+    )
 
 
 def use_vbench_long(config: dict) -> bool:
@@ -195,6 +450,7 @@ def run_vbench_evaluation(
 
     try:
         if long_mode:
+            ensure_moviepy_editor_compat()
             from vbench2_beta_long import VBenchLong as VBenchRunner
         else:
             from vbench import VBench as VBenchRunner
@@ -350,7 +606,6 @@ def run_vbench_cli_fallback(
     This uses VBench's command-line interface which is more stable.
     """
     import subprocess
-    import tempfile
 
     vbench_config = config.get("metrics", {}).get("vbench", {})
     subtasks = vbench_config.get("subtasks", [
@@ -493,7 +748,6 @@ def main():
     output_dir = Path(paths_config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    processed_metadata = output_dir / paths_config["processed_metadata"]
     vbench_output = output_dir / "vbench_per_video.csv"
 
     # Check if already exists
@@ -504,15 +758,23 @@ def main():
     elif vbench_output.exists() and args.force:
         logger.info(f"Force recomputing: {vbench_output}")
 
-    # Load video metadata
-    if not processed_metadata.exists():
-        logger.error(f"Processed metadata not found: {processed_metadata}")
-        logger.error("Run preprocess_videos.py first")
+    # Load video metadata / build from local dataset
+    try:
+        video_records = load_video_records_for_vbench(
+            config=config,
+            output_dir=output_dir,
+            paths_config=paths_config,
+        )
+    except Exception as e:
+        logger.error(f"Failed to prepare video records: {e}")
+        logger.error(
+            "Need one of: processed_metadata.csv / metadata.csv / "
+            "dataset.local_video_dir(with optional prompt_file)"
+        )
         if args.skip_on_error:
             sys.exit(0)
         sys.exit(1)
 
-    video_records = get_video_list(processed_metadata)
     logger.info(f"Loaded {len(video_records)} videos for VBench evaluation")
 
     device = runtime_config.get("device", "cuda")
@@ -559,7 +821,7 @@ def main():
             raise
 
     # Merge with metadata to get group info
-    df_meta = pd.read_csv(processed_metadata)[["video_id", "group"]]
+    df_meta = pd.DataFrame(video_records)[["video_id", "group"]].drop_duplicates(subset=["video_id"])
     if not df_results.empty:
         df_results = df_results.merge(df_meta, on="video_id", how="left")
 
@@ -572,6 +834,14 @@ def main():
         logger.info("\nVBench Temporal Score Summary by Group:")
         summary = df_results.groupby("group")["vbench_temporal_score"].agg(["mean", "std"])
         logger.info(f"\n{summary}")
+
+    # Copy outputs to frontend/public/data
+    logger.info("\nCopying VBench outputs to frontend/public/data ...")
+    copy_outputs_to_frontend(
+        output_dir=output_dir,
+        paths_config=paths_config,
+        vbench_output=vbench_output,
+    )
 
 
 if __name__ == "__main__":
