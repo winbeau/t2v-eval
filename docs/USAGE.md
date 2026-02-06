@@ -1,6 +1,6 @@
 # T2V-Eval 简要使用说明
 
-## 0. Node.js / pnpm（npx 方式）
+## 0. Node.js / pnpm 安装（前端必需，npx 方式）
 
 > 说明：`npx` 方式适合“已有 `npm`、但还没全局装好 Node 管理器或 pnpm”的场景。
 
@@ -39,16 +39,6 @@ apt install -y python3.10-dev build-essential
 - 本地数据路径变更：
   - 同步更新 `configs/*.yaml` 中的 `local_video_dir` / `prompt_file`
 
-## 前端启动（Vite）
-
-```bash
-cd frontend
-pnpm install
-pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
-```
-
-等价写法：`pnpm dev`（已在 `vite.config.ts` 固定 `host=0.0.0.0`、`port=5173`）。
-
 ## 前置准备（推荐本地下载 HF 数据集）
 1. 注册子模块（首次克隆后执行）
 ```bash
@@ -85,6 +75,16 @@ dataset:
 ```bash
 python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml
 ```
+
+## 推理后启动前端（Vite）
+
+```bash
+cd frontend
+pnpm install
+pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
+```
+
+等价写法：`pnpm dev`（已在 `vite.config.ts` 固定 `host=0.0.0.0`、`port=5173`）。
 
 ## 常见提示
 - 若提示缺少依赖（如 `pandas`/`pyyaml`），在虚拟环境中补装：`uv pip install pandas PyYAML`。
