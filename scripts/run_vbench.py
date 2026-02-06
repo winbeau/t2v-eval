@@ -20,8 +20,11 @@ import io
 import json
 import logging
 import sys
+import threading
+import time
 import warnings
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import yaml
@@ -338,6 +341,17 @@ def configure_warning_filters() -> None:
     )
 
 
+def configure_third_party_loggers() -> None:
+    """Reduce verbose INFO logs from VBench internals."""
+    noisy_loggers = [
+        "vbench2_beta_long.subject_consistency",
+        "vbench2_beta_long.background_consistency",
+        "vbench2_beta_long.utils",
+    ]
+    for logger_name in noisy_loggers:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+
 def summarize_vbench_stdout(stdout_text: str, subtask: str) -> None:
     """Summarize verbose stdout from VBench/VBench-Long evaluate()."""
     if not stdout_text:
@@ -360,6 +374,108 @@ def summarize_vbench_stdout(stdout_text: str, subtask: str) -> None:
     hidden = len(other_lines) - max_preview
     if hidden > 0:
         logger.info(f"[{subtask}] ... {hidden} more log lines suppressed")
+
+
+class StdoutMonitor:
+    """Thread-safe stdout monitor for VBench evaluation output."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._parts: list[str] = []
+        self._line_buffer = ""
+        self._saved_count = 0
+        self._line_count = 0
+        self._chars = 0
+
+    def write(self, text: str) -> int:
+        if not text:
+            return 0
+        with self._lock:
+            self._parts.append(text)
+            self._chars += len(text)
+            self._line_buffer += text
+            lines = self._line_buffer.splitlines(keepends=True)
+            remainder = ""
+            if lines and not lines[-1].endswith(("\n", "\r")):
+                remainder = lines.pop()
+            self._line_buffer = remainder
+
+            for line in lines:
+                line_stripped = line.strip()
+                if not line_stripped:
+                    continue
+                self._line_count += 1
+                if line_stripped.startswith("Saved "):
+                    self._saved_count += 1
+        return len(text)
+
+    def flush(self) -> None:
+        return
+
+    def snapshot(self) -> tuple[int, int, int]:
+        with self._lock:
+            return self._saved_count, self._line_count, self._chars
+
+    def getvalue(self) -> str:
+        with self._lock:
+            tail = self._line_buffer
+            return "".join(self._parts) + tail
+
+
+def _render_bar(step: int, width: int = 18) -> str:
+    filled = step % (width + 1)
+    return f"{'█' * filled}{'·' * (width - filled)}"
+
+
+def run_evaluate_with_progress(
+    vbench: Any,
+    eval_kwargs: dict,
+    subtask: str,
+    subtask_index: int,
+    subtask_total: int,
+    refresh_sec: float = 1.0,
+) -> str:
+    """
+    Run one VBench subtask with a lightweight manual progress bar.
+    """
+    monitor = StdoutMonitor()
+    worker_error: list[Exception] = []
+
+    def _worker():
+        try:
+            with contextlib.redirect_stdout(monitor), contextlib.redirect_stderr(monitor):
+                vbench.evaluate(**eval_kwargs)
+        except Exception as e:
+            worker_error.append(e)
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+    start = time.time()
+    tick = 0
+
+    while thread.is_alive():
+        elapsed = int(time.time() - start)
+        saved_count, _, _ = monitor.snapshot()
+        bar = _render_bar(tick)
+        line = (
+            f"\r[{subtask_index}/{subtask_total}] {subtask:<24} "
+            f"| {bar} | clips={saved_count} | {elapsed:>4}s"
+        )
+        print(line, end="", flush=True)
+        tick += 1
+        thread.join(timeout=refresh_sec)
+
+    thread.join()
+    elapsed = int(time.time() - start)
+    saved_count, _, _ = monitor.snapshot()
+    print(
+        f"\r[{subtask_index}/{subtask_total}] {subtask:<24} "
+        f"| {'█' * 18} | clips={saved_count} | {elapsed:>4}s done"
+    )
+
+    if worker_error:
+        raise worker_error[0]
+    return monitor.getvalue()
 
 
 def use_vbench_long(config: dict) -> bool:
@@ -506,6 +622,33 @@ def run_vbench_evaluation(
         "clip_length_config": vbench_config.get("clip_length_config", "clip_length_mix.yaml"),
         "threshold": float(vbench_config.get("scene_threshold", 35.0)),
         "static_filter_flag": bool(vbench_config.get("static_filter_flag", False)),
+        "sb_clip2clip_feat_extractor": vbench_config.get("sb_clip2clip_feat_extractor", "dino"),
+        "bg_clip2clip_feat_extractor": vbench_config.get("bg_clip2clip_feat_extractor", "clip"),
+        "w_inclip": float(vbench_config.get("w_inclip", 1.0)),
+        "w_clip2clip": float(vbench_config.get("w_clip2clip", 0.0)),
+        "imaging_quality_preprocessing_mode": vbench_config.get(
+            "imaging_quality_preprocessing_mode", "longer"
+        ),
+        "dev_flag": bool(vbench_config.get("dev_flag", False)),
+        "num_of_samples_per_prompt": int(vbench_config.get("num_of_samples_per_prompt", 5)),
+        "slow_fast_eval_config": str(
+            vbench_config.get(
+                "slow_fast_eval_config",
+                VBENCH_ROOT / "vbench2_beta_long" / "configs" / "slow_fast_params.yaml",
+            )
+        ),
+        "sb_mapping_file_path": str(
+            vbench_config.get(
+                "sb_mapping_file_path",
+                VBENCH_ROOT / "vbench2_beta_long" / "configs" / "subject_mapping_table.yaml",
+            )
+        ),
+        "bg_mapping_file_path": str(
+            vbench_config.get(
+                "bg_mapping_file_path",
+                VBENCH_ROOT / "vbench2_beta_long" / "configs" / "background_mapping_table.yaml",
+            )
+        ),
     }
 
     # Results directory for VBench output (must be absolute path)
@@ -570,7 +713,8 @@ def run_vbench_evaluation(
     backend_name = "VBench-Long" if long_mode else "VBench"
     logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
 
-    for subtask in subtasks:
+    total_subtasks = len(subtasks)
+    for idx, subtask in enumerate(subtasks, start=1):
         logger.info(f"Evaluating subtask: {subtask}")
         try:
             eval_kwargs = {
@@ -583,10 +727,15 @@ def run_vbench_evaluation(
             }
             if long_mode:
                 eval_kwargs.update(long_kwargs)
-            captured_stdout = io.StringIO()
-            with contextlib.redirect_stdout(captured_stdout):
-                vbench.evaluate(**eval_kwargs)
-            summarize_vbench_stdout(captured_stdout.getvalue(), subtask)
+            stdout_text = run_evaluate_with_progress(
+                vbench=vbench,
+                eval_kwargs=eval_kwargs,
+                subtask=subtask,
+                subtask_index=idx,
+                subtask_total=total_subtasks,
+                refresh_sec=1.0,
+            )
+            summarize_vbench_stdout(stdout_text, subtask)
 
             # VBench saves results to {output_path}/{name}_eval_results.json
             result_file = results_dir / f"{subtask}_eval_results.json"
@@ -773,6 +922,7 @@ def main():
     )
     args = parser.parse_args()
     configure_warning_filters()
+    configure_third_party_loggers()
 
     # Check VBench installation
     if not check_vbench_installation():
