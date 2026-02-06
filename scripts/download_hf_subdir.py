@@ -16,7 +16,14 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from huggingface_hub import snapshot_download
+from huggingface_hub import HfApi, snapshot_download
+
+
+def normalize_subdir(subdir: str | None) -> str | None:
+    if not subdir:
+        return None
+    normalized = subdir.strip("/").rstrip("/")
+    return normalized or None
 
 
 def build_allow_patterns(subdir: str | None, includes: list[str] | None) -> list[str] | None:
@@ -25,11 +32,60 @@ def build_allow_patterns(subdir: str | None, includes: list[str] | None) -> list
 
     patterns: list[str] = []
     if subdir:
-        base = subdir.strip("/").rstrip("/")
-        patterns.append(f"{base}/**")
+        patterns.append(f"{subdir}/**")
     if includes:
         patterns.extend(includes)
     return patterns
+
+
+def resolve_remote_subdir(
+    repo_id: str,
+    subdir: str | None,
+    repo_type: str,
+    revision: str | None,
+    token: str | None,
+) -> str | None:
+    """
+    Resolve user-provided subdir to an actual prefix in the remote repo.
+
+    Supports:
+      - Exact path (e.g. videos/Exp_A)
+      - Basename-only path (e.g. Exp_A), if unique in repo
+    """
+    subdir = normalize_subdir(subdir)
+    if not subdir:
+        return None
+
+    api = HfApi(token=token)
+    files = api.list_repo_files(repo_id=repo_id, repo_type=repo_type, revision=revision)
+
+    # Exact prefix match first.
+    if any(f == subdir or f.startswith(f"{subdir}/") for f in files):
+        return subdir
+
+    # Fallback: basename match across file parents.
+    target_name = Path(subdir).name
+    matches: set[str] = set()
+    for file_path in files:
+        parts = Path(file_path).parts
+        for idx in range(len(parts) - 1):
+            prefix = "/".join(parts[: idx + 1])
+            if Path(prefix).name == target_name:
+                matches.add(prefix)
+
+    if len(matches) == 1:
+        return next(iter(matches))
+    if len(matches) > 1:
+        preview = ", ".join(sorted(matches)[:5])
+        raise ValueError(
+            f"Subdir '{subdir}' is ambiguous. Matched: {preview}. "
+            "Please pass full subdir path."
+        )
+
+    raise FileNotFoundError(
+        f"Subdir '{subdir}' not found in remote repo '{repo_id}'. "
+        "Please check subdir path."
+    )
 
 
 def download_subdir(
@@ -44,9 +100,10 @@ def download_subdir(
     strip_prefix: bool,
     cache_dir: Path | None,
 ) -> None:
-    allow_patterns = build_allow_patterns(subdir, includes)
+    remote_subdir = resolve_remote_subdir(repo_id, subdir, repo_type, revision, token)
+    allow_patterns = build_allow_patterns(remote_subdir, includes)
 
-    if strip_prefix and subdir:
+    if strip_prefix and remote_subdir:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             snapshot_download(
@@ -55,14 +112,12 @@ def download_subdir(
                 revision=revision,
                 token=token,
                 local_dir=str(tmp_path),
-                local_dir_use_symlinks=False,
                 allow_patterns=allow_patterns,
                 ignore_patterns=excludes,
                 cache_dir=str(cache_dir) if cache_dir else None,
-                resume_download=True,
             )
 
-            src = tmp_path / subdir
+            src = tmp_path / remote_subdir
             if not src.exists():
                 raise FileNotFoundError(f"Subdir not found after download: {src}")
 
@@ -76,11 +131,9 @@ def download_subdir(
             revision=revision,
             token=token,
             local_dir=str(output_dir),
-            local_dir_use_symlinks=False,
             allow_patterns=allow_patterns,
             ignore_patterns=excludes,
             cache_dir=str(cache_dir) if cache_dir else None,
-            resume_download=True,
         )
 
 
