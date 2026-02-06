@@ -33,8 +33,12 @@ apt install -y python3.10-dev build-essential
   - 运行 `uv sync` 后仍缺依赖时，补装：`uv pip install PyYAML pandas pillow decord opencv-python`
   - 服务器建议用无头版：`opencv-python-headless`
 - `No module named 'clip'`（VBench 的 `background_consistency` / `aesthetic_quality` 常见）：
+  - 注意：`clip` 不是 `pkg_resources`；`pkg_resources` 来自 `setuptools`
+  - 先装：`uv pip install -U setuptools`
   - 先确认在当前虚拟环境内安装：`uv pip install openai-clip`
   - 若镜像源没有该包，使用：`python -m pip install git+https://github.com/openai/CLIP.git`
+- `No module named 'pkg_resources'`：
+  - 安装/升级 `setuptools`：`uv pip install -U setuptools`
 - `ImportError: PyAV is not installed`：
   - 安装：`uv pip install av`
 - `ffmpeg` 不存在：预处理写视频会失败（安装命令见上）
@@ -90,6 +94,14 @@ python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --f
 ```
 运行结束后会自动把结果同步到 `frontend/public/data/`（并更新 `manifest.json`）。
 脚本会在开始时只做一次切片预处理，后续 6 个维度复用 `split_clip`，不再重复预处理。
+
+多卡并行（例如 4×L40）：
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+torchrun --standalone --nproc_per_node=4 \
+  scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
+```
+说明：多卡时仅 rank0 输出进度并写 `outputs/vbench_per_video.csv`，其余 rank 作为工作进程。
 
 4. 官方 VBench-Long 直跑 6 维度命令（可选）：
 ```bash

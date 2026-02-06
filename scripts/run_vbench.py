@@ -19,12 +19,14 @@ import contextlib
 import io
 import json
 import logging
+import os
+import re
 import sys
 import threading
 import time
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import pandas as pd
 import yaml
@@ -66,6 +68,31 @@ def setup_vbench_path():
     vbench_path = str(VBENCH_ROOT)
     if vbench_path not in sys.path:
         sys.path.insert(0, vbench_path)
+
+
+def init_distributed_if_needed() -> tuple[int, int, Callable[[], None]]:
+    """
+    Initialize torch distributed when launched via torchrun.
+
+    Returns:
+        (rank, world_size, barrier_fn)
+    """
+    world_size_env = int(os.environ.get("WORLD_SIZE", "1"))
+    if world_size_env <= 1:
+        return 0, 1, (lambda: None)
+
+    setup_vbench_path()
+    from vbench.distributed import dist_init, get_rank, get_world_size, barrier
+
+    try:
+        import torch.distributed as dist
+        if not dist.is_initialized():
+            dist_init()
+    except Exception:
+        # Fallback to VBench helper init in unusual runtimes
+        dist_init()
+
+    return int(get_rank()), int(get_world_size()), barrier
 
 
 def load_config(config_path: str) -> dict:
@@ -397,6 +424,7 @@ class StdoutMonitor:
         self._saved_count = 0
         self._line_count = 0
         self._chars = 0
+        self._latest_percent: int | None = None
 
     def write(self, text: str) -> int:
         if not text:
@@ -404,6 +432,10 @@ class StdoutMonitor:
         with self._lock:
             self._parts.append(text)
             self._chars += len(text)
+            for match in re.finditer(r"(\d{1,3})%\|", text):
+                percent = int(match.group(1))
+                if 0 <= percent <= 100:
+                    self._latest_percent = percent
             self._line_buffer += text
             lines = self._line_buffer.splitlines(keepends=True)
             remainder = ""
@@ -418,14 +450,19 @@ class StdoutMonitor:
                 self._line_count += 1
                 if line_stripped.startswith("Saved "):
                     self._saved_count += 1
+                match = re.search(r"(\d{1,3})%\|", line_stripped)
+                if match:
+                    percent = int(match.group(1))
+                    if 0 <= percent <= 100:
+                        self._latest_percent = percent
         return len(text)
 
     def flush(self) -> None:
         return
 
-    def snapshot(self) -> tuple[int, int, int]:
+    def snapshot(self) -> tuple[int, int, int, int | None]:
         with self._lock:
-            return self._saved_count, self._line_count, self._chars
+            return self._saved_count, self._line_count, self._chars, self._latest_percent
 
     def getvalue(self) -> str:
         with self._lock:
@@ -438,11 +475,19 @@ def _render_bar(step: int, width: int = 18) -> str:
     return f"{'█' * filled}{'·' * (width - filled)}"
 
 
+def _render_percent_bar(percent: int, width: int = 18) -> str:
+    clamped = max(0, min(100, percent))
+    filled = int(round(clamped * width / 100))
+    return f"{'█' * filled}{'·' * (width - filled)}"
+
+
 def run_callable_with_progress(
     task_fn,
     title: str,
     prefix: str = "",
     refresh_sec: float = 1.0,
+    status_mode: str = "events",
+    enable_live: bool = True,
 ) -> tuple[str, int]:
     """
     Run a callable with one-line progress display and captured output.
@@ -466,21 +511,40 @@ def run_callable_with_progress(
     tick = 0
 
     while thread.is_alive():
-        elapsed = int(time.time() - start)
-        saved_count, _, _ = monitor.snapshot()
-        bar = _render_bar(tick)
-        line = f"\r{prefix}{title:<24} | {bar} | clips={saved_count} | {elapsed:>4}s"
-        print(line, end="", flush=True, file=sys.__stdout__)
-        tick += 1
+        if enable_live:
+            elapsed = int(time.time() - start)
+            saved_count, line_count, _, latest_percent = monitor.snapshot()
+            if latest_percent is not None:
+                bar = _render_percent_bar(latest_percent)
+                pct_text = f"{latest_percent:>3d}%"
+            else:
+                bar = _render_bar(tick)
+                pct_text = " --%"
+
+            if status_mode == "clips":
+                status_text = f"clips={saved_count}"
+            else:
+                status_text = f"events={line_count}"
+
+            line = f"\r{prefix}{title:<24} | {bar} | {pct_text} | {status_text} | {elapsed:>4}s"
+            print(line, end="", flush=True, file=sys.__stdout__)
+            tick += 1
         thread.join(timeout=refresh_sec)
 
     thread.join()
     elapsed = int(time.time() - start)
-    saved_count, _, _ = monitor.snapshot()
-    print(
-        f"\r{prefix}{title:<24} | {'█' * 18} | clips={saved_count} | {elapsed:>4}s done",
-        file=sys.__stdout__,
-    )
+    saved_count, line_count, _, latest_percent = monitor.snapshot()
+    final_percent = 100 if latest_percent is None else max(100, latest_percent)
+    final_bar = _render_percent_bar(final_percent)
+    if status_mode == "clips":
+        final_status = f"clips={saved_count}"
+    else:
+        final_status = f"events={line_count}"
+    if enable_live:
+        print(
+            f"\r{prefix}{title:<24} | {final_bar} | 100% | {final_status} | {elapsed:>4}s done",
+            file=sys.__stdout__,
+        )
 
     if worker_error:
         raise worker_error[0]
@@ -494,6 +558,7 @@ def run_evaluate_with_progress(
     subtask_index: int,
     subtask_total: int,
     refresh_sec: float = 1.0,
+    enable_live: bool = True,
 ) -> tuple[str, int]:
     """
     Run one VBench subtask with a lightweight manual progress bar.
@@ -503,6 +568,8 @@ def run_evaluate_with_progress(
         title=subtask,
         prefix=f"[{subtask_index}/{subtask_total}] ",
         refresh_sec=refresh_sec,
+        status_mode="events",
+        enable_live=enable_live,
     )
 
 
@@ -562,8 +629,19 @@ def ensure_clip_dependency(subtasks: list[str]) -> None:
     try:
         import clip  # noqa: F401
     except ModuleNotFoundError as e:
+        if e.name == "pkg_resources":
+            raise ModuleNotFoundError(
+                "OpenAI CLIP requires `pkg_resources` from `setuptools`. "
+                "Install it in current env: `uv pip install -U setuptools` "
+                "or `python -m pip install -U setuptools`."
+            ) from e
         if e.name != "clip":
-            raise
+            raise ModuleNotFoundError(
+                f"`clip` import failed due to missing dependency `{e.name}`. "
+                "Please install/repair CLIP environment first. "
+                "Suggested order: `uv pip install -U setuptools` then "
+                "`uv pip install openai-clip`."
+            ) from e
         dims = ", ".join(required)
         raise ModuleNotFoundError(
             "`clip` module is required for VBench subtasks: "
@@ -690,6 +768,9 @@ def run_vbench_evaluation(
     output_dir: Path,
     config: dict,
     device: str = "cuda",
+    rank: int = 0,
+    world_size: int = 1,
+    barrier_fn: Callable[[], None] | None = None,
 ) -> pd.DataFrame:
     """
     Run VBench evaluation on videos using official implementation.
@@ -704,6 +785,8 @@ def run_vbench_evaluation(
         DataFrame with per-video VBench scores
     """
     setup_vbench_path()
+    if barrier_fn is None:
+        barrier_fn = lambda: None
 
     long_mode = use_vbench_long(config)
 
@@ -821,26 +904,33 @@ def run_vbench_evaluation(
 
     if long_mode:
         input_videos = get_input_video_files(video_dir)
-        if are_split_clips_ready(video_dir, input_videos):
-            logger.info(
-                "Detected existing split clips for all videos; skip preprocessing and reuse cache."
-            )
+        split_ready = are_split_clips_ready(video_dir, input_videos)
+        if split_ready:
+            if rank == 0:
+                logger.info(
+                    "Detected existing split clips for all videos; skip preprocessing and reuse cache."
+                )
         else:
-            logger.info("Preprocessing videos into long clips once before subtasks...")
-            preprocess_kwargs = {
-                "videos_path": video_dir_str,
-                "mode": eval_mode,
-                **long_kwargs,
-            }
-            preprocess_stdout, saved_count = run_callable_with_progress(
-                task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
-                title="preprocess_clips",
-                prefix="[0/6] ",
-                refresh_sec=1.0,
-            )
-            if saved_count > 0:
-                logger.info(f"[preprocess] Saved split clips: {saved_count}")
-            summarize_vbench_stdout(preprocess_stdout, "preprocess")
+            if rank == 0:
+                logger.info("Preprocessing videos into long clips once before subtasks...")
+                preprocess_kwargs = {
+                    "videos_path": video_dir_str,
+                    "mode": eval_mode,
+                    **long_kwargs,
+                }
+                preprocess_stdout, saved_count = run_callable_with_progress(
+                    task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
+                    title="preprocess_clips",
+                    prefix="[0/6] ",
+                    refresh_sec=1.0,
+                    status_mode="clips",
+                    enable_live=True,
+                )
+                if saved_count > 0:
+                    logger.info(f"[preprocess] Saved split clips: {saved_count}")
+                summarize_vbench_stdout(preprocess_stdout, "preprocess")
+            if world_size > 1:
+                barrier_fn()
 
         # VBench-Long evaluate() always calls preprocess(). We already did one-time
         # preprocessing above, so disable repeated preprocessing for each subtask.
@@ -851,11 +941,13 @@ def run_vbench_evaluation(
 
     # Run evaluation for each subtask
     backend_name = "VBench-Long" if long_mode else "VBench"
-    logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
+    if rank == 0:
+        logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
 
     total_subtasks = len(subtasks)
     for idx, subtask in enumerate(subtasks, start=1):
-        logger.info(f"Evaluating subtask: {subtask}")
+        if rank == 0:
+            logger.info(f"Evaluating subtask: {subtask}")
         try:
             eval_kwargs = {
                 "videos_path": video_dir_str,
@@ -874,11 +966,15 @@ def run_vbench_evaluation(
                 subtask_index=idx,
                 subtask_total=total_subtasks,
                 refresh_sec=1.0,
+                enable_live=(rank == 0),
             )
-            if saved_count > 0:
+            if rank == 0 and saved_count > 0:
                 logger.info(f"[{subtask}] Saved split clips: {saved_count}")
-            summarize_vbench_stdout(stdout_text, subtask)
+            if rank == 0:
+                summarize_vbench_stdout(stdout_text, subtask)
 
+            if rank != 0:
+                continue
             # VBench saves results to {output_path}/{name}_eval_results.json
             result_file = results_dir / f"{subtask}_eval_results.json"
             if result_file.exists():
@@ -900,9 +996,13 @@ def run_vbench_evaluation(
             else:
                 logger.warning(f"Result file not found: {result_file}")
         except Exception as e:
-            logger.warning(f"Failed to run subtask {subtask}: {e}")
-            logger.debug("Subtask traceback:", exc_info=True)
+            if rank == 0:
+                logger.warning(f"Failed to run subtask {subtask}: {e}")
+                logger.debug("Subtask traceback:", exc_info=True)
             continue
+
+    if rank != 0:
+        return pd.DataFrame()
 
     # Convert to DataFrame and pivot
     if results:
@@ -1076,6 +1176,10 @@ def main():
     config = load_config(args.config)
     paths_config = config["paths"]
     runtime_config = config.get("runtime", {})
+    rank, world_size, barrier_fn = init_distributed_if_needed()
+    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+    if rank == 0 and world_size > 1:
+        logger.info(f"Distributed mode enabled: world_size={world_size}")
 
     output_dir = Path(paths_config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1084,11 +1188,13 @@ def main():
 
     # Check if already exists
     if vbench_output.exists() and not args.force:
-        logger.info(f"VBench results already exist: {vbench_output}")
-        logger.info("Use --force to recompute")
+        if rank == 0:
+            logger.info(f"VBench results already exist: {vbench_output}")
+            logger.info("Use --force to recompute")
         return
     elif vbench_output.exists() and args.force:
-        logger.info(f"Force recomputing: {vbench_output}")
+        if rank == 0:
+            logger.info(f"Force recomputing: {vbench_output}")
 
     # Load video metadata / build from local dataset
     try:
@@ -1107,50 +1213,72 @@ def main():
             sys.exit(0)
         sys.exit(1)
 
-    logger.info(f"Loaded {len(video_records)} videos for VBench evaluation")
+    if rank == 0:
+        logger.info(f"Loaded {len(video_records)} videos for VBench evaluation")
 
     device = runtime_config.get("device", "cuda")
+    if world_size > 1 and isinstance(device, str) and device.startswith("cuda"):
+        device = f"cuda:{local_rank}"
 
     # Try Python API first, fall back to CLI
     long_mode = use_vbench_long(config)
 
     try:
-        logger.info("Attempting VBench evaluation via Python API...")
+        if rank == 0:
+            logger.info("Attempting VBench evaluation via Python API...")
         df_results = run_vbench_evaluation(
             video_records=video_records,
             output_dir=output_dir,
             config=config,
             device=device,
+            rank=rank,
+            world_size=world_size,
+            barrier_fn=barrier_fn,
         )
     except Exception as e:
-        logger.warning(f"Python API failed: {e}")
+        if rank == 0:
+            logger.warning(f"Python API failed: {e}")
         if long_mode:
-            logger.error("VBench-Long currently supports Python API path only in this pipeline.")
+            if rank == 0:
+                logger.error("VBench-Long currently supports Python API path only in this pipeline.")
             if args.skip_on_error:
-                logger.warning("Skipping VBench evaluation")
-                pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
-                    vbench_output, index=False
-                )
+                if rank == 0:
+                    logger.warning("Skipping VBench evaluation")
+                    pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
+                        vbench_output, index=False
+                    )
                 sys.exit(0)
             raise
 
-        logger.info("Falling back to CLI-based evaluation...")
+        if rank == 0:
+            logger.info("Falling back to CLI-based evaluation...")
         try:
-            df_results = run_vbench_cli_fallback(
-                video_records=video_records,
-                output_dir=output_dir,
-                config=config,
-            )
-        except Exception as e2:
-            logger.error(f"CLI fallback also failed: {e2}")
-            if args.skip_on_error:
-                logger.warning("Skipping VBench evaluation")
-                # Create empty result file
-                pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
-                    vbench_output, index=False
+            if rank == 0:
+                df_results = run_vbench_cli_fallback(
+                    video_records=video_records,
+                    output_dir=output_dir,
+                    config=config,
                 )
+            else:
+                df_results = pd.DataFrame()
+        except Exception as e2:
+            if rank == 0:
+                logger.error(f"CLI fallback also failed: {e2}")
+            if args.skip_on_error:
+                if rank == 0:
+                    logger.warning("Skipping VBench evaluation")
+                    # Create empty result file
+                    pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
+                        vbench_output, index=False
+                    )
                 sys.exit(0)
             raise
+
+    if world_size > 1:
+        barrier_fn()
+    if rank != 0:
+        logger.info(f"Rank {rank} finished distributed VBench worker.")
+        return
 
     # Merge with metadata to get group info
     df_meta = pd.DataFrame(video_records)[["video_id", "group"]].drop_duplicates(subset=["video_id"])
