@@ -39,6 +39,13 @@ dependencies = [
     "torchvision>=0.25.0",
     "scenedetect>=0.6.7.1",
     "moviepy>=2.2.1",
+    "scipy>=1.15.3",
+    "easydict>=1.13",
+    "av>=16.1.0",
+    "dreamsim>=0.2.1",
+    "omegaconf>=2.3.0",
+    "openai-clip>=1.0.1",
+    "setuptools>=80.10.2",
 ]
 
 [project.optional-dependencies]
