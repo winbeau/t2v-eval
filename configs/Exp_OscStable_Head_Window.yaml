@@ -112,12 +112,17 @@ metrics:
 
   vbench:
     enabled: true
-    temporal_only: true          # Focus on temporal metrics
-    # Note: subject_consistency often fails with ZeroDivisionError on custom videos
-    # temporal_style may also fail depending on video content
+    use_long: true               # Use VBench-Long backend
+    mode: "long_custom_input"    # Evaluate custom long videos
+    use_semantic_splitting: false
+    clip_length_config: "clip_length_mix.yaml"
     subtasks:
-      - "temporal_flickering"
+      - "subject_consistency"
+      - "background_consistency"
       - "motion_smoothness"
+      - "dynamic_degree"
+      - "imaging_quality"
+      - "aesthetic_quality"
 
   flicker:
     method: "l1"                 # Difference method: l1, l2

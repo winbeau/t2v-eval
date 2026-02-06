@@ -223,9 +223,18 @@ def main():
         "duration_sec",
     ]
 
-    # Add any VBench subtask columns
-    vbench_cols = [c for c in merged_df.columns if c.startswith("temporal_") or c.startswith("motion_")]
-    metric_cols.extend(vbench_cols)
+    # Add configured VBench subtask columns
+    configured_subtasks = config.get("metrics", {}).get("vbench", {}).get("subtasks", [])
+    metric_cols.extend(configured_subtasks)
+
+    # Also include any additional VBench columns found in vbench_per_video.csv
+    vbench_df = metric_dfs.get("vbench")
+    if vbench_df is not None:
+        auto_vbench_cols = [
+            c for c in vbench_df.columns
+            if c not in ["video_id", "group", "prompt", "video_path", "vbench_temporal_score"]
+        ]
+        metric_cols.extend(auto_vbench_cols)
 
     # Add runtime columns if present
     if "fps" in merged_df.columns:
@@ -233,8 +242,8 @@ def main():
     if "inference_time_sec" in merged_df.columns:
         metric_cols.append("inference_time_sec")
 
-    # Filter to existing columns
-    metric_cols = [c for c in metric_cols if c in merged_df.columns]
+    # Filter to existing columns and de-duplicate while preserving order
+    metric_cols = [c for c in dict.fromkeys(metric_cols) if c in merged_df.columns]
 
     # Compute group summary
     summary_df = compute_group_summary(merged_df, metric_cols)

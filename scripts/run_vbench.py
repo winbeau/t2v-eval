@@ -13,7 +13,6 @@ Usage:
 import argparse
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -71,6 +70,107 @@ def get_video_list(metadata_path: Path) -> list:
     return df.to_dict("records")
 
 
+def use_vbench_long(config: dict) -> bool:
+    """Whether to run VBench-Long backend."""
+    vbench_config = config.get("metrics", {}).get("vbench", {})
+    backend = str(vbench_config.get("backend", "vbench")).lower()
+    return bool(vbench_config.get("use_long", False) or backend in {"long", "vbench_long"})
+
+
+def get_vbench_subtasks(config: dict) -> list:
+    """Get configured subtasks with mode-specific defaults."""
+    vbench_config = config.get("metrics", {}).get("vbench", {})
+    if "subtasks" in vbench_config:
+        return vbench_config["subtasks"]
+
+    if use_vbench_long(config):
+        return [
+            "subject_consistency",
+            "background_consistency",
+            "motion_smoothness",
+            "dynamic_degree",
+            "imaging_quality",
+            "aesthetic_quality",
+        ]
+
+    return [
+        "temporal_flickering",
+        "motion_smoothness",
+    ]
+
+
+def resolve_video_id(video_path: str, valid_video_ids: set[str]) -> str:
+    """
+    Resolve a VBench/VBench-Long output path to original video_id.
+
+    Long-mode outputs are often clip-level paths, so we attempt multiple candidates.
+    """
+    path = Path(video_path)
+    stem = path.stem
+    candidates = [stem, path.parent.name]
+
+    if stem.rsplit("_", 1)[-1].isdigit():
+        candidates.append(stem.rsplit("_", 1)[0])
+    if "-Scene" in stem:
+        candidates.append(stem.split("-Scene")[0])
+    if "-Scene" in path.parent.name:
+        candidates.append(path.parent.name.split("-Scene")[0])
+
+    for candidate in candidates:
+        if candidate in valid_video_ids:
+            return candidate
+
+    return stem
+
+
+def extract_subtask_scores(
+    dimension_data,
+    subtask: str,
+    valid_video_ids: set[str],
+    long_mode: bool = False,
+) -> list[dict]:
+    """Extract per-video scores from one subtask result blob."""
+    if not isinstance(dimension_data, list):
+        return []
+
+    per_video_items = []
+    if len(dimension_data) >= 2 and isinstance(dimension_data[1], list):
+        per_video_items = dimension_data[1]
+    elif isinstance(dimension_data, list):
+        per_video_items = [item for item in dimension_data if isinstance(item, dict)]
+
+    parsed_items = []
+    for item in per_video_items:
+        if not isinstance(item, dict):
+            continue
+        video_path = item.get("video_path", item.get("video_name", ""))
+        score = item.get("video_results", item.get("score"))
+        if not video_path or score is None:
+            continue
+        parsed_items.append(
+            {
+                "video_id": resolve_video_id(str(video_path), valid_video_ids),
+                "subtask": subtask,
+                "score": float(score),
+            }
+        )
+
+    if not long_mode:
+        return parsed_items
+
+    # VBench-Long can emit clip-level results; aggregate to per-original-video.
+    if not parsed_items:
+        return parsed_items
+
+    df_long = pd.DataFrame(parsed_items)
+    agg = (
+        df_long.groupby(["video_id", "subtask"], as_index=False)["score"]
+        .mean()
+        .round(6)
+    )
+    return agg.to_dict("records")
+
+
 def run_vbench_evaluation(
     video_records: list,
     output_dir: Path,
@@ -91,30 +191,40 @@ def run_vbench_evaluation(
     """
     setup_vbench_path()
 
+    long_mode = use_vbench_long(config)
+
     try:
-        from vbench import VBench
+        if long_mode:
+            from vbench2_beta_long import VBenchLong as VBenchRunner
+        else:
+            from vbench import VBench as VBenchRunner
     except ImportError as e:
-        logger.error(f"Failed to import VBench: {e}")
+        logger.error(f"Failed to import VBench backend: {e}")
         logger.error("Please ensure VBench dependencies are installed:")
         logger.error("  pip install -r third_party/VBench/requirements.txt")
         raise
 
     # VBench configuration
     vbench_config = config.get("metrics", {}).get("vbench", {})
-    temporal_only = vbench_config.get("temporal_only", True)
-    # Default to safe subtasks (subject_consistency often fails with ZeroDivisionError)
-    subtasks = vbench_config.get("subtasks", [
-        "temporal_flickering",
-        "motion_smoothness",
-    ])
+    subtasks = get_vbench_subtasks(config)
+    eval_mode = vbench_config.get("mode", "long_custom_input" if long_mode else "custom_input")
+    long_kwargs = {
+        "use_semantic_splitting": bool(vbench_config.get("use_semantic_splitting", False)),
+        "clip_length_config": vbench_config.get("clip_length_config", "clip_length_mix.yaml"),
+        "threshold": float(vbench_config.get("scene_threshold", 35.0)),
+        "static_filter_flag": bool(vbench_config.get("static_filter_flag", False)),
+    }
 
     # Results directory for VBench output (must be absolute path)
     results_dir = (output_dir / "vbench_results").resolve()
     results_dir.mkdir(parents=True, exist_ok=True)
 
     # VBench requires full_info_dir to be a JSON file path (not directory)
-    # Use the bundled VBench_full_info.json from the VBench submodule
-    vbench_full_info = VBENCH_ROOT / "vbench" / "VBench_full_info.json"
+    if long_mode:
+        vbench_full_info = VBENCH_ROOT / "vbench2_beta_long" / "VBench_full_info.json"
+    else:
+        vbench_full_info = VBENCH_ROOT / "vbench" / "VBench_full_info.json"
+
     if not vbench_full_info.exists():
         logger.warning(f"VBench full info not found: {vbench_full_info}")
         logger.warning("Will use custom_input mode without full_info")
@@ -127,15 +237,17 @@ def run_vbench_evaluation(
 
     # Prepare video paths for VBench
     # VBench expects a specific format: list of video paths or a directory
-    video_paths = [r["video_path"] for r in video_records]
+    video_map = {r["video_id"]: r["video_path"] for r in video_records}
+    valid_video_ids = set(video_map.keys())
 
     # Create a directory with symlinks to all videos for VBench
     # VBench custom_input mode expects a directory of videos
     video_dir = results_dir / "input_videos"
     video_dir.mkdir(parents=True, exist_ok=True)
-    for vp in video_paths:
+    for video_id, vp in video_map.items():
         src = Path(vp)
-        dst = video_dir / src.name
+        suffix = src.suffix if src.suffix else ".mp4"
+        dst = video_dir / f"{video_id}{suffix}"
         if not dst.exists() and src.exists():
             try:
                 dst.symlink_to(src.resolve())
@@ -150,7 +262,7 @@ def run_vbench_evaluation(
     # Initialize VBench
     try:
         # VBench requires full_info_dir (JSON file path) and output_path (directory)
-        vbench = VBench(
+        vbench = VBenchRunner(
             device=device,
             full_info_dir=vbench_full_info_str,
             output_path=str(results_dir),
@@ -162,22 +274,23 @@ def run_vbench_evaluation(
         raise
 
     # Run evaluation for each subtask
-    logger.info(f"Running VBench evaluation with subtasks: {subtasks}")
+    backend_name = "VBench-Long" if long_mode else "VBench"
+    logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
 
     for subtask in subtasks:
         logger.info(f"Evaluating subtask: {subtask}")
         try:
-            # VBench evaluate method
-            # Use mode='custom_input' since we're providing custom videos
-            # (not following VBench's standard naming convention)
-            vbench.evaluate(
-                videos_path=video_dir_str,  # VBench expects directory path for custom_input
-                name=subtask,
-                dimension_list=[subtask],
-                local=True,
-                read_frame=False,
-                mode='custom_input',
-            )
+            eval_kwargs = {
+                "videos_path": video_dir_str,
+                "name": subtask,
+                "dimension_list": [subtask],
+                "local": True,
+                "read_frame": bool(vbench_config.get("read_frame", False)),
+                "mode": eval_mode,
+            }
+            if long_mode:
+                eval_kwargs.update(long_kwargs)
+            vbench.evaluate(**eval_kwargs)
 
             # VBench saves results to {output_path}/{name}_eval_results.json
             result_file = results_dir / f"{subtask}_eval_results.json"
@@ -188,35 +301,13 @@ def run_vbench_evaluation(
                 if subtask in subtask_data:
                     count_before = len(results)
                     dimension_data = subtask_data[subtask]
-
-                    # Handle format: [avg_score, [per_video_results]]
-                    if isinstance(dimension_data, list) and len(dimension_data) >= 2:
-                        per_video_list = dimension_data[1]  # Second element is the list of per-video results
-                        if isinstance(per_video_list, list):
-                            for item in per_video_list:
-                                if isinstance(item, dict):
-                                    vp = item.get("video_path", item.get("video_name", ""))
-                                    score = item.get("video_results", item.get("score", None))
-                                    if vp and score is not None:
-                                        video_id = Path(vp).stem
-                                        results.append({
-                                            "video_id": video_id,
-                                            "subtask": subtask,
-                                            "score": float(score),
-                                        })
-                    # Fallback: handle other formats
-                    elif isinstance(dimension_data, list):
-                        for item in dimension_data:
-                            if isinstance(item, dict):
-                                vp = item.get("video_path", item.get("video_name", ""))
-                                score = item.get("video_results", item.get("score", None))
-                                if vp and score is not None:
-                                    video_id = Path(vp).stem
-                                    results.append({
-                                        "video_id": video_id,
-                                        "subtask": subtask,
-                                        "score": float(score),
-                                    })
+                    extracted = extract_subtask_scores(
+                        dimension_data=dimension_data,
+                        subtask=subtask,
+                        valid_video_ids=valid_video_ids,
+                        long_mode=long_mode,
+                    )
+                    results.extend(extracted)
 
                     logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
             else:
@@ -427,6 +518,8 @@ def main():
     device = runtime_config.get("device", "cuda")
 
     # Try Python API first, fall back to CLI
+    long_mode = use_vbench_long(config)
+
     try:
         logger.info("Attempting VBench evaluation via Python API...")
         df_results = run_vbench_evaluation(
@@ -437,6 +530,16 @@ def main():
         )
     except Exception as e:
         logger.warning(f"Python API failed: {e}")
+        if long_mode:
+            logger.error("VBench-Long currently supports Python API path only in this pipeline.")
+            if args.skip_on_error:
+                logger.warning("Skipping VBench evaluation")
+                pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
+                    vbench_output, index=False
+                )
+                sys.exit(0)
+            raise
+
         logger.info("Falling back to CLI-based evaluation...")
         try:
             df_results = run_vbench_cli_fallback(
