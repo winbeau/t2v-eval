@@ -72,9 +72,26 @@ dataset:
   local_video_dir: "hf/AdaHead/Exp_OscStable_Head_Window"
   prompt_file: "hf/AdaHead/Exp_OscStable_Head_Window/prompts.csv"
 ```
-2. 运行评测：
+2. 运行核心评测（不含 VBench）：
 ```bash
-python scripts/run_all.py --config configs/Exp_OscStable_Head_Window.yaml
+python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
+```
+兼容旧命令（已弃用）：`python scripts/run_eval_pipeline.py --config configs/Exp_OscStable_Head_Window.yaml`
+
+3. 仅跑 VBench-Long 6 维度（当前配置）：
+```bash
+# 先确保已完成导出与预处理（或之前已跑过）
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
+```
+
+4. 官方 VBench-Long 直跑 6 维度命令（可选）：
+```bash
+cd third_party/VBench
+python vbench2_beta_long/eval_long.py \
+  --videos_path <VIDEO_DIR> \
+  --dimension subject_consistency background_consistency motion_smoothness dynamic_degree imaging_quality aesthetic_quality \
+  --mode long_custom_input \
+  --dev_flag
 ```
 
 ## 推理后启动前端（Vite）
@@ -89,4 +106,4 @@ pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
 
 ## 常见提示
 - 若提示缺少依赖（如 `pandas`/`pyyaml`），在虚拟环境中补装：`uv pip install pandas PyYAML`。
-- 需要跳过 VBench 时可加 `--skip-vbench`。
+- VBench 现为独立步骤，请单独运行：`python scripts/run_vbench.py --config <your_config>.yaml --force`。
