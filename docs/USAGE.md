@@ -1,5 +1,21 @@
 # T2V-Eval 简要使用说明
 
+## 0. Node.js / pnpm（npx 方式）
+
+> 说明：`npx` 方式适合“已有 `npm`、但还没全局装好 Node 管理器或 pnpm”的场景。
+
+```bash
+# 安装/切换到 Node.js LTS（通过 n 包）
+sudo npx -y n lts
+node -v
+npm -v
+
+# 安装并激活 pnpm（通过 Corepack）
+sudo npx -y corepack@latest enable
+sudo npx -y corepack@latest prepare pnpm@latest --activate
+pnpm -v
+```
+
 ```bash
 # 安装 uv（如果尚未安装）
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -11,7 +27,7 @@ apt update && apt install -y ffmpeg
 apt install -y python3.10-dev build-essential
 ```
 
-## 0. 环境与依赖（常见问题修复）
+## 1. 环境与依赖（常见问题修复）
 - `ModuleNotFoundError: yaml/pandas/PIL/decord/cv2`：
   - 运行 `uv sync` 后仍缺依赖时，补装：`uv pip install PyYAML pandas pillow decord opencv-python`
   - 服务器建议用无头版：`opencv-python-headless`
@@ -22,6 +38,16 @@ apt install -y python3.10-dev build-essential
   - 登录：`huggingface-cli login` 或传 `--token`
 - 本地数据路径变更：
   - 同步更新 `configs/*.yaml` 中的 `local_video_dir` / `prompt_file`
+
+## 前端启动（Vite）
+
+```bash
+cd frontend
+pnpm install
+pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
+```
+
+等价写法：`pnpm dev`（已在 `vite.config.ts` 固定 `host=0.0.0.0`、`port=5173`）。
 
 ## 前置准备（推荐本地下载 HF 数据集）
 1. 注册子模块（首次克隆后执行）
