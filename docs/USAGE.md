@@ -32,6 +32,11 @@ apt install -y python3.10-dev build-essential
 - `ModuleNotFoundError: yaml/pandas/PIL/decord/cv2`：
   - 运行 `uv sync` 后仍缺依赖时，补装：`uv pip install PyYAML pandas pillow decord opencv-python`
   - 服务器建议用无头版：`opencv-python-headless`
+- `No module named 'clip'`（VBench 的 `background_consistency` / `aesthetic_quality` 常见）：
+  - 先确认在当前虚拟环境内安装：`uv pip install openai-clip`
+  - 若镜像源没有该包，使用：`python -m pip install git+https://github.com/openai/CLIP.git`
+- `ImportError: PyAV is not installed`：
+  - 安装：`uv pip install av`
 - `ffmpeg` 不存在：预处理写视频会失败（安装命令见上）
 - 编译失败 `Python.h` 缺失：安装 Python 头文件与编译工具（命令见上）
 - HF 访问报 401：
@@ -84,6 +89,7 @@ python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
 python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
 ```
 运行结束后会自动把结果同步到 `frontend/public/data/`（并更新 `manifest.json`）。
+脚本会在开始时只做一次切片预处理，后续 6 个维度复用 `split_clip`，不再重复预处理。
 
 4. 官方 VBench-Long 直跑 6 维度命令（可选）：
 ```bash

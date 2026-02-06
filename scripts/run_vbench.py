@@ -344,9 +344,11 @@ def configure_warning_filters() -> None:
 def configure_third_party_loggers() -> None:
     """Reduce verbose INFO logs from VBench internals."""
     noisy_loggers = [
+        "vbench2_beta_long",
         "vbench2_beta_long.subject_consistency",
         "vbench2_beta_long.background_consistency",
         "vbench2_beta_long.utils",
+        "vbench",
     ]
     for logger_name in noisy_loggers:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
@@ -357,12 +359,21 @@ def summarize_vbench_stdout(stdout_text: str, subtask: str) -> None:
     if not stdout_text:
         return
 
-    lines = [line.strip() for line in stdout_text.splitlines() if line.strip()]
+    normalized = stdout_text.replace("\r", "\n")
+    lines = [line.strip() for line in normalized.splitlines() if line.strip()]
     if not lines:
         return
 
     saved_lines = [line for line in lines if line.startswith("Saved ")]
     other_lines = [line for line in lines if not line.startswith("Saved ")]
+    other_lines = [
+        line
+        for line in other_lines
+        if "████" not in line
+        and "clips=" not in line
+        and not line.startswith("[")
+        and not ("%" in line and "|" in line and "/" in line)
+    ]
 
     if saved_lines:
         logger.info(f"[{subtask}] Saved split clips: {len(saved_lines)}")
@@ -427,16 +438,17 @@ def _render_bar(step: int, width: int = 18) -> str:
     return f"{'█' * filled}{'·' * (width - filled)}"
 
 
-def run_evaluate_with_progress(
-    vbench: Any,
-    eval_kwargs: dict,
-    subtask: str,
-    subtask_index: int,
-    subtask_total: int,
+def run_callable_with_progress(
+    task_fn,
+    title: str,
+    prefix: str = "",
     refresh_sec: float = 1.0,
-) -> str:
+) -> tuple[str, int]:
     """
-    Run one VBench subtask with a lightweight manual progress bar.
+    Run a callable with one-line progress display and captured output.
+
+    Returns:
+        Tuple of (captured_stdout_and_stderr, saved_clip_count)
     """
     monitor = StdoutMonitor()
     worker_error: list[Exception] = []
@@ -444,7 +456,7 @@ def run_evaluate_with_progress(
     def _worker():
         try:
             with contextlib.redirect_stdout(monitor), contextlib.redirect_stderr(monitor):
-                vbench.evaluate(**eval_kwargs)
+                task_fn()
         except Exception as e:
             worker_error.append(e)
 
@@ -457,11 +469,8 @@ def run_evaluate_with_progress(
         elapsed = int(time.time() - start)
         saved_count, _, _ = monitor.snapshot()
         bar = _render_bar(tick)
-        line = (
-            f"\r[{subtask_index}/{subtask_total}] {subtask:<24} "
-            f"| {bar} | clips={saved_count} | {elapsed:>4}s"
-        )
-        print(line, end="", flush=True)
+        line = f"\r{prefix}{title:<24} | {bar} | clips={saved_count} | {elapsed:>4}s"
+        print(line, end="", flush=True, file=sys.__stdout__)
         tick += 1
         thread.join(timeout=refresh_sec)
 
@@ -469,13 +478,64 @@ def run_evaluate_with_progress(
     elapsed = int(time.time() - start)
     saved_count, _, _ = monitor.snapshot()
     print(
-        f"\r[{subtask_index}/{subtask_total}] {subtask:<24} "
-        f"| {'█' * 18} | clips={saved_count} | {elapsed:>4}s done"
+        f"\r{prefix}{title:<24} | {'█' * 18} | clips={saved_count} | {elapsed:>4}s done",
+        file=sys.__stdout__,
     )
 
     if worker_error:
         raise worker_error[0]
-    return monitor.getvalue()
+    return monitor.getvalue(), saved_count
+
+
+def run_evaluate_with_progress(
+    vbench: Any,
+    eval_kwargs: dict,
+    subtask: str,
+    subtask_index: int,
+    subtask_total: int,
+    refresh_sec: float = 1.0,
+) -> tuple[str, int]:
+    """
+    Run one VBench subtask with a lightweight manual progress bar.
+    """
+    return run_callable_with_progress(
+        task_fn=lambda: vbench.evaluate(**eval_kwargs),
+        title=subtask,
+        prefix=f"[{subtask_index}/{subtask_total}] ",
+        refresh_sec=refresh_sec,
+    )
+
+
+def get_input_video_files(video_dir: Path) -> list[Path]:
+    """List direct input videos under the VBench input directory."""
+    valid_suffixes = {".mp4", ".avi", ".mov"}
+    return sorted(
+        p for p in video_dir.iterdir() if p.is_file() and p.suffix.lower() in valid_suffixes
+    )
+
+
+def are_split_clips_ready(video_dir: Path, input_videos: list[Path]) -> bool:
+    """
+    Check whether split clips are already prepared for all input videos.
+    """
+    split_dir = video_dir / "split_clip"
+    if not split_dir.exists() or not split_dir.is_dir():
+        return False
+    if not input_videos:
+        return False
+
+    valid_suffixes = {".mp4", ".avi", ".mov"}
+    for video_path in input_videos:
+        clip_dir = split_dir / video_path.stem
+        if not clip_dir.exists() or not clip_dir.is_dir():
+            return False
+        has_clip = any(
+            clip_file.is_file() and clip_file.suffix.lower() in valid_suffixes
+            for clip_file in clip_dir.iterdir()
+        )
+        if not has_clip:
+            return False
+    return True
 
 
 def use_vbench_long(config: dict) -> bool:
@@ -483,6 +543,52 @@ def use_vbench_long(config: dict) -> bool:
     vbench_config = config.get("metrics", {}).get("vbench", {})
     backend = str(vbench_config.get("backend", "vbench")).lower()
     return bool(vbench_config.get("use_long", False) or backend in {"long", "vbench_long"})
+
+
+def ensure_clip_dependency(subtasks: list[str]) -> None:
+    """Ensure CLIP Python package is available for CLIP-based dimensions."""
+    clip_required_subtasks = {
+        "background_consistency",
+        "aesthetic_quality",
+        "appearance_style",
+        "human_action",
+        "overall_consistency",
+        "temporal_style",
+    }
+    required = sorted(set(subtasks).intersection(clip_required_subtasks))
+    if not required:
+        return
+
+    try:
+        import clip  # noqa: F401
+    except ModuleNotFoundError as e:
+        if e.name != "clip":
+            raise
+        dims = ", ".join(required)
+        raise ModuleNotFoundError(
+            "`clip` module is required for VBench subtasks: "
+            f"{dims}. Install it in the same environment, e.g. "
+            "`uv pip install openai-clip` or "
+            "`python -m pip install openai-clip`. "
+            "If your mirror does not provide it, use "
+            "`python -m pip install git+https://github.com/openai/CLIP.git`."
+        ) from e
+
+
+def ensure_pyav_dependency(long_mode: bool) -> None:
+    """Ensure PyAV is available for VBench-Long preprocessing video writes."""
+    if not long_mode:
+        return
+    try:
+        import av  # noqa: F401
+    except ModuleNotFoundError as e:
+        if e.name != "av":
+            raise
+        raise ModuleNotFoundError(
+            "PyAV is required by torchvision video IO in VBench-Long. "
+            "Install in current env: `uv pip install av` "
+            "or `python -m pip install av`."
+        ) from e
 
 
 def get_vbench_subtasks(config: dict) -> list:
@@ -601,6 +707,14 @@ def run_vbench_evaluation(
 
     long_mode = use_vbench_long(config)
 
+    # VBench configuration
+    vbench_config = config.get("metrics", {}).get("vbench", {})
+    subtasks = get_vbench_subtasks(config)
+    eval_mode = vbench_config.get("mode", "long_custom_input" if long_mode else "custom_input")
+
+    ensure_pyav_dependency(long_mode=long_mode)
+    ensure_clip_dependency(subtasks=subtasks)
+
     try:
         if long_mode:
             ensure_moviepy_editor_compat()
@@ -613,10 +727,6 @@ def run_vbench_evaluation(
         logger.error("  pip install -r third_party/VBench/requirements.txt")
         raise
 
-    # VBench configuration
-    vbench_config = config.get("metrics", {}).get("vbench", {})
-    subtasks = get_vbench_subtasks(config)
-    eval_mode = vbench_config.get("mode", "long_custom_input" if long_mode else "custom_input")
     long_kwargs = {
         "use_semantic_splitting": bool(vbench_config.get("use_semantic_splitting", False)),
         "clip_length_config": vbench_config.get("clip_length_config", "clip_length_mix.yaml"),
@@ -709,6 +819,36 @@ def run_vbench_evaluation(
         logger.error("Please check VBench documentation for weight download instructions.")
         raise
 
+    if long_mode:
+        input_videos = get_input_video_files(video_dir)
+        if are_split_clips_ready(video_dir, input_videos):
+            logger.info(
+                "Detected existing split clips for all videos; skip preprocessing and reuse cache."
+            )
+        else:
+            logger.info("Preprocessing videos into long clips once before subtasks...")
+            preprocess_kwargs = {
+                "videos_path": video_dir_str,
+                "mode": eval_mode,
+                **long_kwargs,
+            }
+            preprocess_stdout, saved_count = run_callable_with_progress(
+                task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
+                title="preprocess_clips",
+                prefix="[0/6] ",
+                refresh_sec=1.0,
+            )
+            if saved_count > 0:
+                logger.info(f"[preprocess] Saved split clips: {saved_count}")
+            summarize_vbench_stdout(preprocess_stdout, "preprocess")
+
+        # VBench-Long evaluate() always calls preprocess(). We already did one-time
+        # preprocessing above, so disable repeated preprocessing for each subtask.
+        def _skip_preprocess(*args, **kwargs):
+            return None
+
+        vbench.preprocess = _skip_preprocess
+
     # Run evaluation for each subtask
     backend_name = "VBench-Long" if long_mode else "VBench"
     logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
@@ -727,7 +867,7 @@ def run_vbench_evaluation(
             }
             if long_mode:
                 eval_kwargs.update(long_kwargs)
-            stdout_text = run_evaluate_with_progress(
+            stdout_text, saved_count = run_evaluate_with_progress(
                 vbench=vbench,
                 eval_kwargs=eval_kwargs,
                 subtask=subtask,
@@ -735,6 +875,8 @@ def run_vbench_evaluation(
                 subtask_total=total_subtasks,
                 refresh_sec=1.0,
             )
+            if saved_count > 0:
+                logger.info(f"[{subtask}] Saved split clips: {saved_count}")
             summarize_vbench_stdout(stdout_text, subtask)
 
             # VBench saves results to {output_path}/{name}_eval_results.json
@@ -759,8 +901,7 @@ def run_vbench_evaluation(
                 logger.warning(f"Result file not found: {result_file}")
         except Exception as e:
             logger.warning(f"Failed to run subtask {subtask}: {e}")
-            import traceback
-            logger.warning(traceback.format_exc())
+            logger.debug("Subtask traceback:", exc_info=True)
             continue
 
     # Convert to DataFrame and pivot
