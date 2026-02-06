@@ -35,6 +35,10 @@ dependencies = [
     "opencv-python-headless>=4.5.0",
     # Utilities
     "gdown>=5.2.1",
+    "torch>=2.10.0",
+    "torchvision>=0.25.0",
+    "scenedetect>=0.6.7.1",
+    "moviepy>=2.2.1",
 ]
 
 [project.optional-dependencies]
