@@ -1,3 +1,8 @@
 {
-  "files": []
+  "files": [
+    "Exp_OscStable_Head_Window.csv",
+    "group_summary.csv",
+    "per_video_metrics.csv",
+    "vbench_per_video.csv"
+  ]
 }

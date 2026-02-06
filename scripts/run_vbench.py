@@ -299,7 +299,16 @@ def copy_outputs_to_frontend(output_dir: Path, paths_config: dict, vbench_output
             except (json.JSONDecodeError, KeyError):
                 existing_files = set()
 
-        all_files = sorted(existing_files.union(set(copied_files)))
+        discovered_csv_files = {
+            p.name for p in frontend_data_dir.glob("*.csv") if p.is_file()
+        }
+        all_files = sorted(
+            {
+                file_name
+                for file_name in existing_files.union(set(copied_files)).union(discovered_csv_files)
+                if str(file_name).endswith(".csv")
+            }
+        )
         with open(manifest_path, "w") as f:
             json.dump({"files": all_files}, f, indent=2)
         logger.info(f"  Updated manifest.json with {len(all_files)} files")
