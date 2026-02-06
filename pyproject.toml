@@ -46,6 +46,7 @@ dependencies = [
     "omegaconf>=2.3.0",
     "openai-clip>=1.0.1",
     "setuptools>=80.10.2",
+    "pyiqa>=0.1.10",
 ]
 
 [project.optional-dependencies]
