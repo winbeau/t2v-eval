@@ -15,9 +15,12 @@ Usage:
 """
 
 import argparse
+import contextlib
+import io
 import json
 import logging
 import sys
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -319,10 +322,44 @@ def ensure_moviepy_editor_compat() -> None:
     editor_module = types.ModuleType("moviepy.editor")
     editor_module.VideoFileClip = VideoFileClip
     sys.modules["moviepy.editor"] = editor_module
-    logger.warning(
+    logger.info(
         "Applied compatibility shim for `moviepy.editor` "
         "(VBench-Long expects legacy import path)."
     )
+
+
+def configure_warning_filters() -> None:
+    """Suppress noisy but non-actionable warnings from third-party libs."""
+    warnings.filterwarnings(
+        "ignore",
+        message=r"The video decoding and encoding capabilities of torchvision are deprecated.*",
+        category=UserWarning,
+        module=r"torchvision\.io\._video_deprecation_warning",
+    )
+
+
+def summarize_vbench_stdout(stdout_text: str, subtask: str) -> None:
+    """Summarize verbose stdout from VBench/VBench-Long evaluate()."""
+    if not stdout_text:
+        return
+
+    lines = [line.strip() for line in stdout_text.splitlines() if line.strip()]
+    if not lines:
+        return
+
+    saved_lines = [line for line in lines if line.startswith("Saved ")]
+    other_lines = [line for line in lines if not line.startswith("Saved ")]
+
+    if saved_lines:
+        logger.info(f"[{subtask}] Saved split clips: {len(saved_lines)}")
+
+    max_preview = 4
+    for line in other_lines[:max_preview]:
+        logger.info(f"[{subtask}] {line}")
+
+    hidden = len(other_lines) - max_preview
+    if hidden > 0:
+        logger.info(f"[{subtask}] ... {hidden} more log lines suppressed")
 
 
 def use_vbench_long(config: dict) -> bool:
@@ -546,7 +583,10 @@ def run_vbench_evaluation(
             }
             if long_mode:
                 eval_kwargs.update(long_kwargs)
-            vbench.evaluate(**eval_kwargs)
+            captured_stdout = io.StringIO()
+            with contextlib.redirect_stdout(captured_stdout):
+                vbench.evaluate(**eval_kwargs)
+            summarize_vbench_stdout(captured_stdout.getvalue(), subtask)
 
             # VBench saves results to {output_path}/{name}_eval_results.json
             result_file = results_dir / f"{subtask}_eval_results.json"
@@ -732,6 +772,7 @@ def main():
         help="Overwrite existing results"
     )
     args = parser.parse_args()
+    configure_warning_filters()
 
     # Check VBench installation
     if not check_vbench_installation():
