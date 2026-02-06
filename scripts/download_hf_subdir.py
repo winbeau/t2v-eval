@@ -12,11 +12,11 @@ Example:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import shutil
-import tempfile
 from pathlib import Path
 
-from huggingface_hub import HfApi, snapshot_download
+from huggingface_hub import HfApi, hf_hub_download
 
 
 def normalize_subdir(subdir: str | None) -> str | None:
@@ -26,24 +26,20 @@ def normalize_subdir(subdir: str | None) -> str | None:
     return normalized or None
 
 
-def build_allow_patterns(subdir: str | None, includes: list[str] | None) -> list[str] | None:
-    if not subdir and not includes:
-        return None
-
-    patterns: list[str] = []
-    if subdir:
-        patterns.append(f"{subdir}/**")
+def matches_patterns(path: str, includes: list[str] | None, excludes: list[str] | None) -> bool:
+    include_ok = True
     if includes:
-        patterns.extend(includes)
-    return patterns
+        include_ok = any(fnmatch.fnmatch(path, pat) for pat in includes)
+    exclude_hit = False
+    if excludes:
+        exclude_hit = any(fnmatch.fnmatch(path, pat) for pat in excludes)
+    return include_ok and not exclude_hit
 
 
 def resolve_remote_subdir(
+    files: list[str],
     repo_id: str,
     subdir: str | None,
-    repo_type: str,
-    revision: str | None,
-    token: str | None,
 ) -> str | None:
     """
     Resolve user-provided subdir to an actual prefix in the remote repo.
@@ -55,9 +51,6 @@ def resolve_remote_subdir(
     subdir = normalize_subdir(subdir)
     if not subdir:
         return None
-
-    api = HfApi(token=token)
-    files = api.list_repo_files(repo_id=repo_id, repo_type=repo_type, revision=revision)
 
     # Exact prefix match first.
     if any(f == subdir or f.startswith(f"{subdir}/") for f in files):
@@ -100,41 +93,53 @@ def download_subdir(
     strip_prefix: bool,
     cache_dir: Path | None,
 ) -> None:
-    remote_subdir = resolve_remote_subdir(repo_id, subdir, repo_type, revision, token)
-    allow_patterns = build_allow_patterns(remote_subdir, includes)
+    api = HfApi(token=token)
+    files = api.list_repo_files(repo_id=repo_id, repo_type=repo_type, revision=revision)
+    remote_subdir = resolve_remote_subdir(files, repo_id, subdir)
 
-    if strip_prefix and remote_subdir:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            snapshot_download(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                revision=revision,
-                token=token,
-                local_dir=str(tmp_path),
-                allow_patterns=allow_patterns,
-                ignore_patterns=excludes,
-                cache_dir=str(cache_dir) if cache_dir else None,
-            )
-
-            src = tmp_path / remote_subdir
-            if not src.exists():
-                raise FileNotFoundError(f"Subdir not found after download: {src}")
-
-            output_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(src, output_dir, dirs_exist_ok=True)
+    if remote_subdir:
+        prefix = f"{remote_subdir}/"
+        scoped_files = [f for f in files if f.startswith(prefix)]
     else:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        snapshot_download(
+        scoped_files = list(files)
+
+    if not scoped_files:
+        raise FileNotFoundError(
+            f"No files found under subdir '{remote_subdir or subdir}' in repo '{repo_id}'."
+        )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    selected_files: list[str] = []
+    for remote_file in scoped_files:
+        relative = remote_file[len(prefix) :] if remote_subdir else remote_file
+        # Allow include/exclude matching by either full path or relative path.
+        path_for_match = [remote_file, relative]
+        if includes or excludes:
+            if not any(matches_patterns(p, includes, excludes) for p in path_for_match):
+                continue
+        selected_files.append(remote_file)
+
+    if not selected_files:
+        raise FileNotFoundError(
+            f"No files matched include/exclude filters under '{remote_subdir or '/'}'."
+        )
+
+    for remote_file in selected_files:
+        cached_file = hf_hub_download(
             repo_id=repo_id,
             repo_type=repo_type,
             revision=revision,
             token=token,
-            local_dir=str(output_dir),
-            allow_patterns=allow_patterns,
-            ignore_patterns=excludes,
+            filename=remote_file,
             cache_dir=str(cache_dir) if cache_dir else None,
         )
+        if strip_prefix and remote_subdir:
+            relative = remote_file[len(prefix) :]
+            target = output_dir / relative
+        else:
+            target = output_dir / remote_file
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(cached_file, target)
 
 
 def main() -> None:
