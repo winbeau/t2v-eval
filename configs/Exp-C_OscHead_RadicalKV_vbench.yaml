@@ -1,0 +1,70 @@
+# =============================================================================
+# VBench-only config for:
+#   hf/AdaHead/Exp-C_OscHead_RadicalKV
+# Compatible with:
+#   python scripts/run_vbench.py --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml
+# =============================================================================
+
+dataset:
+  repo_id: "kv-compression/AdaHead"
+  split: "train"
+  use_local_videos: true
+  local_video_dir: "hf/AdaHead/Exp-C_OscHead_RadicalKV"
+  # NOTE:
+  # This dataset stores prompts.csv inside each group folder.
+  # run_vbench.py only accepts one dataset.prompt_file, so we omit prompt_file here.
+  # For current subtasks (temporal_flickering, motion_smoothness), prompt is not required.
+  default_group: "Exp-C_OscHead_RadicalKV"
+  video_dir: "videos/Exp-C_OscHead_RadicalKV"
+
+groups:
+  - name: "c1_self_forcing_baseline_72"
+    description: "Baseline 72-frame setup"
+    latent_frames: 72
+  - name: "c2_headkv_aligned_baseline_72"
+    description: "HeadKV aligned baseline 72-frame setup"
+    latent_frames: 72
+  - name: "c3_osc_class_windowed_select_72"
+    description: "Oscillating class windowed select 72-frame setup"
+    latent_frames: 72
+  - name: "c4_osc_class_global_select_72"
+    description: "Oscillating class global select 72-frame setup"
+    latent_frames: 72
+
+metrics:
+  enabled:
+    - "vbench_temporal"
+
+  vbench:
+    enabled: true
+    # Robust default: standard VBench temporal-only subtasks.
+    # This avoids extra CLIP/PyAV dependencies required by VBench-Long subtasks.
+    backend: "vbench"
+    use_long: false
+    mode: "custom_input"
+    read_frame: false
+    subtasks:
+      - "temporal_flickering"
+      - "motion_smoothness"
+
+runtime:
+  device: "cuda"
+  batch_size: 1
+  num_workers: 4
+  seed: 42
+
+paths:
+  cache_dir: "./eval_cache"
+  output_dir: "./outputs/Exp-C_OscHead_RadicalKV_vbench"
+  metadata_file: "metadata.csv"
+  processed_metadata: "processed_metadata.csv"
+  per_video_metrics: "per_video_metrics.csv"
+  group_summary: "group_summary.csv"
+  runtime_csv: "runtime.csv"
+  figures_dir: "./outputs/Exp-C_OscHead_RadicalKV_vbench/figs"
+  experiment_output: "Exp-C_OscHead_RadicalKV_vbench.csv"
+
+logging:
+  level: "INFO"
+  log_file: "./outputs/Exp-C_OscHead_RadicalKV_vbench/eval.log"
+  console: true
