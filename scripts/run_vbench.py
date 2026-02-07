@@ -15,6 +15,7 @@ Usage:
 """
 
 import argparse
+from collections import Counter
 import contextlib
 import io
 import json
@@ -254,6 +255,89 @@ def load_video_records_for_vbench(config: dict, output_dir: Path, paths_config: 
 
     logger.info("Metadata not found, building video list from local dataset paths...")
     return build_video_list_from_local_dataset(config)
+
+
+def ensure_unique_video_ids(video_records: list[dict], config: dict) -> list[dict]:
+    """
+    Ensure video_id is globally unique across groups.
+
+    Some experiments store videos as {group}/video_000.mp4, causing duplicate
+    video_id values across groups. VBench parsing/merge expects unique ids.
+    """
+    if not video_records:
+        return video_records
+
+    groups = config.get("groups", [])
+    group_names = [g["name"] for g in groups if isinstance(g, dict) and "name" in g]
+
+    normalized: list[dict] = []
+    for record in video_records:
+        rec = dict(record)
+        video_id = str(rec.get("video_id", "")).strip()
+        video_path = str(rec.get("video_path", "")).strip()
+        group = str(rec.get("group", "")).strip()
+
+        if not video_id and video_path:
+            video_id = Path(video_path).stem
+        if not group and video_path:
+            group = infer_group_from_path(Path(video_path), group_names) or ""
+
+        rec["video_id"] = video_id
+        rec["video_path"] = video_path
+        rec["group"] = group
+        normalized.append(rec)
+
+    counts = Counter(rec["video_id"] for rec in normalized if rec["video_id"])
+    duplicated_ids = [video_id for video_id, count in counts.items() if count > 1]
+    if not duplicated_ids:
+        return normalized
+
+    logger.warning(
+        "Detected duplicate video_id values across groups (%d duplicated ids). "
+        "Applying group-prefixed remap for VBench run.",
+        len(duplicated_ids),
+    )
+
+    ordered_groups: list[str] = []
+    for name in group_names:
+        if name and name not in ordered_groups:
+            ordered_groups.append(name)
+    for rec in normalized:
+        group_name = str(rec.get("group", "")).strip()
+        if group_name and group_name not in ordered_groups:
+            ordered_groups.append(group_name)
+    group_alias = {name: f"g{idx + 1}" for idx, name in enumerate(ordered_groups)}
+
+    used_ids: set[str] = set()
+    remapped_records = 0
+    for rec in normalized:
+        original_id = rec["video_id"]
+        if not original_id:
+            original_id = Path(rec["video_path"]).stem if rec.get("video_path") else "video"
+
+        unique_id = original_id
+        if counts.get(original_id, 0) > 1:
+            group_name = str(rec.get("group") or "").strip()
+            alias = group_alias.get(group_name, "g0")
+            unique_id = f"{alias}_{original_id}"
+
+        if unique_id in used_ids:
+            suffix = 2
+            candidate = f"{unique_id}_{suffix}"
+            while candidate in used_ids:
+                suffix += 1
+                candidate = f"{unique_id}_{suffix}"
+            unique_id = candidate
+
+        if unique_id != rec.get("video_id"):
+            remapped_records += 1
+        rec["video_id"] = unique_id
+        used_ids.add(unique_id)
+
+    logger.warning("Remapped %d records to unique video_id.", remapped_records)
+    if group_alias:
+        logger.info("Group alias mapping for duplicate IDs: %s", group_alias)
+    return normalized
 
 
 def copy_outputs_to_frontend(output_dir: Path, paths_config: dict, vbench_output: Path) -> bool:
@@ -1327,6 +1411,7 @@ def main():
             output_dir=output_dir,
             paths_config=paths_config,
         )
+        video_records = ensure_unique_video_ids(video_records, config)
     except Exception as e:
         logger.error(f"Failed to prepare video records: {e}")
         logger.error(
