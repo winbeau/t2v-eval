@@ -1,8 +1,9 @@
 # =============================================================================
-# VBench-only config for:
-#   hf/AdaHead/Exp-C_OscHead_RadicalKV
+# T2V-Eval Configuration - Exp-C_OscHead_RadicalKV (100 videos total)
+# 4 groups × 25 videos = 100 videos
 # Compatible with:
-#   python scripts/run_vbench.py --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml
+#   python scripts/run_eval_core.py --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml
+#   python scripts/run_vbench.py --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml --force
 # =============================================================================
 
 dataset:
@@ -10,42 +11,92 @@ dataset:
   split: "train"
   use_local_videos: true
   local_video_dir: "hf/AdaHead/Exp-C_OscHead_RadicalKV"
-  # NOTE:
-  # This dataset stores prompts.csv inside each group folder.
-  # run_vbench.py only accepts one dataset.prompt_file, so we omit prompt_file here.
-  # For current subtasks (temporal_flickering, motion_smoothness), prompt is not required.
-  default_group: "Exp-C_OscHead_RadicalKV"
+  # Assumption: all groups share the same prompt set keyed by video_id (video_000 ...).
+  # If prompts differ by group, first merge them into one CSV and update this path.
+  prompt_file: "hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv"
   video_dir: "videos/Exp-C_OscHead_RadicalKV"
 
 groups:
   - name: "c1_self_forcing_baseline_72"
-    description: "Baseline 72-frame setup"
+    description: "Self-forcing baseline (72 latent frames)"
     latent_frames: 72
+    actual_frames: 288
+
   - name: "c2_headkv_aligned_baseline_72"
-    description: "HeadKV aligned baseline 72-frame setup"
+    description: "HeadKV aligned baseline (72 latent frames)"
     latent_frames: 72
+    actual_frames: 288
+
   - name: "c3_osc_class_windowed_select_72"
-    description: "Oscillating class windowed select 72-frame setup"
+    description: "Osc-class windowed select (72 latent frames)"
     latent_frames: 72
+    actual_frames: 288
+
   - name: "c4_osc_class_global_select_72"
-    description: "Oscillating class global select 72-frame setup"
+    description: "Osc-class global select (72 latent frames)"
     latent_frames: 72
+    actual_frames: 288
+
+group_categories:
+  by_method:
+    baseline: ["c1_self_forcing_baseline_72", "c2_headkv_aligned_baseline_72"]
+    oscillating: ["c3_osc_class_windowed_select_72", "c4_osc_class_global_select_72"]
+
+  by_select_strategy:
+    windowed: ["c3_osc_class_windowed_select_72"]
+    global: ["c4_osc_class_global_select_72"]
+
+protocol:
+  fps_eval: 8
+  num_frames: 173
+  resize: 256
+  frame_sampling: "uniform"
+  frame_padding: "loop"
 
 metrics:
   enabled:
+    - "clip_or_vqa"
     - "vbench_temporal"
+    - "flicker"
+    - "niqe"
+
+  clip_or_vqa:
+    mode: "clip"
+    model_name: "ViT-B-32"
+    pretrained: "openai"
+    num_frames_for_score: 173
+    aggregation: "mean"
 
   vbench:
     enabled: true
-    # Robust default: standard VBench temporal-only subtasks.
-    # This avoids extra CLIP/PyAV dependencies required by VBench-Long subtasks.
-    backend: "vbench"
-    use_long: false
-    mode: "custom_input"
-    read_frame: false
+    backend: "vbench_long"
+    use_long: true
+    mode: "long_custom_input"
+    use_semantic_splitting: false
+    clip_length_config: "clip_length_mix.yaml"
+    static_filter_flag: false
+    scene_threshold: 35.0
+    sb_clip2clip_feat_extractor: "dino"
+    bg_clip2clip_feat_extractor: "clip"
     subtasks:
-      - "temporal_flickering"
+      - "subject_consistency"
+      - "background_consistency"
       - "motion_smoothness"
+      - "dynamic_degree"
+      - "imaging_quality"
+      - "aesthetic_quality"
+
+  flicker:
+    method: "l1"
+    normalize: true
+    compute_std: true
+    grayscale: false
+
+  niqe:
+    enabled: true
+    num_frames_for_niqe: 173
+    block_size: 96
+    alternative: "niqe"
 
 runtime:
   device: "cuda"
@@ -55,16 +106,16 @@ runtime:
 
 paths:
   cache_dir: "./eval_cache"
-  output_dir: "./outputs/Exp-C_OscHead_RadicalKV_vbench"
+  output_dir: "./outputs/Exp-C_OscHead_RadicalKV"
   metadata_file: "metadata.csv"
   processed_metadata: "processed_metadata.csv"
   per_video_metrics: "per_video_metrics.csv"
   group_summary: "group_summary.csv"
   runtime_csv: "runtime.csv"
-  figures_dir: "./outputs/Exp-C_OscHead_RadicalKV_vbench/figs"
-  experiment_output: "Exp-C_OscHead_RadicalKV_vbench.csv"
+  figures_dir: "./outputs/Exp-C_OscHead_RadicalKV/figs"
+  experiment_output: "Exp-C_OscHead_RadicalKV.csv"
 
 logging:
   level: "INFO"
-  log_file: "./outputs/Exp-C_OscHead_RadicalKV_vbench/eval.log"
+  log_file: "./outputs/Exp-C_OscHead_RadicalKV/eval.log"
   console: true
