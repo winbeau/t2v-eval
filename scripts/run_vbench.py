@@ -431,6 +431,7 @@ class StdoutMonitor:
         self._parts: list[str] = []
         self._line_buffer = ""
         self._saved_count = 0
+        self._saved_video_ids: set[str] = set()
         self._line_count = 0
         self._chars = 0
         self._latest_percent: int | None = None
@@ -459,6 +460,9 @@ class StdoutMonitor:
                 self._line_count += 1
                 if line_stripped.startswith("Saved "):
                     self._saved_count += 1
+                    saved_video_id = _extract_saved_video_id(line_stripped)
+                    if saved_video_id:
+                        self._saved_video_ids.add(saved_video_id)
                 match = re.search(r"(\d{1,3})%\|", line_stripped)
                 if match:
                     percent = int(match.group(1))
@@ -469,9 +473,15 @@ class StdoutMonitor:
     def flush(self) -> None:
         return
 
-    def snapshot(self) -> tuple[int, int, int, int | None]:
+    def snapshot(self) -> tuple[int, int, int, int | None, int]:
         with self._lock:
-            return self._saved_count, self._line_count, self._chars, self._latest_percent
+            return (
+                self._saved_count,
+                self._line_count,
+                self._chars,
+                self._latest_percent,
+                len(self._saved_video_ids),
+            )
 
     def getvalue(self) -> str:
         with self._lock:
@@ -490,6 +500,17 @@ def _render_percent_bar(percent: int, width: int = 18) -> str:
     return f"{'█' * filled}{'·' * (width - filled)}"
 
 
+def _extract_saved_video_id(saved_line: str) -> str | None:
+    """
+    Extract video id from VBench split-clip log line, e.g.:
+    Saved .../split_clip/<video_id>/<video_id>_000.mp4
+    """
+    match = re.search(r"split_clip/([^/]+)/", saved_line)
+    if match:
+        return match.group(1)
+    return None
+
+
 def run_callable_with_progress(
     task_fn,
     title: str,
@@ -497,6 +518,7 @@ def run_callable_with_progress(
     refresh_sec: float = 1.0,
     status_mode: str = "events",
     enable_live: bool = True,
+    expected_units: int | None = None,
 ) -> tuple[str, int]:
     """
     Run a callable with one-line progress display and captured output.
@@ -522,16 +544,28 @@ def run_callable_with_progress(
     while thread.is_alive():
         if enable_live:
             elapsed = int(time.time() - start)
-            saved_count, line_count, _, latest_percent = monitor.snapshot()
-            if latest_percent is not None:
-                bar = _render_percent_bar(latest_percent)
-                pct_text = f"{latest_percent:>3d}%"
+            saved_count, line_count, _, latest_percent, saved_video_count = monitor.snapshot()
+            display_percent = latest_percent
+            if (
+                display_percent is None
+                and status_mode == "clips"
+                and expected_units is not None
+                and expected_units > 0
+            ):
+                display_percent = min(99, int(saved_video_count * 100 / expected_units))
+
+            if display_percent is not None:
+                bar = _render_percent_bar(display_percent)
+                pct_text = f"{display_percent:>3d}%"
             else:
                 bar = _render_bar(tick)
                 pct_text = " --%"
 
             if status_mode == "clips":
-                status_text = f"clips={saved_count}"
+                if expected_units is not None and expected_units > 0:
+                    status_text = f"videos={saved_video_count}/{expected_units}, clips={saved_count}"
+                else:
+                    status_text = f"clips={saved_count}"
             else:
                 status_text = f"events={line_count}"
 
@@ -542,11 +576,14 @@ def run_callable_with_progress(
 
     thread.join()
     elapsed = int(time.time() - start)
-    saved_count, line_count, _, latest_percent = monitor.snapshot()
+    saved_count, line_count, _, latest_percent, saved_video_count = monitor.snapshot()
     final_percent = 100 if latest_percent is None else max(100, latest_percent)
     final_bar = _render_percent_bar(final_percent)
     if status_mode == "clips":
-        final_status = f"clips={saved_count}"
+        if expected_units is not None and expected_units > 0:
+            final_status = f"videos={saved_video_count}/{expected_units}, clips={saved_count}"
+        else:
+            final_status = f"clips={saved_count}"
     else:
         final_status = f"events={line_count}"
     if enable_live:
@@ -1011,6 +1048,7 @@ def run_vbench_evaluation(
                     refresh_sec=1.0,
                     status_mode="clips",
                     enable_live=True,
+                    expected_units=len(video_records),
                 )
                 if saved_count > 0:
                     logger.info(f"[preprocess] Saved split clips: {saved_count}")
