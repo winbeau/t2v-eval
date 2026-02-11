@@ -188,13 +188,11 @@ class MultiGpuProgressBoard:
             "on",
         }
         torchrun_like = bool(os.environ.get("TORCHELASTIC_RUN_ID"))
-        term_ok = str(os.environ.get("TERM", "")).strip().lower() not in {"", "dumb"}
         self._overwrite_supported = bool(
-            stream_is_tty or force_overwrite or (torchrun_like and term_ok)
+            stream_is_tty or force_overwrite or torchrun_like
         )
         self._last_non_tty_emit = 0.0
         self._last_lines: list[str] = []
-        self._anchor_ready = False
 
     def _status_file(self, rank: int) -> Path:
         return self.progress_dir / f"rank_{rank}.json"
@@ -267,19 +265,13 @@ class MultiGpuProgressBoard:
                 file=self._stdout,
             )
         print(sep, file=self._stdout)
-        print("Live Progress:", file=self._stdout)
-        for _ in range(self.world_size):
-            print("", file=self._stdout)
-        if self._overwrite_supported:
-            self._stdout.write(f"\x1b[{self.world_size}A")
-            self._stdout.write("\x1b[s")
-            self._stdout.write(f"\x1b[{self.world_size}B")
-            self._anchor_ready = True
+
+        # Print initial live status lines (will be overwritten in-place)
+        statuses = [self._read_rank_status(rank) for rank in range(self.world_size)]
+        for status in statuses:
+            print(self._format_live_line(status), file=self._stdout)
         self._stdout.flush()
         self._printed_live_block = True
-        mode = "overwrite" if self._overwrite_supported else "snapshot"
-        print(f"[Progress Render Mode] {mode}", file=self._stdout)
-        self._stdout.flush()
 
     def _derive_next_task(self, status: dict) -> str:
         assigned = list(status.get("assigned_subtasks", []))
@@ -325,8 +317,9 @@ class MultiGpuProgressBoard:
         if not force and lines == self._last_lines:
             return
 
-        if self._overwrite_supported and self._printed_live_block and self._anchor_ready:
-            self._stdout.write("\x1b[u")
+        if self._overwrite_supported and self._printed_live_block:
+            # Move cursor up N lines, overwrite each, cursor ends back below
+            self._stdout.write(f"\x1b[{self.world_size}A")
             for line in lines:
                 self._stdout.write("\r\x1b[2K" + line + "\n")
             self._stdout.flush()
@@ -335,7 +328,6 @@ class MultiGpuProgressBoard:
             if not force and (now - self._last_non_tty_emit) < self.non_tty_snapshot_sec:
                 return
             self._last_non_tty_emit = now
-            print("[Live Progress Snapshot]", file=self._stdout)
             print("\n".join(lines), file=self._stdout)
             self._stdout.flush()
         self._last_lines = lines
