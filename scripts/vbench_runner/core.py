@@ -714,6 +714,7 @@ def main():
 
     progress_reporter: RankProgressReporter | None = None
     progress_board: MultiGpuProgressBoard | None = None
+    parent_managed = os.environ.get("VBENCH_PROGRESS_PARENT_MANAGED") == "1"
     if world_size > 1:
         progress_dir = output_dir / "vbench_progress"
         if rank == 0:
@@ -731,7 +732,7 @@ def main():
             assigned_subtasks=assigned_subtasks,
             visible_devices=visible_devices,
         )
-        if rank == 0:
+        if rank == 0 and not parent_managed:
             assignment_map = {
                 worker_rank: split_subtasks_for_rank(
                     all_subtasks, rank=worker_rank, world_size=world_size

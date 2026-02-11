@@ -142,9 +142,8 @@ def maybe_auto_launch_multi_gpu(
     """
     Auto-launch torch distributed when multiple GPUs are visible.
 
-    Default behavior:
-    - single visible GPU -> current process only
-    - multiple visible GPUs -> re-launch with torchrun and split by dimensions
+    When launched, the parent process manages a live progress board on the
+    terminal while torchrun worker output is captured to a log file.
     """
     if rank != 0 or world_size > 1:
         return False
@@ -198,10 +197,67 @@ def maybe_auto_launch_multi_gpu(
 
     env = os.environ.copy()
     env["VBENCH_AUTO_MULTI_GPU_LAUNCHED"] = "1"
+    env["VBENCH_PROGRESS_PARENT_MANAGED"] = "1"
 
-    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=env)
+    # --- Prepare parent-managed progress board ---
+    assignment_map = {
+        r: split_subtasks_for_rank(subtasks, r, worker_count) for r in range(worker_count)
+    }
+    gpu_map = {
+        r: visible_devices[r] if r < len(visible_devices) else str(r)
+        for r in range(worker_count)
+    }
+    progress_dir = output_dir / "vbench_progress"
+    progress_dir.mkdir(parents=True, exist_ok=True)
+    for stale in progress_dir.glob("rank_*.json"):
+        try:
+            stale.unlink()
+        except OSError:
+            pass
+
+    log_path = output_dir / "vbench_workers.log"
+
+    try:
+        from .progress import MultiGpuProgressBoard
+    except ImportError:
+        from vbench_runner.progress import MultiGpuProgressBoard
+
+    board = MultiGpuProgressBoard(
+        progress_dir=progress_dir,
+        assignment_map=assignment_map,
+        gpu_map=gpu_map,
+        refresh_sec=1.0,
+        log_path=log_path,
+    )
+    board.start()
+
+    try:
+        with open(log_path, "w") as log_f:
+            result = subprocess.run(
+                cmd,
+                cwd=str(PROJECT_ROOT),
+                env=env,
+                stdout=log_f,
+                stderr=subprocess.STDOUT,
+            )
+    finally:
+        board.stop()
+
+    # --- Post-run summary ---
+    _print_run_summary(log_path)
+
     if result.returncode != 0:
         logger.error("Auto multi-GPU torchrun failed with code %d.", result.returncode)
+        logger.error("Full worker log: %s", log_path)
+        try:
+            with open(log_path, errors="replace") as f:
+                lines = f.readlines()
+            tail = lines[-30:] if len(lines) > 30 else lines
+            for line in tail:
+                logger.error("  | %s", line.rstrip())
+        except Exception:
+            pass
+
         if args.skip_on_error:
             logger.warning("Skipping VBench evaluation due to auto multi-GPU failure.")
             pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
@@ -211,3 +267,36 @@ def maybe_auto_launch_multi_gpu(
         raise RuntimeError(f"torchrun failed with exit code {result.returncode}")
 
     return True
+
+
+def _print_run_summary(log_path: Path) -> None:
+    """Print post-run summary extracted from worker log file."""
+    try:
+        with open(log_path, errors="replace") as f:
+            lines = f.readlines()
+    except Exception:
+        return
+
+    summary_keywords = [
+        "results saved to",
+        "score summary",
+        "coverage summary",
+        "error",
+        "failed",
+        "merged",
+        "copied",
+    ]
+    important = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        lower = stripped.lower()
+        if any(kw in lower for kw in summary_keywords):
+            important.append(stripped)
+
+    if important:
+        logger.info("=== Worker Summary ===")
+        for line in important[-20:]:
+            logger.info("  %s", line)
+    logger.info("Full worker log: %s", log_path)

@@ -9,6 +9,7 @@ import re
 import sys
 import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -158,7 +159,9 @@ class RankProgressReporter:
 # Multi-GPU progress board (rank-0 only)
 # =============================================================================
 class MultiGpuProgressBoard:
-    """Rank-0 terminal board rendering all rank progress as a bordered table."""
+    """Rank-0 terminal board: bordered table with ANSI overwrite + log tail."""
+
+    LOG_TAIL_LINES = 5
 
     def __init__(
         self,
@@ -166,20 +169,28 @@ class MultiGpuProgressBoard:
         assignment_map: dict[int, list[str]],
         gpu_map: dict[int, str] | None = None,
         refresh_sec: float = 1.0,
-        non_tty_snapshot_sec: float = 10.0,
+        log_path: Path | None = None,
+        non_tty_snapshot_sec: float = 30.0,
     ):
         self.progress_dir = progress_dir
         self.assignment_map = assignment_map
         self.gpu_map = gpu_map or {}
         self.world_size = len(assignment_map)
         self.refresh_sec = refresh_sec
-        self.snapshot_sec = max(1.0, float(non_tty_snapshot_sec))
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._stdout = sys.__stdout__
-        self._last_lines: list[str] = []
-        self._last_emit = 0.0
+        self._overwrite = bool(getattr(self._stdout, "isatty", lambda: False)())
         self._start_time = time.time()
+        self._block_height = 0
+        # Log tailing
+        self._log_path = log_path
+        self._log_tail: deque[str] = deque(maxlen=self.LOG_TAIL_LINES)
+        self._log_offset = 0
+        # Non-TTY fallback
+        self._last_row_strs: list[str] = []
+        self._last_snapshot = 0.0
+        self._snapshot_interval = max(1.0, float(non_tty_snapshot_sec))
 
     def _status_file(self, rank: int) -> Path:
         return self.progress_dir / f"rank_{rank}.json"
@@ -201,7 +212,7 @@ class MultiGpuProgressBoard:
             "completed_subtasks": 0,
             "current_subtask": None,
             "next_subtask": assigned[0] if assigned else "-",
-            "percent": 0,
+            "percent": None,
             "status_text": "waiting",
             "elapsed_sec": 0,
             "done": False,
@@ -220,7 +231,6 @@ class MultiGpuProgressBoard:
                     "next": _shorten_text(tasks[0] if tasks else "-", 20),
                 }
             )
-
         headers = {"gpu": "GPU", "tasks": "Assigned Tasks", "done": "Done", "next": "Next Task"}
         widths = {"gpu": 4, "tasks": 52, "done": 4, "next": 20}
         sep = (
@@ -265,7 +275,6 @@ class MultiGpuProgressBoard:
         return "-"
 
     def _format_row(self, status: dict) -> dict[str, str]:
-        """Format one rank's status into column values."""
         completed = int(status.get("completed_subtasks", 0))
         total = int(status.get("assigned_total", 0))
         percent = status.get("percent")
@@ -286,17 +295,31 @@ class MultiGpuProgressBoard:
             "time": f"{elapsed:>4}s{done_flag}",
         }
 
-    def _render_table(self, force: bool = False) -> None:
-        statuses = [self._read_rank_status(rank) for rank in range(self.world_size)]
-        rows = [self._format_row(s) for s in statuses]
-        row_strs = [str(r) for r in rows]
-        if not force and row_strs == self._last_lines:
+    def _update_log_tail(self) -> None:
+        """Read new complete lines from worker log file."""
+        if self._log_path is None:
             return
-        now = time.time()
-        if not force and (now - self._last_emit) < self.snapshot_sec:
-            return
-        self._last_emit = now
+        try:
+            with open(self._log_path, errors="replace") as f:
+                f.seek(self._log_offset)
+                chunk = f.read(65536)
+                if not chunk:
+                    return
+                last_nl = chunk.rfind("\n")
+                if last_nl < 0:
+                    return
+                self._log_offset += last_nl + 1
+                for line in chunk[:last_nl].splitlines():
+                    stripped = line.strip()
+                    if not stripped or "█" in stripped:
+                        continue
+                    if len(stripped) > 120:
+                        stripped = stripped[:117] + "..."
+                    self._log_tail.append(stripped)
+        except Exception:
+            pass
 
+    def _build_table_lines(self, rows: list[dict[str, str]]) -> list[str]:
         cols = ["gpu", "done", "pct", "cur", "next", "status", "time"]
         headers = {
             "gpu": "GPU",
@@ -311,34 +334,67 @@ class MultiGpuProgressBoard:
         for c in cols:
             widths[c] = max(len(headers[c]), *(len(r[c]) for r in rows))
 
-        def _sep(left: str, mid: str, right: str, fill: str = "─") -> str:
-            return left + mid.join(fill * (widths[c] + 2) for c in cols) + right
+        def _sep(left: str, mid: str, right: str) -> str:
+            return left + mid.join("─" * (widths[c] + 2) for c in cols) + right
 
         def _row(vals: dict[str, str]) -> str:
             return "│" + "│".join(f" {vals[c]:<{widths[c]}} " for c in cols) + "│"
 
-        elapsed_total = int(now - self._start_time)
-        block = [
+        elapsed = int(time.time() - self._start_time)
+        return [
             _sep("┌", "┬", "┐"),
             _row(headers),
             _sep("├", "┼", "┤"),
             *(_row(r) for r in rows),
-            _sep("└", "┴", "┘") + f"  T+{elapsed_total}s",
+            _sep("└", "┴", "┘") + f"  T+{elapsed}s",
         ]
-        print("\n".join(block), file=self._stdout)
-        self._stdout.flush()
-        self._last_lines = row_strs
+
+    def _render(self, force: bool = False) -> None:
+        statuses = [self._read_rank_status(r) for r in range(self.world_size)]
+        rows = [self._format_row(s) for s in statuses]
+
+        self._update_log_tail()
+
+        table = self._build_table_lines(rows)
+
+        # Fixed-height log section below table
+        log_display = list(self._log_tail)
+        while len(log_display) < self.LOG_TAIL_LINES:
+            log_display.append("")
+        log_display = log_display[-self.LOG_TAIL_LINES :]
+
+        all_lines = table + [f"  {line}" for line in log_display]
+
+        if self._overwrite:
+            if self._block_height > 0:
+                self._stdout.write(f"\x1b[{self._block_height}A")
+            for line in all_lines:
+                self._stdout.write("\r\x1b[2K" + line + "\n")
+            self._stdout.flush()
+            self._block_height = len(all_lines)
+        else:
+            row_strs = [str(r) for r in rows]
+            if not force and row_strs == self._last_row_strs:
+                return
+            now = time.time()
+            if not force and (now - self._last_snapshot) < self._snapshot_interval:
+                return
+            self._last_snapshot = now
+            print("\n".join(table), file=self._stdout)
+            self._stdout.flush()
+            self._last_row_strs = row_strs
 
     def _run(self) -> None:
         while not self._stop.is_set():
-            self._render_table(force=False)
+            self._render(force=False)
             if self._stop.wait(self.refresh_sec):
                 break
-        self._render_table(force=True)
+        self._render(force=True)
 
     def start(self) -> None:
         self._print_assignment_table()
         self._start_time = time.time()
+        self._render(force=True)
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
@@ -347,6 +403,7 @@ class MultiGpuProgressBoard:
             return
         self._stop.set()
         self._thread.join(timeout=2.0)
+        self._render(force=True)
 
 
 # =============================================================================
