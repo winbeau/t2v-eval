@@ -1725,19 +1725,22 @@ def main():
     df_meta = pd.DataFrame(video_records)[["video_id", "group"]].drop_duplicates(subset=["video_id"])
     if not df_results.empty:
         df_results = df_results.merge(df_meta, on="video_id", how="left")
-        expected_count = len(video_records)
-        for subtask in all_subtasks:
-            if subtask not in df_results.columns:
-                logger.warning("Missing subtask column in merged output: %s", subtask)
-                continue
+    expected_count = len(video_records)
+    coverage_rows: list[tuple[str, int, int]] = []
+    for subtask in all_subtasks:
+        if subtask not in df_results.columns:
+            covered = 0
+            logger.warning("Missing subtask column in merged output: %s", subtask)
+        else:
             covered = int(df_results[subtask].notna().sum())
-            if covered != expected_count:
-                logger.warning(
-                    "Subtask coverage mismatch for %s: %d/%d",
-                    subtask,
-                    covered,
-                    expected_count,
-                )
+        coverage_rows.append((subtask, covered, expected_count))
+        if covered != expected_count:
+            logger.warning(
+                "Subtask coverage mismatch for %s: %d/%d",
+                subtask,
+                covered,
+                expected_count,
+            )
 
     # Save results
     df_results.to_csv(vbench_output, index=False)
@@ -1756,6 +1759,15 @@ def main():
         paths_config=paths_config,
         vbench_output=vbench_output,
     )
+
+    if coverage_rows:
+        name_width = max(len("subtask"), max(len(name) for name, _, _ in coverage_rows))
+        logger.info("\nVBench Coverage Summary:")
+        logger.info(f"{'subtask':<{name_width}} | coverage | status")
+        logger.info(f"{'-' * name_width}-+----------+-------")
+        for name, covered, total in coverage_rows:
+            status = "OK" if covered == total else "MISS"
+            logger.info(f"{name:<{name_width}} | {covered:>4d}/{total:<4d} | {status}")
 
 
 if __name__ == "__main__":
