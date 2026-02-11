@@ -183,28 +183,32 @@ def patch_grit_device_compat() -> None:
 
 def patch_tokenizer_special_tokens_ids() -> None:
     """
-    Add additional_special_tokens_ids property to tokenizers if missing.
+    Patch tag2Text's init_tokenizer to avoid additional_special_tokens_ids.
 
     Newer transformers removed the dynamic __getattr__ that resolved
     ``additional_special_tokens_ids`` from ``additional_special_tokens``.
-    VBench's tag2Text/tag2text.py accesses this attribute directly.
+    VBench's tag2Text/tag2text.py calls ``tokenizer.additional_special_tokens_ids[0]``
+    which fails. We patch init_tokenizer to use convert_tokens_to_ids directly.
     """
     try:
-        from transformers import PreTrainedTokenizerBase
+        from transformers import BertTokenizer
+        from vbench.third_party.tag2Text import tag2text as _t2t
     except ImportError:
         return
 
-    # Check if an instance would already support it
-    if hasattr(PreTrainedTokenizerBase, "additional_special_tokens_ids"):
+    if getattr(_t2t.init_tokenizer, "_patched", False):
         return
 
-    @property  # type: ignore[misc]
-    def additional_special_tokens_ids(self):
-        tokens = getattr(self, "additional_special_tokens", None) or []
-        return self.convert_tokens_to_ids(tokens)
+    def _init_tokenizer_compat():
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        tokenizer.add_special_tokens({"bos_token": "[DEC]"})
+        tokenizer.add_special_tokens({"additional_special_tokens": ["[ENC]"]})
+        tokenizer.enc_token_id = tokenizer.convert_tokens_to_ids("[ENC]")
+        return tokenizer
 
-    PreTrainedTokenizerBase.additional_special_tokens_ids = additional_special_tokens_ids  # type: ignore[attr-defined]
-    logger.debug("Patched PreTrainedTokenizerBase with additional_special_tokens_ids property.")
+    _t2t.init_tokenizer = _init_tokenizer_compat
+    _t2t.init_tokenizer._patched = True  # type: ignore[attr-defined]
+    logger.debug("Patched tag2Text.init_tokenizer for tokenizer compatibility.")
 
 
 def apply_vbench_compat_patches() -> None:
