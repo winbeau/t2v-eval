@@ -13,35 +13,66 @@ except ImportError:
     from vbench_runner.env import logger
 
 
-def _import_or_build_chunking_helpers():
+def patch_transformers_compat() -> None:
     """
-    Try importing from transformers, fall back to self-contained implementations.
+    Inject missing functions into transformers.modeling_utils.
 
-    Returns (apply_chunking_to_forward, find_pruneable_heads_and_indices, prune_linear_layer).
+    Newer transformers removed apply_chunking_to_forward, find_pruneable_heads_and_indices,
+    and prune_linear_layer from modeling_utils. VBench's tag2Text/med.py still imports
+    all three from there, so we re-inject whichever are missing.
     """
-    # Try the original location first
-    for module_name in ("transformers.modeling_utils", "transformers.pytorch_utils"):
+    import importlib
+
+    import transformers.modeling_utils as _mu
+
+    # The three functions tag2Text/med.py needs from transformers.modeling_utils
+    needed = ["apply_chunking_to_forward", "find_pruneable_heads_and_indices", "prune_linear_layer"]
+    missing = [name for name in needed if not hasattr(_mu, name)]
+    if not missing:
+        return
+
+    # Try to find each missing function in alternative transformers modules
+    alt_modules = []
+    for mod_name in ("transformers.pytorch_utils",):
         try:
-            import importlib
-
-            mod = importlib.import_module(module_name)
-            fn = getattr(mod, "apply_chunking_to_forward", None)
-            if fn is not None:
-                return (
-                    fn,
-                    getattr(mod, "find_pruneable_heads_and_indices", None),
-                    getattr(mod, "prune_linear_layer", None),
-                )
+            alt_modules.append(importlib.import_module(mod_name))
         except ImportError:
-            continue
+            pass
 
-    # --- Self-contained fallback implementations ---
+    still_missing = []
+    for name in missing:
+        found = False
+        for mod in alt_modules:
+            fn = getattr(mod, name, None)
+            if fn is not None:
+                setattr(_mu, name, fn)
+                found = True
+                break
+        if not found:
+            still_missing.append(name)
+
+    if not still_missing:
+        logger.debug("Patched transformers.modeling_utils from pytorch_utils: %s", missing)
+        return
+
+    # Self-contained fallback for anything still missing
+    _inject_builtin_shims(_mu, still_missing)
+    logger.info(
+        "Injected built-in shims into transformers.modeling_utils: %s",
+        still_missing,
+    )
+
+
+def _inject_builtin_shims(target_module, names: list[str]) -> None:
+    """Inject self-contained implementations of transformers helper functions."""
     import inspect
 
     import torch
     from torch import nn
 
-    def apply_chunking_to_forward(forward_fn, chunk_size, chunk_dim, *input_tensors):
+    shims = {}
+
+    def _apply_chunking_to_forward(forward_fn, chunk_size, chunk_dim, *input_tensors):
         if chunk_size > 0:
             num_args = len(inspect.signature(forward_fn).parameters)
             if num_args != len(input_tensors):
@@ -56,7 +87,9 @@ def _import_or_build_chunking_helpers():
             return torch.cat(output_chunks, dim=chunk_dim)
         return forward_fn(*input_tensors)
 
-    def find_pruneable_heads_and_indices(heads, n_heads, head_size, already_pruned_heads):
+    shims["apply_chunking_to_forward"] = _apply_chunking_to_forward
+
+    def _find_pruneable_heads_and_indices(heads, n_heads, head_size, already_pruned_heads):
         mask = torch.ones(n_heads, head_size)
         heads = set(heads) - already_pruned_heads
         for head in heads:
@@ -66,7 +99,9 @@ def _import_or_build_chunking_helpers():
         index = torch.arange(len(mask))[mask].long()
         return heads, index
 
-    def prune_linear_layer(layer, index, dim=0):
+    shims["find_pruneable_heads_and_indices"] = _find_pruneable_heads_and_indices
+
+    def _prune_linear_layer(layer, index, dim=0):
         index = index.to(layer.weight.device)
         w = layer.weight.index_select(dim, index).detach().clone()
         if layer.bias is not None:
@@ -85,35 +120,11 @@ def _import_or_build_chunking_helpers():
             new_layer.bias.requires_grad = True
         return new_layer
 
-    logger.info("Using built-in shims for apply_chunking_to_forward (not found in transformers).")
-    return apply_chunking_to_forward, find_pruneable_heads_and_indices, prune_linear_layer
+    shims["prune_linear_layer"] = _prune_linear_layer
 
-
-def patch_transformers_compat() -> None:
-    """
-    Inject apply_chunking_to_forward into transformers.modeling_utils.
-
-    Newer transformers removed this function (it lived in modeling_utils,
-    then pytorch_utils, then was dropped entirely).  VBench's tag2Text/med.py
-    still imports it from modeling_utils, so we re-inject it.
-    """
-    try:
-        from transformers.modeling_utils import apply_chunking_to_forward  # noqa: F401
-
-        return  # already available, nothing to do
-    except ImportError:
-        pass
-
-    chunking, pruning_heads, pruning_layer = _import_or_build_chunking_helpers()
-
-    import transformers.modeling_utils as _mu
-
-    _mu.apply_chunking_to_forward = chunking  # type: ignore[attr-defined]
-    if pruning_heads is not None and not hasattr(_mu, "find_pruneable_heads_and_indices"):
-        _mu.find_pruneable_heads_and_indices = pruning_heads  # type: ignore[attr-defined]
-    if pruning_layer is not None and not hasattr(_mu, "prune_linear_layer"):
-        _mu.prune_linear_layer = pruning_layer  # type: ignore[attr-defined]
-    logger.debug("Patched transformers.modeling_utils with apply_chunking_to_forward.")
+    for name in names:
+        if name in shims:
+            setattr(target_module, name, shims[name])
 
 
 def patch_clip_tokenize_truncate() -> None:
