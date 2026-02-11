@@ -181,8 +181,35 @@ def patch_grit_device_compat() -> None:
     logger.debug("Patched GrIT get_parser for string device compatibility.")
 
 
+def patch_tokenizer_special_tokens_ids() -> None:
+    """
+    Add additional_special_tokens_ids property to tokenizers if missing.
+
+    Newer transformers removed the dynamic __getattr__ that resolved
+    ``additional_special_tokens_ids`` from ``additional_special_tokens``.
+    VBench's tag2Text/tag2text.py accesses this attribute directly.
+    """
+    try:
+        from transformers import PreTrainedTokenizerBase
+    except ImportError:
+        return
+
+    # Check if an instance would already support it
+    if hasattr(PreTrainedTokenizerBase, "additional_special_tokens_ids"):
+        return
+
+    @property  # type: ignore[misc]
+    def additional_special_tokens_ids(self):
+        tokens = getattr(self, "additional_special_tokens", None) or []
+        return self.convert_tokens_to_ids(tokens)
+
+    PreTrainedTokenizerBase.additional_special_tokens_ids = additional_special_tokens_ids  # type: ignore[attr-defined]
+    logger.debug("Patched PreTrainedTokenizerBase with additional_special_tokens_ids property.")
+
+
 def apply_vbench_compat_patches() -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
+    patch_tokenizer_special_tokens_ids()
     patch_clip_tokenize_truncate()
     patch_grit_device_compat()
