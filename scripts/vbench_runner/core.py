@@ -250,7 +250,7 @@ class RankProgressReporter:
     def start_task(self, task_name: str, status_text: str = "running") -> None:
         with self._lock:
             self._current_subtask = task_name
-            self._current_percent = 0
+            self._current_percent = None
             self._status_text = status_text
             self._elapsed_sec = 0
             self._write_status()
@@ -259,6 +259,8 @@ class RankProgressReporter:
         with self._lock:
             if percent is not None:
                 self._current_percent = max(0, min(99, int(percent)))
+            else:
+                self._current_percent = None
             self._status_text = status_text
             self._elapsed_sec = int(elapsed_sec)
             self._write_status()
