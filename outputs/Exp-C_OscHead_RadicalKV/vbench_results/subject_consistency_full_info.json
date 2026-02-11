@@ -1,0 +1,1702 @@
+[
+  {
+    "prompt_en": "A stylish woman strolls down a bustling Tokyo street, the warm glow of neon lights and animated city signs casting vibrant reflections. She wears a sleek black leather jacket paired with a flowing red dress and black boots, her black purse slung over her shoulder. Sunglasses perched on her nose and a bold red lipstick add to her confident, casual demeanor. The street is damp and reflective, creating a mirror-like effect that enhances the colorful lights and shadows. Pedestrians move about, adding to the lively atmosphere. The scene is captured in a dynamic medium shot with the woman walking slightly to one side, highlighting her graceful strides.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_000/g1_video_000_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A stunning mid-afternoon landscape photograph with a low camera angle, showcasing several giant wooly mammoths treading through a snowy meadow. Their long, wooly fur gently billows in the brisk wind as they move, creating a sense of natural movement. Snow-covered trees and dramatic snow-capped mountains loom in the distance, adding to the majestic setting. Wispy clouds and a high sun cast a warm glow over the scene, enhancing the serene and awe-inspiring atmosphere. The depth of field brings out the detailed textures of the mammoths and the snowy environment, capturing every nuance of these prehistoric giants in breathtaking clarity.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_001/g1_video_001_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A movie trailer in a classic cinematic style, featuring the adventurous journey of a 30-year-old space man wearing a vibrant red wool knitted motorcycle helmet. The scene unfolds against a vast blue sky and a desolate salt desert landscape. Shot on 35mm film, the trailer showcases vivid and rich colors, capturing the hero as he navigates through the harsh terrain with determination. His helmet glints under the sun, adding to the dramatic effect. The background is a mix of sweeping desert vistas and distant horizons, with the occasional shimmer of light reflecting off the salt flats. A dynamic medium shot with a sweeping overhead angle, emphasizing the hero's resilience and the vastness of his adventure.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_002/g1_video_002_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A drone view of waves crashing against the rugged cliffs along Big Sur’s Garay Point beach. The crashing blue waters create white-tipped waves, while the golden light of the setting sun illuminates the rocky shore, casting long shadows. In the distance, a small island with a lighthouse stands tall, its beam piercing the twilight. Green shrubbery covers the cliff’s edge, and the steep drop from the road down to the beach is a dramatic feat, with the cliff’s edges jutting out over the sea. The camera angle provides a bird's-eye view, capturing the raw beauty of the coast and the rugged landscape of the Pacific Coast Highway. The scene is bathed in a warm, golden hue, highlighting the textures and details of the rocky terrain.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_003/g1_video_003_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A close-up 3D animated scene of a short, fluffy monster kneeling beside a melting red candle. The monster has large, wide eyes and an open mouth, gazing at the flame with a look of wonder and curiosity. Its soft, fluffy fur contrasts with the warm, dramatic lighting that highlights every detail of its gentle, innocent expression. The pose conveys a sense of playfulness and exploration, as if the creature is discovering the world for the first time. The background features a cozy, warmly lit room with subtle hints of a fireplace and soft furnishings, enhancing the overall atmosphere. The use of warm colors and dramatic lighting creates a captivating and inviting scene.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_004/g1_video_004_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A beautifully detailed papercraft illustration of a vibrant coral reef teeming with colorful fish and sea creatures. The coral formations are intricately designed, with each polyp and branch meticulously crafted. Schools of tropical fish swim gracefully among the corals, their scales shimmering in hues of turquoise, orange, and purple. Sea turtles glide smoothly over the reef, while a school of clownfish dart playfully around an anemone. The background features a soft, pastel-colored ocean with gentle waves and a hint of sunlight breaking through. The entire scene is rendered with a lifelike and textured papercraft style, capturing the essence of a thriving underwater ecosystem. A close-up view from a slightly elevated angle.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_005/g1_video_005_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A close-up shot of a Victoria crowned pigeon in a naturalistic wildlife photography style, showcasing its striking blue plumage and red chest. The bird’s crest is adorned with delicate, lacy feathers, and its eye is a striking red color, adding to its regal and majestic appearance. The pigeon’s head is tilted slightly to the side, giving it a regal gaze. The background is blurred, emphasizing the bird’s striking beauty against a soft, muted backdrop. The lighting highlights the bird’s feathers, creating a vibrant and lifelike image.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_006/g1_video_006_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A photorealistic closeup video of two pirate ships battling each other as they sail inside a steaming cup of coffee. The ships are intricately detailed, with wooden planks, sails flapping in the breeze, and cannons aimed at each other. The crew members, wearing authentic pirate attire, brandish swords and pistols, their expressions fierce and determined. The coffee foam creates a frothy, turbulent sea, with ripples and waves realistically depicted. The background is a blurred, warm brown coffee surface, with steam rising gently. The camera angle is slightly elevated, capturing the intense action from above.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_007/g1_video_007_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A vibrant anime illustration in a thick painting style featuring a young man in his 20s sitting on a fluffy white cloud in the sky, engrossed in reading a classic leather-bound book. He has short, messy black hair and expressive brown eyes, wearing a casual white t-shirt and blue jeans. His posture is relaxed yet attentive, with one leg crossed over the other. The background is a vivid sky with cotton-like clouds and a soft sunset glow, casting a warm orange hue. The scene has a dreamy and ethereal quality. A medium shot with a slightly downward angle.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_008/g1_video_008_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A historical footage style photograph depicting a bustling gold rush town in California. The scene captures miners panning for gold in a stream, their faces weathered and determined. Behind them, makeshift wooden shacks and tents line the streets, with smoke rising from chimneys. A man in a dusty hat and tattered clothes stands near a sluice box, his hand on his hip, looking out towards the camera with a mix of hope and hardship. The background features rolling hills and dense forests, with a few oxen-drawn wagons in the distance. The photo has a sepia tone and a grainy texture, capturing the essence of the era. A medium shot with a slightly tilted angle.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_009/g1_video_009_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A close-up view of a glass sphere containing a tranquil Zen garden. Inside, a small Eastern dwarf with weathered skin and a serene expression is raking the sand, meticulously creating intricate patterns with a bamboo rake. His movements are deliberate and meditative, enhancing the peaceful atmosphere of the scene. The background is blurred, revealing only hints of greenery and rocks, adding to the serene setting. The sphere itself is polished, reflecting the surroundings subtly. The camera angle captures the dwarf from a slightly elevated position, emphasizing his focused and contemplative pose.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_010/g1_video_010_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A cinematic film shot in 70mm, capturing an extreme close-up of a 24-year-old woman's eye as it blinks. The scene takes place during magic hour in Marrakech, with the vibrant colors of the setting sun casting warm hues over the bustling streets. The depth of field emphasizes the intricate details of her almond-shaped eyes, which reflect the lively atmosphere of the city. Her eyes, framed by long, dark lashes, are set against a backdrop of bustling market stalls, ornate architecture, and the soft shadows of the setting sun. The background features a blend of rich textures and vibrant colors, creating a sense of depth and immersion. A medium shot with a slightly elevated perspective, highlighting the natural movement of her eye.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_011/g1_video_011_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A vibrant cartoon-style illustration depicting a kangaroo performing a lively disco dance. The kangaroo has a joyful expression, with large, expressive eyes and a mischievous grin. It wears a colorful sequined outfit with sparkles, including a glittery top and matching pants. Its tail is fluffed out and swaying rhythmically. The kangaroo moves with natural fluidity, one foot lifted and the other stepping forward. The background features a blurred dance floor with colorful lights and dancing figures, creating a festive atmosphere. The illustration has a smooth, hand-drawn style with exaggerated proportions. A dynamic close-up shot from a slightly elevated angle.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_012/g1_video_012_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A beautifully crafted homemade video set in Lagos, Nigeria in the year 2056, captured with a mobile phone camera. The footage showcases diverse people going about their daily lives in a vibrant and bustling urban environment. The camera captures various individuals: a group of young Nigerian women in colorful traditional attire walking down a crowded street, a man in a smart business suit hurrying past a futuristic billboard, and a family gathered around a street vendor selling fresh fruits. The background features modern skyscrapers, traditional market stalls, and electric vehicles zipping by. The video has a warm, nostalgic feel, with occasional blurs and graininess reminiscent of mobile phone recording. A series of handheld shots and close-ups capture the dynamic energy of the city.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_013/g1_video_013_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A high-resolution digital artwork in a realistic botanical style, showcasing a petri dish where a miniature bamboo forest thrives, complete with tiny red pandas running around. The bamboo stalks are slender and green, with delicate leaves swaying gently. The red pandas, with their distinctive reddish-brown fur and black legs, move playfully among the bamboo, sometimes climbing up the stalks or nibbling on leaves. The petri dish is filled with nutrient-rich soil, and the background is a blurred but recognizable forest landscape, with hints of distant mountains and clear blue skies. The entire scene exudes a sense of harmony and tranquility, capturing the wonder of nature in a microscopic world. A macro shot from a low angle, emphasizing the intricate details of the red pandas and the bamboo.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_014/g1_video_014_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A rotating camera view inside a large New York museum gallery, showcasing a towering stack of vintage televisions, each displaying different programs from the 1950s and 1970s. The televisions show a mix of 1950s sci-fi movies, horror films, news broadcasts, static, and a 1970s sitcom. The gallery space is filled with the nostalgic glow of the old TV screens, their edges worn and frames aged. The background features other vintage exhibits and artifacts, adding to the historical ambiance. The televisions are arranged in a dynamic, almost chaotic pattern, creating a sense of visual interest and movement. A wide-angle shot capturing the entire stack and the surrounding gallery space.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_015/g1_video_015_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A 3D animation of a small, round, fluffy creature with big, expressive eyes exploring a vibrant, enchanted forest. The creature, a whimsical blend of a rabbit and a squirrel, has soft blue fur and a bushy, striped tail. It hops along a sparkling stream, its eyes wide with wonder. The forest is alive with magical elements: flowers that glow and change colors, trees with leaves in shades of purple and silver, and small floating lights that resemble fireflies. The creature stops to interact playfully with a group of tiny, fairy-like beings dancing around a mushroom ring. The creature looks up in awe at a large, glowing tree that seems to be the heart of the forest. The scene is rendered in a detailed, fantasy style, with a soft, ethereal lighting that enhances the enchantment. The camera follows the creature as it moves, capturing its playful interactions and the magical ambiance of the forest. A medium shot with a dynamic angle that highlights the creature's expressions and the enchanting environment.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_016/g1_video_016_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A dynamic shot from behind a white vintage SUV with a black roof rack as it speeds up a steep dirt road surrounded by towering redwood trees on a rugged mountain slope. Dust kicks up from its tires, and the sunlight shines on the SUV, casting a warm glow over the scene. The dirt road curves gently into the distance, with no other vehicles in sight. The trees on either side are dense redwoods, with patches of greenery scattered throughout. The car navigates the curve with ease, making it seem as if it is on a thrilling drive through the rugged terrain. The dirt road is framed by steep hills and mountains, with a clear blue sky above and wispy clouds drifting by. The camera captures the vehicle from the rear, emphasizing its powerful and adventurous journey.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_017/g1_video_017_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A detailed digital painting in the style of a realistic Japanese manga, capturing reflections in the window of a train traveling through the Tokyo suburbs. The train moves smoothly, passing through lush green fields and dense forests. Outside the window, the scenery blurs into a series of vivid colors—emerald greens, deep browns, and vibrant yellows. Inside the train, a young woman with long black hair and traditional Japanese clothing sits with a contemplative expression, gazing out the window. Her kimono is adorned with intricate patterns, and she wears a simple obi sash tied neatly. The train cabin is dimly lit, with soft shadows playing across the wooden seats. The background features a blurred yet recognizable landscape, with hints of Tokyo skyscrapers and cherry blossoms in the distance. A medium shot from a slightly tilted angle, emphasizing the reflection and the woman's serene expression.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_018/g1_video_018_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A stunning aerial photograph captured from a drone, circling around a majestic historic church perched atop a rocky outcropping along the Amalfi Coast. The camera captures the intricate architectural details and tiered pathways and patios that adorn the church, with waves crashing against the rocks below. The view extends to the horizon, showcasing the coastal waters and the rolling hills of the Amalfi Coast in Italy. Distant figures can be seen leisurely walking and enjoying the dramatic ocean views from the patios. The warm glow of the afternoon sun bathes the scene in a magical and romantic light, creating a breathtaking and serene atmosphere. The photo has a high-resolution, detailed quality that highlights every texture and color of the landscape. A wide-angle shot from a dynamic aerial perspective.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_019/g1_video_019_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A wide-angle underwater photograph captures a large orange octopus resting on the ocean floor, its tentacles spread out around its body and eyes closed. The octopus blends seamlessly with the sandy and rocky terrain. Behind a rock, a brown and spiny king crab is crawling towards it, its claws raised and ready to strike. The crab has long legs and antennae, adding to its menacing appearance. The scene is set in a clear, blue ocean with rays of sunlight filtering through, creating a vivid contrast. The photo is sharp and crisp, with a high dynamic range, emphasizing the octopus and the crab in focus while the background is slightly blurred, enhancing the sense of depth.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_020/g1_video_020_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A vibrant illustration in a whimsical cartoon style depicting a flock of paper airplanes fluttering through a dense jungle. The airplanes, resembling small birds, weave gracefully around towering trees, their wings fluttering gently. The jungle is lush and vibrant, with a variety of exotic plants and colorful flowers. The airplanes seem to migrate through the forest, creating a mesmerizing aerial dance. The background is rich with detailed textures, including sunlight filtering through the canopy, casting dappled shadows on the ground. A dynamic overhead view capturing the mid-flight action of the airplanes.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_021/g1_video_021_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A charming comic-style illustration depicting a cozy living room scene where a fluffy gray cat is waking up its sleeping owner, who lies on the couch with a sleepy, resigned expression. The cat, with large, round eyes and a mischievous look, is pawing at the owner's face and meowing insistently. The owner attempts to ignore the cat, turning away slightly, but the cat persists, jumping onto the owner's chest and nuzzling their hand. Finally, the owner, unable to resist, reaches under the pillow and pulls out a small bag of treats, offering it to the cat with a playful smile. The background shows soft, warm lighting from a nearby lamp, with scattered books and a blanket on the couch. A medium shot from a slightly elevated angle, capturing both the cat and the owner's interaction.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_022/g1_video_022_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A nature photography style photo capturing a family of orangutans along the Kinabatangan River in Borneo. The mother orangutan, with long reddish-brown fur and expressive brown eyes, is holding her baby tightly. The baby orangutan, with smaller size and lighter fur, is clinging to its mother’s chest, both gazing curiously at the camera. The father orangutan, larger and more muscular, is standing nearby, looking contemplative. The riverbank is lush with green foliage, and the water reflects the surrounding tropical rainforest. The photo has a vivid and naturalistic style, with the orangutans in focus against a slightly blurred background of dense jungle. A medium shot from a slightly elevated angle, capturing the interaction between the family.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_023/g1_video_023_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "A vibrant and lively Chinese Lunar New Year celebration video featuring a majestic Chinese dragon performing traditional dance moves. The dragon, made of colorful silk and adorned with intricate patterns, has flowing scales and a fierce expression, moving gracefully with fluid movements. It dances amidst a sea of joyful people in festive red and gold attire, accompanied by drummers and musicians playing traditional instruments. The background showcases bustling streets filled with lanterns, paper decorations, and colorful stalls. The video has a dynamic and energetic feel, capturing the essence of the festival. A wide-angle shot with dynamic camera movements following the dragon's path.",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g1_video_024/g1_video_024_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_000",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_000/g2_video_000_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_001",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_001/g2_video_001_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_002",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_002/g2_video_002_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_003",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_003/g2_video_003_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_004",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_004/g2_video_004_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_005",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_005/g2_video_005_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_006",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_006/g2_video_006_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_007",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_007/g2_video_007_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_008",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_008/g2_video_008_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_009",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_009/g2_video_009_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_010",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_010/g2_video_010_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_011",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_011/g2_video_011_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_012",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_012/g2_video_012_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_013",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_013/g2_video_013_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_014",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_014/g2_video_014_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_015",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_015/g2_video_015_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_016",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_016/g2_video_016_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_017",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_017/g2_video_017_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_018",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_018/g2_video_018_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_019",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_019/g2_video_019_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_020",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_020/g2_video_020_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_021",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_021/g2_video_021_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_022",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_022/g2_video_022_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_023",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_023/g2_video_023_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_024",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g2_video_024/g2_video_024_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_000",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_000/g3_video_000_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_001",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_001/g3_video_001_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_002",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_002/g3_video_002_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_003",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_003/g3_video_003_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_004",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_004/g3_video_004_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_005",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_005/g3_video_005_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_006",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_006/g3_video_006_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_007",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_007/g3_video_007_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_008",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_008/g3_video_008_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_009",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_009/g3_video_009_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_010",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_010/g3_video_010_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_011",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_011/g3_video_011_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_012",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_012/g3_video_012_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_013",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_013/g3_video_013_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_014",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_014/g3_video_014_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_015",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_015/g3_video_015_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_016",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_016/g3_video_016_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_017",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_017/g3_video_017_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_018",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_018/g3_video_018_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_019",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_019/g3_video_019_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_020",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_020/g3_video_020_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_021",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_021/g3_video_021_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_022",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_022/g3_video_022_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_023",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_023/g3_video_023_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_024",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g3_video_024/g3_video_024_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_000",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_000/g4_video_000_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_001",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_001/g4_video_001_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_002",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_002/g4_video_002_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_003",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_003/g4_video_003_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_004",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_004/g4_video_004_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_005",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_005/g4_video_005_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_006",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_006/g4_video_006_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_007",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_007/g4_video_007_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_008",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_008/g4_video_008_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_009",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_009/g4_video_009_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_010",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_010/g4_video_010_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_011",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_011/g4_video_011_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_012",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_012/g4_video_012_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_013",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_013/g4_video_013_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_014",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_014/g4_video_014_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_015",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_015/g4_video_015_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_016",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_016/g4_video_016_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_017",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_017/g4_video_017_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_018",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_018/g4_video_018_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_019",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_019/g4_video_019_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_020",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_020/g4_video_020_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_021",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_021/g4_video_021_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_022",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_022/g4_video_022_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_023",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_023/g4_video_023_008.mp4"
+    ]
+  },
+  {
+    "prompt_en": "video_024",
+    "dimension": [
+      "subject_consistency"
+    ],
+    "video_list": [
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_000.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_001.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_002.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_003.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_004.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_005.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_006.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_007.mp4",
+      "/workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/split_clip/g4_video_024/g4_video_024_008.mp4"
+    ]
+  }
+]

@@ -1,0 +1,1 @@
+{"rank": 1, "gpu": "1", "assigned_total": 4, "assigned_subtasks": ["background_consistency", "appearance_style", "spatial_relationship", "dynamic_degree"], "completed_subtasks": 4, "current_subtask": null, "next_subtask": "-", "percent": 100, "status_text": "done", "elapsed_sec": 0, "done": true, "error": null, "updated_at": 1770805112.7508667}

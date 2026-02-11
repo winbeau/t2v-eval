@@ -1,0 +1,1 @@
+{"rank": 0, "gpu": "0", "assigned_total": 4, "assigned_subtasks": ["subject_consistency", "temporal_style", "multiple_objects", "overall_consistency"], "completed_subtasks": 4, "current_subtask": null, "next_subtask": "-", "percent": 100, "status_text": "done", "elapsed_sec": 0, "done": true, "error": null, "updated_at": 1770805112.8249493}
