@@ -2186,8 +2186,7 @@ def run_vbench_evaluation(
                     if rank == 0:
                         logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
             else:
-                if rank == 0:
-                    logger.warning(f"Result file not found: {result_file}")
+                logger.warning(f"[rank {rank}] Result file not found: {result_file}")
             if progress_reporter is not None:
                 progress_reporter.finish_task(success=True)
         except Exception as e:
@@ -2393,6 +2392,7 @@ def main():
         )
 
     vbench_output = output_dir / "vbench_per_video.csv"
+    vbench_config = config.get("metrics", {}).get("vbench", {})
 
     # Check if already exists
     if vbench_output.exists() and not args.force:
@@ -2603,6 +2603,12 @@ def main():
                     expected_count,
                 )
 
+        missing_coverage = [
+            (name, covered, total)
+            for name, covered, total in coverage_rows
+            if covered != total
+        ]
+
         # Save results
         df_results.to_csv(vbench_output, index=False)
         logger.info(f"VBench results saved to: {vbench_output}")
@@ -2629,6 +2635,21 @@ def main():
             for name, covered, total in coverage_rows:
                 status = "OK" if covered == total else "MISS"
                 logger.info(f"{name:<{name_width}} | {covered:>4d}/{total:<4d} | {status}")
+
+        profile = str(vbench_config.get("dimension_profile", "")).strip().lower()
+        strict_full_coverage = bool(vbench_config.get("require_full_coverage", False))
+        if not strict_full_coverage and profile in {"long_16", "16", "16d", "full", "full_16"}:
+            strict_full_coverage = True
+
+        if strict_full_coverage and missing_coverage:
+            short_msg = ", ".join(
+                f"{name}:{covered}/{total}" for name, covered, total in missing_coverage
+            )
+            raise RuntimeError(
+                "VBench coverage check failed under strict mode: "
+                f"{short_msg}. "
+                "Install missing dependencies / inspect failed subtasks, then rerun."
+            )
     finally:
         if progress_reporter is not None:
             progress_reporter.mark_done()
