@@ -229,9 +229,9 @@ def patch_pretrained_model_tied_weights() -> None:
     if hasattr(PreTrainedModel, "all_tied_weights_keys"):
         return
 
-    # Return a fresh empty list per access; tag2Text models have no tied weights.
+    # _tied_weights_keys defaults to None on PreTrainedModel; guard against that.
     PreTrainedModel.all_tied_weights_keys = property(
-        lambda self: list(getattr(self, "_tied_weights_keys", []))
+        lambda self: list(getattr(self, "_tied_weights_keys", None) or [])
     )
     logger.debug("Patched PreTrainedModel with all_tied_weights_keys property.")
 
