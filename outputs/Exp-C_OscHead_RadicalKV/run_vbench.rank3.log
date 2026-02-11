@@ -1,0 +1,163 @@
+2026-02-11 11:11:41 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 11:11:41 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 11:11:41 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 11:11:41 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 11:11:41 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 11:11:44 [INFO] Applied compatibility shim for `moviepy.editor` (VBench-Long expects legacy import path).
+2026-02-11 11:14:42 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 11:14:42 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 11:14:42 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 11:14:42 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 11:14:42 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 11:14:45 [INFO] Applied compatibility shim for `moviepy.editor` (VBench-Long expects legacy import path).
+2026-02-11 11:16:49 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 11:16:49 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 11:16:49 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 11:16:49 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 11:16:49 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 11:19:52 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 11:19:52 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 11:19:52 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 11:19:52 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 11:19:52 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 11:23:22 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 11:23:22 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 11:23:22 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 11:23:22 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 11:23:22 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 11:24:57 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 11:24:57 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 11:24:57 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 11:24:57 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 11:24:57 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 11:30:34 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 11:30:34 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 11:30:34 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 11:30:34 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 11:30:34 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 11:38:15 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 11:38:16 [WARNING] [rank 3] Failed to run subtask object_class: 'str' object has no attribute 'type'
+2026-02-11 11:38:16 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 11:38:16 [WARNING] [rank 3] Failed to run subtask color: 'str' object has no attribute 'type'
+2026-02-11 11:44:58 [INFO] Rank 3 wrote partial results: outputs/Exp-C_OscHead_RadicalKV/vbench_partials/rank_3.csv
+2026-02-11 11:52:20 [INFO] Rank 3 finished distributed VBench worker.
+2026-02-11 12:56:20 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 12:56:20 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 12:56:20 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 12:56:20 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 12:56:20 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 13:04:02 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:04:04 [WARNING] [rank 3] Failed to run subtask object_class: 'str' object has no attribute 'type'
+2026-02-11 13:04:04 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:04:04 [WARNING] [rank 3] Failed to run subtask color: 'str' object has no attribute 'type'
+2026-02-11 13:06:25 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 13:06:25 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 13:06:25 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 13:06:25 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 13:06:25 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 13:14:06 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:14:08 [WARNING] [rank 3] Failed to run subtask object_class: 'str' object has no attribute 'type'
+2026-02-11 13:14:08 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:14:08 [WARNING] [rank 3] Failed to run subtask color: 'str' object has no attribute 'type'
+2026-02-11 13:18:13 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 13:18:13 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 13:18:13 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 13:18:13 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 13:18:13 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 13:26:01 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:26:03 [WARNING] [rank 3] Failed to run subtask object_class: 'str' object has no attribute 'type'
+2026-02-11 13:26:03 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:26:03 [WARNING] [rank 3] Failed to run subtask color: 'str' object has no attribute 'type'
+2026-02-11 13:30:34 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 13:30:34 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 13:30:34 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 13:30:34 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 13:30:34 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 13:31:20 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 13:31:20 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 13:31:20 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 13:31:20 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 13:31:20 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 13:39:05 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:39:06 [WARNING] [rank 3] Failed to run subtask object_class: 'str' object has no attribute 'type'
+2026-02-11 13:39:06 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 13:39:06 [WARNING] [rank 3] Failed to run subtask color: 'str' object has no attribute 'type'
+2026-02-11 13:45:55 [INFO] Rank 3 wrote partial results: outputs/Exp-C_OscHead_RadicalKV/vbench_partials/rank_3.csv
+2026-02-11 13:53:05 [INFO] Rank 3 finished distributed VBench worker.
+2026-02-11 13:55:06 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 13:55:06 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 13:55:06 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 13:55:06 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 13:55:06 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 13:55:10 [WARNING] Cannot find apply_chunking_to_forward in transformers; scene dimension may fail.
+2026-02-11 14:03:06 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 14:03:08 [WARNING] [rank 3] Failed to run subtask object_class: No module named 'boto3'
+2026-02-11 14:03:08 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 14:03:10 [WARNING] [rank 3] Failed to run subtask color: No module named 'boto3'
+2026-02-11 14:03:56 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 14:03:56 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 14:03:56 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 14:03:56 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 14:03:56 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 14:04:01 [WARNING] Cannot find apply_chunking_to_forward in transformers; scene dimension may fail.
+2026-02-11 14:09:21 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 14:09:21 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 14:09:21 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 14:09:21 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 14:09:21 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 14:16:59 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 14:16:59 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 14:16:59 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 14:16:59 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 14:16:59 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 14:17:04 [INFO] Injected built-in shims into transformers.modeling_utils: ['find_pruneable_heads_and_indices']
+2026-02-11 14:23:57 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 14:23:57 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 14:23:57 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 14:23:57 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 14:23:57 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 14:24:01 [INFO] Injected built-in shims into transformers.modeling_utils: ['find_pruneable_heads_and_indices']
+2026-02-11 14:31:42 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 14:31:44 [WARNING] [rank 3] Failed to run subtask object_class: No module named 'boto3'
+2026-02-11 14:31:44 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 14:31:46 [WARNING] [rank 3] Failed to run subtask color: No module named 'boto3'
+2026-02-11 14:34:55 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 14:34:55 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 14:34:55 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 14:34:55 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 14:34:55 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 14:35:00 [INFO] Injected built-in shims into transformers.modeling_utils: ['find_pruneable_heads_and_indices']
+2026-02-11 14:41:22 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 14:41:22 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 14:41:22 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 14:41:22 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 14:41:22 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 14:41:27 [INFO] Injected built-in shims into transformers.modeling_utils: ['find_pruneable_heads_and_indices']
+2026-02-11 14:47:00 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 14:47:00 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 14:47:00 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 14:47:00 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 14:47:00 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 14:47:04 [INFO] Injected built-in shims into transformers.modeling_utils: ['find_pruneable_heads_and_indices']
+2026-02-11 14:54:55 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 14:54:57 [WARNING] [rank 3] Failed to run subtask object_class: No module named 'boto3'
+2026-02-11 14:54:57 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 14:54:59 [WARNING] [rank 3] Failed to run subtask color: No module named 'boto3'
+2026-02-11 15:01:41 [INFO] Rank 3 wrote partial results: outputs/Exp-C_OscHead_RadicalKV/vbench_partials/rank_3.csv
+2026-02-11 15:18:47 [INFO] Rank 3 finished distributed VBench worker.
+2026-02-11 16:58:16 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 16:58:16 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 16:58:16 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 16:58:16 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 16:58:16 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 16:58:20 [INFO] Injected built-in shims into transformers.modeling_utils: ['find_pruneable_heads_and_indices']
+2026-02-11 17:08:20 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:08:20 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:08:20 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:08:20 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:08:20 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:08:52 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:08:52 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:08:52 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:08:52 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:08:52 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
