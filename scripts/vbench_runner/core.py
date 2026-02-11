@@ -445,7 +445,16 @@ class MultiGpuProgressBoard:
         self._stop = threading.Event()
         self._printed_live_block = False
         self._stdout = sys.__stdout__
-        self._overwrite_supported = bool(getattr(self._stdout, "isatty", lambda: False)())
+        stream_is_tty = bool(getattr(self._stdout, "isatty", lambda: False)())
+        force_overwrite = str(os.environ.get("VBENCH_FORCE_PROGRESS_OVERWRITE", "")).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        torchrun_like = bool(os.environ.get("TORCHELASTIC_RUN_ID"))
+        term_ok = str(os.environ.get("TERM", "")).strip().lower() not in {"", "dumb"}
+        self._overwrite_supported = bool(stream_is_tty or force_overwrite or (torchrun_like and term_ok))
         self._last_non_tty_emit = 0.0
         self._last_lines: list[str] = []
         self._anchor_ready = False
@@ -532,6 +541,9 @@ class MultiGpuProgressBoard:
             self._anchor_ready = True
         self._stdout.flush()
         self._printed_live_block = True
+        mode = "overwrite" if self._overwrite_supported else "snapshot"
+        print(f"[Progress Render Mode] {mode}", file=self._stdout)
+        self._stdout.flush()
 
     def _derive_next_task(self, status: dict) -> str:
         assigned = list(status.get("assigned_subtasks", []))
