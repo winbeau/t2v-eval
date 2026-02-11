@@ -340,9 +340,21 @@ class RankProgressReporter:
         return str(self.local_rank)
 
     def _next_subtask(self) -> str:
+        total = len(self.assigned_subtasks)
+        if total == 0:
+            return "-"
+
         if self._current_subtask:
-            return self._current_subtask
-        if self._completed_subtasks < len(self.assigned_subtasks):
+            try:
+                current_idx = self.assigned_subtasks.index(self._current_subtask)
+            except ValueError:
+                current_idx = self._completed_subtasks
+            next_idx = current_idx + 1
+            if 0 <= next_idx < total:
+                return self.assigned_subtasks[next_idx]
+            return "-"
+
+        if self._completed_subtasks < total:
             return self.assigned_subtasks[self._completed_subtasks]
         return "-"
 
