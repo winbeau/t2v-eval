@@ -3,8 +3,10 @@ Compatibility patches for VBench internals.
 
 Fixes known issues in the VBench submodule without modifying its source:
   1. transformers removed apply_chunking_to_forward from modeling_utils
-  2. clip.tokenize() defaults to truncate=False, causing errors on long prompts
-  3. GrIT model expects torch.device but receives a string
+  2. transformers removed all_tied_weights_keys from PreTrainedModel
+  3. transformers removed additional_special_tokens_ids dynamic resolution
+  4. clip.tokenize() defaults to truncate=False, causing errors on long prompts
+  5. GrIT model expects torch.device but receives a string
 """
 
 try:
@@ -211,9 +213,33 @@ def patch_tokenizer_special_tokens_ids() -> None:
     logger.debug("Patched tag2Text.init_tokenizer for tokenizer compatibility.")
 
 
+def patch_pretrained_model_tied_weights() -> None:
+    """
+    Add missing all_tied_weights_keys to PreTrainedModel.
+
+    Newer transformers removed the ``all_tied_weights_keys`` property from
+    ``PreTrainedModel``. VBench's tag2Text models (inheriting from
+    PreTrainedModel) access it during model initialization/checkpoint loading.
+    """
+    try:
+        from transformers import PreTrainedModel
+    except ImportError:
+        return
+
+    if hasattr(PreTrainedModel, "all_tied_weights_keys"):
+        return
+
+    # Return a fresh empty list per access; tag2Text models have no tied weights.
+    PreTrainedModel.all_tied_weights_keys = property(
+        lambda self: list(getattr(self, "_tied_weights_keys", []))
+    )
+    logger.debug("Patched PreTrainedModel with all_tied_weights_keys property.")
+
+
 def apply_vbench_compat_patches() -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
+    patch_pretrained_model_tied_weights()
     patch_tokenizer_special_tokens_ids()
     patch_clip_tokenize_truncate()
     patch_grit_device_compat()
