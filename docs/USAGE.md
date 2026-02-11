@@ -29,6 +29,11 @@ apt install -y python3.10-dev build-essential
 ```
 
 ## 1. 环境与依赖（常见问题修复）
+- VBench 16 维推荐稳定栈（已在 `pyproject.toml` 固定）：
+  - `torch==2.1.2`
+  - `torchvision==0.16.2`
+  - `timm<=1.0.12`
+  - 执行：`uv sync`
 - `ModuleNotFoundError: yaml/pandas/PIL/decord/cv2`：
   - 运行 `uv sync` 后仍缺依赖时，补装：`uv pip install PyYAML pandas pillow decord opencv-python`
   - 服务器建议用无头版：`opencv-python-headless`
@@ -41,6 +46,11 @@ apt install -y python3.10-dev build-essential
   - 安装/升级 `setuptools`：`uv pip install -U setuptools`
 - `ImportError: PyAV is not installed`：
   - 安装：`uv pip install av`
+- `No module named 'fairscale'`（16维里的 `scene` 常见）：
+  - 安装：`uv pip install fairscale`
+- `No module named 'detectron2'`（`object_class`/`multiple_objects`/`spatial_relationship`/`color`）：
+  - 先装构建后端：`uv pip install hatchling`
+  - 再装：`uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"`
 - `ffmpeg` 不存在：预处理写视频会失败（安装命令见上）
 - 编译失败 `Python.h` 缺失：安装 Python 头文件与编译工具（命令见上）
 - HF 访问报 401：

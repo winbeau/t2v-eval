@@ -73,6 +73,11 @@ uv sync
 source .venv/bin/activate
 ```
 
+Pinned baseline for VBench-Long 16D compatibility:
+- `torch==2.1.2`
+- `torchvision==0.16.2`
+- `timm<=1.0.12`
+
 ### 3. Run Evaluation
 
 ```bash

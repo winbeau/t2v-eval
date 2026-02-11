@@ -88,6 +88,11 @@ uv sync
 source .venv/bin/activate
 ```
 
+为保证 VBench-Long 16 维兼容性，环境已固定为：
+- `torch==2.1.2`
+- `torchvision==0.16.2`
+- `timm<=1.0.12`
+
 ### 3. 运行评测
 
 ```bash
