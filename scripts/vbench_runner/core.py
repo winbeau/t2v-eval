@@ -479,8 +479,10 @@ class MultiGpuProgressBoard:
 
         headers = {"gpu": "GPU", "tasks": "Assigned Tasks", "done": "Done", "next": "Next Task"}
         widths = {
-            key: max(len(headers[key]), max(len(str(row[key])) for row in rows) if rows else 0)
-            for key in headers
+            "gpu": 4,
+            "tasks": 52,
+            "done": 4,
+            "next": 20,
         }
 
         sep = (
@@ -488,7 +490,6 @@ class MultiGpuProgressBoard:
             + "+".join("-" * (widths[key] + 2) for key in ["gpu", "tasks", "done", "next"])
             + "+"
         )
-        print("\n[Multi-GPU Progress Board]", file=self._stdout)
         print(sep, file=self._stdout)
         print(
             f"| {headers['gpu']:<{widths['gpu']}} "
@@ -1005,10 +1006,12 @@ def ensure_moviepy_editor_compat() -> None:
     editor_module = types.ModuleType("moviepy.editor")
     editor_module.VideoFileClip = VideoFileClip
     sys.modules["moviepy.editor"] = editor_module
-    logger.info(
-        "Applied compatibility shim for `moviepy.editor` "
-        "(VBench-Long expects legacy import path)."
-    )
+    rank = int(os.environ.get("RANK", "0"))
+    if rank == 0:
+        logger.info(
+            "Applied compatibility shim for `moviepy.editor` "
+            "(VBench-Long expects legacy import path)."
+        )
 
 
 def configure_warning_filters() -> None:
