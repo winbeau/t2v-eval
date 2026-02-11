@@ -285,7 +285,7 @@ def copy_outputs_to_frontend(output_dir: Path, paths_config: dict, vbench_output
         existing_files = set()
         if manifest_path.exists():
             try:
-                with open(manifest_path, "r") as f:
+                with open(manifest_path) as f:
                     manifest = json.load(f)
                     existing_files = set(manifest.get("files", []))
             except (json.JSONDecodeError, KeyError):

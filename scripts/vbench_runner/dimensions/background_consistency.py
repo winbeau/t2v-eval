@@ -6,4 +6,3 @@ SPEC = DimensionSpec(
     description="Long-term background consistency",
     requires_clip=True,
 )
-

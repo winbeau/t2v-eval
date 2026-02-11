@@ -9,8 +9,9 @@ import re
 import sys
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 try:
     from .env import logger
@@ -202,7 +203,7 @@ class MultiGpuProgressBoard:
         path = self._status_file(rank)
         if path.exists():
             try:
-                with open(path, "r", encoding="utf-8") as f:
+                with open(path, encoding="utf-8") as f:
                     return json.load(f)
             except Exception:
                 pass

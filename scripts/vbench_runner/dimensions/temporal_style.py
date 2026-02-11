@@ -6,4 +6,3 @@ SPEC = DimensionSpec(
     description="Temporal style consistency",
     requires_clip=True,
 )
-

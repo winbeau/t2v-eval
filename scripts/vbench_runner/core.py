@@ -15,104 +15,104 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable
+from collections.abc import Callable
 
 import pandas as pd
 
 try:
-    from .env import (
-        VBENCH_ROOT,
-        PROJECT_ROOT,
-        logger,
-        setup_log_file_handler,
-        check_vbench_installation,
-        setup_vbench_path,
-        configure_warning_filters,
-        configure_third_party_loggers,
-        ensure_moviepy_editor_compat,
-        load_config,
-        resolve_path,
-        use_vbench_long,
-        get_vbench_subtasks,
-        ensure_clip_dependency,
-        ensure_pyiqa_dependency,
-        ensure_extended_dimension_dependencies,
-        ensure_pyav_dependency,
-    )
-    from .distributed import (
-        init_distributed_if_needed,
-        _parse_visible_devices,
-        split_subtasks_for_rank,
-        merge_rank_partial_results,
-        make_file_barrier,
-        maybe_auto_launch_multi_gpu,
-    )
-    from .progress import (
-        RankProgressReporter,
-        MultiGpuProgressBoard,
-        summarize_vbench_stdout,
-        run_callable_with_progress,
-        run_evaluate_with_progress,
-    )
-    from .video_records import (
-        load_video_records_for_vbench,
-        ensure_unique_video_ids,
-        copy_outputs_to_frontend,
-        get_input_video_files,
-        are_split_clips_ready,
-    )
     from .auxiliary import (
         build_auxiliary_prompt_lookup,
         patch_long_custom_full_info_builder,
     )
-    from .results import extract_subtask_scores
-except ImportError:
-    from vbench_runner.env import (
-        VBENCH_ROOT,
-        PROJECT_ROOT,
-        logger,
-        setup_log_file_handler,
-        check_vbench_installation,
-        setup_vbench_path,
-        configure_warning_filters,
-        configure_third_party_loggers,
-        ensure_moviepy_editor_compat,
-        load_config,
-        resolve_path,
-        use_vbench_long,
-        get_vbench_subtasks,
-        ensure_clip_dependency,
-        ensure_pyiqa_dependency,
-        ensure_extended_dimension_dependencies,
-        ensure_pyav_dependency,
-    )
-    from vbench_runner.distributed import (
-        init_distributed_if_needed,
+    from .distributed import (
         _parse_visible_devices,
-        split_subtasks_for_rank,
-        merge_rank_partial_results,
+        init_distributed_if_needed,
         make_file_barrier,
         maybe_auto_launch_multi_gpu,
+        merge_rank_partial_results,
+        split_subtasks_for_rank,
     )
-    from vbench_runner.progress import (
-        RankProgressReporter,
+    from .env import (
+        PROJECT_ROOT,
+        VBENCH_ROOT,
+        check_vbench_installation,
+        configure_third_party_loggers,
+        configure_warning_filters,
+        ensure_clip_dependency,
+        ensure_extended_dimension_dependencies,
+        ensure_moviepy_editor_compat,
+        ensure_pyav_dependency,
+        ensure_pyiqa_dependency,
+        get_vbench_subtasks,
+        load_config,
+        logger,
+        resolve_path,
+        setup_log_file_handler,
+        setup_vbench_path,
+        use_vbench_long,
+    )
+    from .progress import (
         MultiGpuProgressBoard,
-        summarize_vbench_stdout,
+        RankProgressReporter,
         run_callable_with_progress,
         run_evaluate_with_progress,
+        summarize_vbench_stdout,
     )
-    from vbench_runner.video_records import (
-        load_video_records_for_vbench,
-        ensure_unique_video_ids,
-        copy_outputs_to_frontend,
-        get_input_video_files,
+    from .results import extract_subtask_scores
+    from .video_records import (
         are_split_clips_ready,
+        copy_outputs_to_frontend,
+        ensure_unique_video_ids,
+        get_input_video_files,
+        load_video_records_for_vbench,
     )
+except ImportError:
     from vbench_runner.auxiliary import (
         build_auxiliary_prompt_lookup,
         patch_long_custom_full_info_builder,
     )
+    from vbench_runner.distributed import (
+        _parse_visible_devices,
+        init_distributed_if_needed,
+        make_file_barrier,
+        maybe_auto_launch_multi_gpu,
+        merge_rank_partial_results,
+        split_subtasks_for_rank,
+    )
+    from vbench_runner.env import (
+        PROJECT_ROOT,
+        VBENCH_ROOT,
+        check_vbench_installation,
+        configure_third_party_loggers,
+        configure_warning_filters,
+        ensure_clip_dependency,
+        ensure_extended_dimension_dependencies,
+        ensure_moviepy_editor_compat,
+        ensure_pyav_dependency,
+        ensure_pyiqa_dependency,
+        get_vbench_subtasks,
+        load_config,
+        logger,
+        resolve_path,
+        setup_log_file_handler,
+        setup_vbench_path,
+        use_vbench_long,
+    )
+    from vbench_runner.progress import (
+        MultiGpuProgressBoard,
+        RankProgressReporter,
+        run_callable_with_progress,
+        run_evaluate_with_progress,
+        summarize_vbench_stdout,
+    )
     from vbench_runner.results import extract_subtask_scores
+    from vbench_runner.video_records import (
+        are_split_clips_ready,
+        copy_outputs_to_frontend,
+        ensure_unique_video_ids,
+        get_input_video_files,
+        load_video_records_for_vbench,
+    )
 
 
 # =============================================================================
@@ -138,7 +138,9 @@ def run_vbench_evaluation(
     """
     setup_vbench_path()
     if barrier_fn is None:
-        barrier_fn = lambda: None
+
+        def barrier_fn() -> None:
+            return None
 
     long_mode = use_vbench_long(config)
 

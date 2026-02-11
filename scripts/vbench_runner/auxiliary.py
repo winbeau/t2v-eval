@@ -202,7 +202,7 @@ def build_auxiliary_prompt_lookup(
     if not full_info_path.exists():
         return {}, {}
 
-    with open(full_info_path, "r", encoding="utf-8") as f:
+    with open(full_info_path, encoding="utf-8") as f:
         full_info_data = json.load(f)
 
     exact: dict[str, dict[str, dict]] = {dim: {} for dim in AUXILIARY_REQUIRED_LONG_DIMS}
@@ -279,12 +279,14 @@ def patch_long_custom_full_info_builder(
         videos_path,
         name,
         dimension_list,
-        prompt_list=[],
+        prompt_list=None,
         special_str="",
         verbose=False,
         mode="vbench_standard",
         **kwargs,
     ):
+        if prompt_list is None:
+            prompt_list = []
         if str(mode).strip().lower() != "long_custom_input":
             return original_build(
                 videos_path,

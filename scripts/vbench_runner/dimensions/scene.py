@@ -5,4 +5,3 @@ SPEC = DimensionSpec(
     key="scene",
     description="Scene-level correctness",
 )
-

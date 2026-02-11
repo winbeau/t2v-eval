@@ -8,4 +8,3 @@ class DimensionSpec:
     requires_clip: bool = False
     requires_pyiqa: bool = False
     long_mode_only: bool = True
-

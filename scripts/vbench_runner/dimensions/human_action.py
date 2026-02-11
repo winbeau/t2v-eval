@@ -6,4 +6,3 @@ SPEC = DimensionSpec(
     description="Human action correctness",
     requires_clip=True,
 )
-

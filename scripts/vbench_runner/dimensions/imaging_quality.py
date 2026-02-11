@@ -6,4 +6,3 @@ SPEC = DimensionSpec(
     description="Frame-wise imaging quality",
     requires_pyiqa=True,
 )
-

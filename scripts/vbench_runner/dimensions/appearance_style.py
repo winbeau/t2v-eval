@@ -6,4 +6,3 @@ SPEC = DimensionSpec(
     description="Appearance/style consistency",
     requires_clip=True,
 )
-

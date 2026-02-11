@@ -9,7 +9,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Callable
+from collections.abc import Callable
 
 import pandas as pd
 

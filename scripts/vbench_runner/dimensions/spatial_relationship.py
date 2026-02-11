@@ -5,4 +5,3 @@ SPEC = DimensionSpec(
     key="spatial_relationship",
     description="Spatial relationship correctness",
 )
-

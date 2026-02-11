@@ -6,4 +6,3 @@ SPEC = DimensionSpec(
     description="Aesthetic quality",
     requires_clip=True,
 )
-

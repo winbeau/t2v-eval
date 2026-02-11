@@ -1,5 +1,5 @@
-from .appearance_style import SPEC as APPEARANCE_STYLE
 from .aesthetic_quality import SPEC as AESTHETIC_QUALITY
+from .appearance_style import SPEC as APPEARANCE_STYLE
 from .background_consistency import SPEC as BACKGROUND_CONSISTENCY
 from .base import DimensionSpec
 from .color import SPEC as COLOR
