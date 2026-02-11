@@ -92,7 +92,11 @@ def setup_vbench_path():
 
 def init_distributed_if_needed() -> tuple[int, int, Callable[[], None]]:
     """
-    Initialize torch distributed when launched via torchrun.
+    Read torchrun rank/world_size without initializing torch.distributed.
+
+    We intentionally avoid process-group init because this pipeline parallelizes
+    by dimensions (different ranks run different dimensions). VBench internals
+    use all_gather/barrier and can deadlock if a global process group is active.
 
     Returns:
         (rank, world_size, barrier_fn)
@@ -100,19 +104,8 @@ def init_distributed_if_needed() -> tuple[int, int, Callable[[], None]]:
     world_size_env = int(os.environ.get("WORLD_SIZE", "1"))
     if world_size_env <= 1:
         return 0, 1, (lambda: None)
-
-    setup_vbench_path()
-    from vbench.distributed import dist_init, get_rank, get_world_size, barrier
-
-    try:
-        import torch.distributed as dist
-        if not dist.is_initialized():
-            dist_init()
-    except Exception:
-        # Fallback to VBench helper init in unusual runtimes
-        dist_init()
-
-    return int(get_rank()), int(get_world_size()), barrier
+    rank = int(os.environ.get("RANK", "0"))
+    return rank, world_size_env, (lambda: None)
 
 
 def _parse_visible_devices() -> list[str]:
@@ -172,6 +165,42 @@ def merge_rank_partial_results(partial_frames: list[pd.DataFrame]) -> pd.DataFra
     if metric_cols:
         df_wide["vbench_temporal_score"] = df_wide[metric_cols].mean(axis=1)
     return df_wide
+
+
+def make_file_barrier(sync_dir: Path, rank: int, world_size: int) -> Callable[[], None]:
+    """
+    Build a filesystem-based barrier for multi-process coordination.
+
+    This avoids torch.distributed dependency while still synchronizing stages
+    (e.g., one-time preprocess completion, partial result collection).
+    """
+    sync_dir.mkdir(parents=True, exist_ok=True)
+    counter_lock = threading.Lock()
+    stage_counter = {"value": 0}
+
+    def _barrier(timeout_sec: float = 7200.0, poll_sec: float = 0.2) -> None:
+        if world_size <= 1:
+            return
+        with counter_lock:
+            stage_counter["value"] += 1
+            stage = stage_counter["value"]
+        stage_dir = sync_dir / f"stage_{stage:03d}"
+        stage_dir.mkdir(parents=True, exist_ok=True)
+        marker = stage_dir / f"rank_{rank}.done"
+        marker.write_text(str(time.time()), encoding="utf-8")
+
+        deadline = time.time() + timeout_sec
+        while True:
+            ready = len(list(stage_dir.glob("rank_*.done")))
+            if ready >= world_size:
+                return
+            if time.time() > deadline:
+                raise TimeoutError(
+                    f"File barrier timeout at {stage_dir} ({ready}/{world_size} ready)"
+                )
+            time.sleep(poll_sec)
+
+    return _barrier
 
 
 def _shorten_text(text: str, max_len: int) -> str:
@@ -1960,10 +1989,20 @@ def main():
     rank, world_size, barrier_fn = init_distributed_if_needed()
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     if rank == 0 and world_size > 1:
-        logger.info(f"Distributed mode enabled: world_size={world_size}")
+        logger.info(
+            "Multi-process dimension-parallel mode enabled: world_size=%d (no torch.distributed init)",
+            world_size,
+        )
 
     output_dir = Path(paths_config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
+    if world_size > 1:
+        sync_run_id = os.environ.get("TORCHELASTIC_RUN_ID") or str(int(time.time()))
+        barrier_fn = make_file_barrier(
+            sync_dir=output_dir / "vbench_sync" / sync_run_id,
+            rank=rank,
+            world_size=world_size,
+        )
 
     vbench_output = output_dir / "vbench_per_video.csv"
 
