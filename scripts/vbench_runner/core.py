@@ -174,6 +174,279 @@ def merge_rank_partial_results(partial_frames: list[pd.DataFrame]) -> pd.DataFra
     return df_wide
 
 
+def _shorten_text(text: str, max_len: int) -> str:
+    """Shorten text for compact terminal table display."""
+    if len(text) <= max_len:
+        return text
+    if max_len <= 3:
+        return text[:max_len]
+    return text[: max_len - 3] + "..."
+
+
+class RankProgressReporter:
+    """Per-rank progress reporter writing JSON status for controller display."""
+
+    def __init__(
+        self,
+        progress_dir: Path,
+        rank: int,
+        local_rank: int,
+        assigned_subtasks: list[str],
+        visible_devices: list[str] | None = None,
+    ):
+        self.progress_dir = progress_dir
+        self.rank = rank
+        self.local_rank = local_rank
+        self.assigned_subtasks = list(assigned_subtasks)
+        self.visible_devices = visible_devices or []
+        self._lock = threading.Lock()
+        self._completed_subtasks = 0
+        self._current_subtask: str | None = None
+        self._current_percent: int | None = None
+        self._status_text = "idle"
+        self._elapsed_sec = 0
+        self._done = False
+        self._last_error: str | None = None
+        self._write_status()
+
+    @property
+    def _status_file(self) -> Path:
+        return self.progress_dir / f"rank_{self.rank}.json"
+
+    def _gpu_label(self) -> str:
+        if self.visible_devices and 0 <= self.local_rank < len(self.visible_devices):
+            return self.visible_devices[self.local_rank]
+        return str(self.local_rank)
+
+    def _next_subtask(self) -> str:
+        if self._current_subtask:
+            return self._current_subtask
+        if self._completed_subtasks < len(self.assigned_subtasks):
+            return self.assigned_subtasks[self._completed_subtasks]
+        return "-"
+
+    def _write_status(self) -> None:
+        payload = {
+            "rank": self.rank,
+            "gpu": self._gpu_label(),
+            "assigned_total": len(self.assigned_subtasks),
+            "assigned_subtasks": self.assigned_subtasks,
+            "completed_subtasks": self._completed_subtasks,
+            "current_subtask": self._current_subtask,
+            "next_subtask": self._next_subtask(),
+            "percent": self._current_percent,
+            "status_text": self._status_text,
+            "elapsed_sec": int(self._elapsed_sec),
+            "done": self._done,
+            "error": self._last_error,
+            "updated_at": time.time(),
+        }
+        self.progress_dir.mkdir(parents=True, exist_ok=True)
+        tmp_path = self._status_file.with_suffix(".json.tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+        tmp_path.replace(self._status_file)
+
+    def start_task(self, task_name: str, status_text: str = "running") -> None:
+        with self._lock:
+            self._current_subtask = task_name
+            self._current_percent = 0
+            self._status_text = status_text
+            self._elapsed_sec = 0
+            self._write_status()
+
+    def update_live(self, percent: int | None, status_text: str, elapsed_sec: int) -> None:
+        with self._lock:
+            if percent is not None:
+                self._current_percent = max(0, min(99, int(percent)))
+            self._status_text = status_text
+            self._elapsed_sec = int(elapsed_sec)
+            self._write_status()
+
+    def finish_task(
+        self,
+        success: bool = True,
+        error: str | None = None,
+        count_completion: bool = True,
+    ) -> None:
+        with self._lock:
+            if count_completion and self._current_subtask is not None:
+                self._completed_subtasks += 1
+            self._current_percent = 100
+            self._status_text = "done" if success else "failed"
+            self._last_error = _shorten_text(str(error), 120) if error else None
+            self._current_subtask = None
+            self._elapsed_sec = 0
+            self._write_status()
+
+    def mark_done(self) -> None:
+        with self._lock:
+            self._done = True
+            self._current_subtask = None
+            self._current_percent = 100 if self.assigned_subtasks else 0
+            self._status_text = "done"
+            self._elapsed_sec = 0
+            self._write_status()
+
+
+class MultiGpuProgressBoard:
+    """Rank-0 terminal board rendering all rank progress lines."""
+
+    def __init__(
+        self,
+        progress_dir: Path,
+        assignment_map: dict[int, list[str]],
+        gpu_map: dict[int, str] | None = None,
+        refresh_sec: float = 1.0,
+        non_tty_snapshot_sec: float = 10.0,
+    ):
+        self.progress_dir = progress_dir
+        self.assignment_map = assignment_map
+        self.gpu_map = gpu_map or {}
+        self.world_size = len(assignment_map)
+        self.refresh_sec = refresh_sec
+        self.non_tty_snapshot_sec = max(1.0, float(non_tty_snapshot_sec))
+        self._thread: threading.Thread | None = None
+        self._stop = threading.Event()
+        self._printed_live_block = False
+        self._use_ansi = bool(getattr(sys.__stdout__, "isatty", lambda: False)())
+        self._last_non_tty_emit = 0.0
+
+    def _status_file(self, rank: int) -> Path:
+        return self.progress_dir / f"rank_{rank}.json"
+
+    def _read_rank_status(self, rank: int) -> dict:
+        path = self._status_file(rank)
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        assigned = self.assignment_map.get(rank, [])
+        return {
+            "rank": rank,
+            "gpu": self.gpu_map.get(rank, str(rank)),
+            "assigned_total": len(assigned),
+            "assigned_subtasks": assigned,
+            "completed_subtasks": 0,
+            "current_subtask": None,
+            "next_subtask": assigned[0] if assigned else "-",
+            "percent": 0,
+            "status_text": "waiting",
+            "elapsed_sec": 0,
+            "done": False,
+            "error": None,
+        }
+
+    def _print_assignment_table(self) -> None:
+        rows = []
+        for rank in range(self.world_size):
+            tasks = self.assignment_map.get(rank, [])
+            rows.append(
+                {
+                    "gpu": f"gpu{self.gpu_map.get(rank, str(rank))}",
+                    "tasks": _shorten_text(", ".join(tasks) if tasks else "-", 52),
+                    "done": f"0/{len(tasks)}",
+                    "next": _shorten_text(tasks[0] if tasks else "-", 20),
+                }
+            )
+
+        headers = {"gpu": "GPU", "tasks": "Assigned Tasks", "done": "Done", "next": "Next Task"}
+        widths = {
+            key: max(len(headers[key]), max(len(str(row[key])) for row in rows) if rows else 0)
+            for key in headers
+        }
+
+        sep = (
+            "+"
+            + "+".join("-" * (widths[key] + 2) for key in ["gpu", "tasks", "done", "next"])
+            + "+"
+        )
+        print("\n[Multi-GPU Progress Board]", file=sys.__stdout__)
+        print(sep, file=sys.__stdout__)
+        print(
+            f"| {headers['gpu']:<{widths['gpu']}} "
+            f"| {headers['tasks']:<{widths['tasks']}} "
+            f"| {headers['done']:<{widths['done']}} "
+            f"| {headers['next']:<{widths['next']}} |",
+            file=sys.__stdout__,
+        )
+        print(sep, file=sys.__stdout__)
+        for row in rows:
+            print(
+                f"| {row['gpu']:<{widths['gpu']}} "
+                f"| {row['tasks']:<{widths['tasks']}} "
+                f"| {row['done']:<{widths['done']}} "
+                f"| {row['next']:<{widths['next']}} |",
+                file=sys.__stdout__,
+            )
+        print(sep, file=sys.__stdout__)
+        print("Live Progress:", file=sys.__stdout__)
+        for _ in range(self.world_size):
+            print("", file=sys.__stdout__)
+        sys.__stdout__.flush()
+        self._printed_live_block = True
+
+    def _format_live_line(self, status: dict) -> str:
+        completed = int(status.get("completed_subtasks", 0))
+        total = int(status.get("assigned_total", 0))
+        percent = status.get("percent")
+        pct_text = "--%" if percent is None else f"{int(percent):>3d}%"
+        current = status.get("current_subtask") or "-"
+        next_task = status.get("next_subtask") or "-"
+        state_text = status.get("status_text", "running")
+        elapsed = int(status.get("elapsed_sec", 0))
+        gpu_label = status.get("gpu", "?")
+        base = (
+            f"GPU{gpu_label} | done {completed}/{total} | {pct_text} | "
+            f"cur: {_shorten_text(str(current), 24):<24} | "
+            f"next: {_shorten_text(str(next_task), 24):<24} | "
+            f"{_shorten_text(str(state_text), 24):<24} | {elapsed:>4}s"
+        )
+        if status.get("done", False):
+            base += " [DONE]"
+        return base
+
+    def _render_live_lines(self, force: bool = False) -> None:
+        statuses = [self._read_rank_status(rank) for rank in range(self.world_size)]
+        lines = [self._format_live_line(status) for status in statuses]
+
+        if self._use_ansi and self._printed_live_block:
+            sys.__stdout__.write(f"\x1b[{self.world_size}A")
+            for line in lines:
+                sys.__stdout__.write("\r\x1b[2K" + line + "\n")
+            sys.__stdout__.flush()
+        else:
+            now = time.time()
+            if not force and (now - self._last_non_tty_emit) < self.non_tty_snapshot_sec:
+                return
+            self._last_non_tty_emit = now
+            print("[Live Progress Snapshot]", file=sys.__stdout__)
+            print("\n".join(lines), file=sys.__stdout__)
+            sys.__stdout__.flush()
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            self._render_live_lines(force=False)
+            if self._stop.wait(self.refresh_sec):
+                break
+        self._render_live_lines(force=True)
+
+    def start(self) -> None:
+        self._print_assignment_table()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        if self._thread is None:
+            return
+        self._stop.set()
+        self._thread.join(timeout=2.0)
+        if self._use_ansi:
+            print("", file=sys.__stdout__)
+
+
 def maybe_auto_launch_multi_gpu(
     args: argparse.Namespace,
     config: dict,
@@ -678,6 +951,8 @@ class StdoutMonitor:
         self._line_count = 0
         self._chars = 0
         self._latest_percent: int | None = None
+        self._latest_done: int | None = None
+        self._latest_total: int | None = None
 
     def write(self, text: str) -> int:
         if not text:
@@ -689,6 +964,14 @@ class StdoutMonitor:
                 percent = int(match.group(1))
                 if 0 <= percent <= 100:
                     self._latest_percent = percent
+            if "%|" in text:
+                for match in re.finditer(r"(?<!\d)(\d+)\s*/\s*(\d+)(?!\d)", text):
+                    done = int(match.group(1))
+                    total = int(match.group(2))
+                    if total > 0 and 0 <= done <= total:
+                        self._latest_done = done
+                        self._latest_total = total
+                        self._latest_percent = int(done * 100 / total)
             self._line_buffer += text
             lines = self._line_buffer.splitlines(keepends=True)
             remainder = ""
@@ -711,12 +994,20 @@ class StdoutMonitor:
                     percent = int(match.group(1))
                     if 0 <= percent <= 100:
                         self._latest_percent = percent
+                if "%|" in line_stripped:
+                    for ratio_match in re.finditer(r"(?<!\d)(\d+)\s*/\s*(\d+)(?!\d)", line_stripped):
+                        done = int(ratio_match.group(1))
+                        total = int(ratio_match.group(2))
+                        if total > 0 and 0 <= done <= total:
+                            self._latest_done = done
+                            self._latest_total = total
+                            self._latest_percent = int(done * 100 / total)
         return len(text)
 
     def flush(self) -> None:
         return
 
-    def snapshot(self) -> tuple[int, int, int, int | None, int]:
+    def snapshot(self) -> tuple[int, int, int, int | None, int, int | None, int | None]:
         with self._lock:
             return (
                 self._saved_count,
@@ -724,6 +1015,8 @@ class StdoutMonitor:
                 self._chars,
                 self._latest_percent,
                 len(self._saved_video_ids),
+                self._latest_done,
+                self._latest_total,
             )
 
     def getvalue(self) -> str:
@@ -762,6 +1055,7 @@ def run_callable_with_progress(
     status_mode: str = "events",
     enable_live: bool = True,
     expected_units: int | None = None,
+    progress_callback: Callable[[dict], None] | None = None,
 ) -> tuple[str, int]:
     """
     Run a callable with one-line progress display and captured output.
@@ -785,33 +1079,55 @@ def run_callable_with_progress(
     tick = 0
 
     while thread.is_alive():
-        if enable_live:
-            elapsed = int(time.time() - start)
-            saved_count, line_count, _, latest_percent, saved_video_count = monitor.snapshot()
-            display_percent = latest_percent
-            if (
-                display_percent is None
-                and status_mode == "clips"
-                and expected_units is not None
-                and expected_units > 0
-            ):
-                display_percent = min(99, int(saved_video_count * 100 / expected_units))
+        elapsed = int(time.time() - start)
+        (
+            saved_count,
+            line_count,
+            _,
+            latest_percent,
+            saved_video_count,
+            latest_done,
+            latest_total,
+        ) = monitor.snapshot()
+        display_percent = latest_percent
+        if status_mode == "clips" and expected_units is not None and expected_units > 0:
+            # For preprocessing, use observed completed videos as authoritative progress.
+            # This avoids premature 100% from third-party tqdm outputs.
+            display_percent = min(99, int(saved_video_count * 100 / expected_units))
 
+        # Never show 100% until the worker thread has actually finished.
+        if display_percent is not None and display_percent >= 100:
+            display_percent = 99
+
+        if status_mode == "clips":
+            if expected_units is not None and expected_units > 0:
+                status_text = f"videos={saved_video_count}/{expected_units}, clips={saved_count}"
+            else:
+                status_text = f"clips={saved_count}"
+        else:
+            if latest_done is not None and latest_total is not None and latest_total > 0:
+                status_text = f"progress={latest_done}/{latest_total}"
+            else:
+                status_text = f"events={line_count}"
+
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "title": title,
+                    "percent": display_percent,
+                    "status_text": status_text,
+                    "elapsed_sec": elapsed,
+                    "done": False,
+                }
+            )
+
+        if enable_live:
             if display_percent is not None:
                 bar = _render_percent_bar(display_percent)
                 pct_text = f"{display_percent:>3d}%"
             else:
                 bar = _render_bar(tick)
                 pct_text = " --%"
-
-            if status_mode == "clips":
-                if expected_units is not None and expected_units > 0:
-                    status_text = f"videos={saved_video_count}/{expected_units}, clips={saved_count}"
-                else:
-                    status_text = f"clips={saved_count}"
-            else:
-                status_text = f"events={line_count}"
-
             line = f"\r{prefix}{title:<24} | {bar} | {pct_text} | {status_text} | {elapsed:>4}s"
             print(line, end="", flush=True, file=sys.__stdout__)
             tick += 1
@@ -819,7 +1135,15 @@ def run_callable_with_progress(
 
     thread.join()
     elapsed = int(time.time() - start)
-    saved_count, line_count, _, latest_percent, saved_video_count = monitor.snapshot()
+    (
+        saved_count,
+        line_count,
+        _,
+        latest_percent,
+        saved_video_count,
+        latest_done,
+        latest_total,
+    ) = monitor.snapshot()
     final_percent = 100 if latest_percent is None else max(100, latest_percent)
     final_bar = _render_percent_bar(final_percent)
     if status_mode == "clips":
@@ -828,7 +1152,20 @@ def run_callable_with_progress(
         else:
             final_status = f"clips={saved_count}"
     else:
-        final_status = f"events={line_count}"
+        if latest_done is not None and latest_total is not None and latest_total > 0:
+            final_status = f"progress={latest_done}/{latest_total}"
+        else:
+            final_status = f"events={line_count}"
+    if progress_callback is not None:
+        progress_callback(
+            {
+                "title": title,
+                "percent": 100,
+                "status_text": final_status,
+                "elapsed_sec": elapsed,
+                "done": True,
+            }
+        )
     if enable_live:
         print(
             f"\r{prefix}{title:<24} | {final_bar} | 100% | {final_status} | {elapsed:>4}s done",
@@ -848,6 +1185,7 @@ def run_evaluate_with_progress(
     subtask_total: int,
     refresh_sec: float = 1.0,
     enable_live: bool = True,
+    progress_callback: Callable[[dict], None] | None = None,
 ) -> tuple[str, int]:
     """
     Run one VBench subtask with a lightweight manual progress bar.
@@ -859,6 +1197,7 @@ def run_evaluate_with_progress(
         refresh_sec=refresh_sec,
         status_mode="events",
         enable_live=enable_live,
+        progress_callback=progress_callback,
     )
 
 
@@ -1161,6 +1500,7 @@ def run_vbench_evaluation(
     barrier_fn: Callable[[], None] | None = None,
     subtasks_override: list[str] | None = None,
     progress_total_subtasks: int | None = None,
+    progress_reporter: RankProgressReporter | None = None,
 ) -> pd.DataFrame:
     """
     Run VBench evaluation on videos using official implementation.
@@ -1311,20 +1651,50 @@ def run_vbench_evaluation(
                     "mode": eval_mode,
                     **long_kwargs,
                 }
-                preprocess_stdout, saved_count = run_callable_with_progress(
-                    task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
-                    title="preprocess_clips",
-                    prefix=f"[0/{display_total_subtasks}] ",
-                    refresh_sec=1.0,
-                    status_mode="clips",
-                    enable_live=True,
-                    expected_units=len(video_records),
-                )
+                if progress_reporter is not None:
+                    progress_reporter.start_task("preprocess_clips")
+                try:
+                    preprocess_stdout, saved_count = run_callable_with_progress(
+                        task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
+                        title="preprocess_clips",
+                        prefix=f"[0/{display_total_subtasks}] ",
+                        refresh_sec=1.0,
+                        status_mode="clips",
+                        enable_live=(world_size <= 1),
+                        expected_units=len(video_records),
+                        progress_callback=(
+                            (lambda payload: progress_reporter.update_live(
+                                percent=payload.get("percent"),
+                                status_text=str(payload.get("status_text", "running")),
+                                elapsed_sec=int(payload.get("elapsed_sec", 0)),
+                            ))
+                            if progress_reporter is not None
+                            else None
+                        ),
+                    )
+                    if progress_reporter is not None:
+                        progress_reporter.finish_task(success=True, count_completion=False)
+                except Exception as exc:
+                    if progress_reporter is not None:
+                        progress_reporter.finish_task(
+                            success=False,
+                            error=str(exc),
+                            count_completion=False,
+                        )
+                    raise
                 if saved_count > 0:
                     logger.info(f"[preprocess] Saved split clips: {saved_count}")
                 summarize_vbench_stdout(preprocess_stdout, "preprocess")
+            else:
+                if progress_reporter is not None:
+                    progress_reporter.start_task(
+                        "preprocess_clips",
+                        status_text="waiting_rank0_preprocess",
+                    )
             if world_size > 1:
                 barrier_fn()
+                if rank != 0 and progress_reporter is not None:
+                    progress_reporter.finish_task(success=True, count_completion=False)
 
         # VBench-Long evaluate() always calls preprocess(). We already did one-time
         # preprocessing above, so disable repeated preprocessing for each subtask.
@@ -1342,6 +1712,8 @@ def run_vbench_evaluation(
         if rank == 0:
             logger.info(f"Evaluating subtask: {subtask}")
         try:
+            if progress_reporter is not None:
+                progress_reporter.start_task(subtask)
             eval_kwargs = {
                 "videos_path": video_dir_str,
                 "name": subtask,
@@ -1359,7 +1731,16 @@ def run_vbench_evaluation(
                 subtask_index=idx,
                 subtask_total=display_total_subtasks,
                 refresh_sec=1.0,
-                enable_live=(rank == 0),
+                enable_live=(rank == 0 and world_size <= 1),
+                progress_callback=(
+                    (lambda payload: progress_reporter.update_live(
+                        percent=payload.get("percent"),
+                        status_text=str(payload.get("status_text", "running")),
+                        elapsed_sec=int(payload.get("elapsed_sec", 0)),
+                    ))
+                    if progress_reporter is not None
+                    else None
+                ),
             )
             if rank == 0 and saved_count > 0:
                 logger.info(f"[{subtask}] Saved split clips: {saved_count}")
@@ -1388,7 +1769,11 @@ def run_vbench_evaluation(
             else:
                 if rank == 0:
                     logger.warning(f"Result file not found: {result_file}")
+            if progress_reporter is not None:
+                progress_reporter.finish_task(success=True)
         except Exception as e:
+            if progress_reporter is not None:
+                progress_reporter.finish_task(success=False, error=str(e))
             logger.warning(f"[rank {rank}] Failed to run subtask {subtask}: {e}")
             logger.debug("Subtask traceback:", exc_info=True)
             continue
@@ -1622,6 +2007,7 @@ def main():
 
     all_subtasks = get_vbench_subtasks(config)
     assigned_subtasks = split_subtasks_for_rank(all_subtasks, rank=rank, world_size=world_size)
+    visible_devices = _parse_visible_devices()
     if rank == 0:
         logger.info(
             "Subtask distribution: total=%d, world_size=%d",
@@ -1637,137 +2023,188 @@ def main():
     if not assigned_subtasks:
         logger.warning("Rank %d has no assigned subtasks; producing empty partial.", rank)
 
-    device = runtime_config.get("device", "cuda")
-    if world_size > 1 and isinstance(device, str) and device.startswith("cuda"):
-        device = f"cuda:{local_rank}"
-
-    # Try Python API first, fall back to CLI
-    long_mode = use_vbench_long(config)
+    progress_reporter: RankProgressReporter | None = None
+    progress_board: MultiGpuProgressBoard | None = None
+    if world_size > 1:
+        progress_dir = output_dir / "vbench_progress"
+        if rank == 0:
+            progress_dir.mkdir(parents=True, exist_ok=True)
+            for stale_file in progress_dir.glob("rank_*.json"):
+                try:
+                    stale_file.unlink()
+                except OSError:
+                    pass
+        barrier_fn()
+        progress_reporter = RankProgressReporter(
+            progress_dir=progress_dir,
+            rank=rank,
+            local_rank=local_rank,
+            assigned_subtasks=assigned_subtasks,
+            visible_devices=visible_devices,
+        )
+        if rank == 0:
+            assignment_map = {
+                worker_rank: split_subtasks_for_rank(
+                    all_subtasks, rank=worker_rank, world_size=world_size
+                )
+                for worker_rank in range(world_size)
+            }
+            gpu_map = {
+                worker_rank: (
+                    visible_devices[worker_rank]
+                    if worker_rank < len(visible_devices)
+                    else str(worker_rank)
+                )
+                for worker_rank in range(world_size)
+            }
+            progress_board = MultiGpuProgressBoard(
+                progress_dir=progress_dir,
+                assignment_map=assignment_map,
+                gpu_map=gpu_map,
+                refresh_sec=1.0,
+            )
+            progress_board.start()
 
     try:
-        if rank == 0:
-            logger.info("Attempting VBench evaluation via Python API...")
-        df_results = run_vbench_evaluation(
-            video_records=video_records,
-            output_dir=output_dir,
-            config=config,
-            device=device,
-            rank=rank,
-            world_size=world_size,
-            barrier_fn=barrier_fn,
-            subtasks_override=assigned_subtasks,
-            progress_total_subtasks=len(all_subtasks),
-        )
-    except Exception as e:
-        if rank == 0:
-            logger.warning(f"Python API failed: {e}")
-        if long_mode:
-            if rank == 0:
-                logger.error("VBench-Long currently supports Python API path only in this pipeline.")
-            if args.skip_on_error:
-                if rank == 0:
-                    logger.warning("Skipping VBench evaluation")
-                    pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
-                        vbench_output, index=False
-                    )
-                sys.exit(0)
-            raise
+        device = runtime_config.get("device", "cuda")
+        if world_size > 1 and isinstance(device, str) and device.startswith("cuda"):
+            device = f"cuda:{local_rank}"
 
-        if rank == 0:
-            logger.info("Falling back to CLI-based evaluation...")
+        # Try Python API first, fall back to CLI
+        long_mode = use_vbench_long(config)
+
         try:
             if rank == 0:
-                df_results = run_vbench_cli_fallback(
-                    video_records=video_records,
-                    output_dir=output_dir,
-                    config=config,
-                )
-            else:
-                df_results = pd.DataFrame()
-        except Exception as e2:
-            if rank == 0:
-                logger.error(f"CLI fallback also failed: {e2}")
-            if args.skip_on_error:
-                if rank == 0:
-                    logger.warning("Skipping VBench evaluation")
-                    # Create empty result file
-                    pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
-                        vbench_output, index=False
-                    )
-                sys.exit(0)
-            raise
-
-    if world_size > 1:
-        partial_dir = output_dir / "vbench_partials"
-        partial_dir.mkdir(parents=True, exist_ok=True)
-        partial_file = partial_dir / f"rank_{rank}.csv"
-        df_results.to_csv(partial_file, index=False)
-        logger.info("Rank %d wrote partial results: %s", rank, partial_file)
-        barrier_fn()
-        if rank != 0:
-            logger.info(f"Rank {rank} finished distributed VBench worker.")
-            return
-
-        partial_frames: list[pd.DataFrame] = []
-        for worker_rank in range(world_size):
-            rank_file = partial_dir / f"rank_{worker_rank}.csv"
-            if rank_file.exists():
-                try:
-                    partial_frames.append(pd.read_csv(rank_file))
-                except Exception as exc:
-                    logger.warning("Failed to read %s: %s", rank_file, exc)
-            else:
-                logger.warning("Missing partial results for rank %d: %s", worker_rank, rank_file)
-        df_results = merge_rank_partial_results(partial_frames)
-        logger.info("Merged %d partial result files on CPU.", len(partial_frames))
-
-    # Merge with metadata to get group info
-    df_meta = pd.DataFrame(video_records)[["video_id", "group"]].drop_duplicates(subset=["video_id"])
-    if not df_results.empty:
-        df_results = df_results.merge(df_meta, on="video_id", how="left")
-    expected_count = len(video_records)
-    coverage_rows: list[tuple[str, int, int]] = []
-    for subtask in all_subtasks:
-        if subtask not in df_results.columns:
-            covered = 0
-            logger.warning("Missing subtask column in merged output: %s", subtask)
-        else:
-            covered = int(df_results[subtask].notna().sum())
-        coverage_rows.append((subtask, covered, expected_count))
-        if covered != expected_count:
-            logger.warning(
-                "Subtask coverage mismatch for %s: %d/%d",
-                subtask,
-                covered,
-                expected_count,
+                logger.info("Attempting VBench evaluation via Python API...")
+            df_results = run_vbench_evaluation(
+                video_records=video_records,
+                output_dir=output_dir,
+                config=config,
+                device=device,
+                rank=rank,
+                world_size=world_size,
+                barrier_fn=barrier_fn,
+                subtasks_override=assigned_subtasks,
+                progress_total_subtasks=len(all_subtasks),
+                progress_reporter=progress_reporter,
             )
+        except Exception as e:
+            if rank == 0:
+                logger.warning(f"Python API failed: {e}")
+            if long_mode:
+                if rank == 0:
+                    logger.error("VBench-Long currently supports Python API path only in this pipeline.")
+                if args.skip_on_error:
+                    if rank == 0:
+                        logger.warning("Skipping VBench evaluation")
+                        pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
+                            vbench_output, index=False
+                        )
+                    sys.exit(0)
+                raise
 
-    # Save results
-    df_results.to_csv(vbench_output, index=False)
-    logger.info(f"VBench results saved to: {vbench_output}")
+            if rank == 0:
+                logger.info("Falling back to CLI-based evaluation...")
+            try:
+                if rank == 0:
+                    df_results = run_vbench_cli_fallback(
+                        video_records=video_records,
+                        output_dir=output_dir,
+                        config=config,
+                    )
+                else:
+                    df_results = pd.DataFrame()
+            except Exception as e2:
+                if rank == 0:
+                    logger.error(f"CLI fallback also failed: {e2}")
+                if args.skip_on_error:
+                    if rank == 0:
+                        logger.warning("Skipping VBench evaluation")
+                        # Create empty result file
+                        pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
+                            vbench_output, index=False
+                        )
+                    sys.exit(0)
+                raise
 
-    # Print summary
-    if "vbench_temporal_score" in df_results.columns:
-        logger.info("\nVBench Temporal Score Summary by Group:")
-        summary = df_results.groupby("group")["vbench_temporal_score"].agg(["mean", "std"])
-        logger.info(f"\n{summary}")
+        if world_size > 1:
+            partial_dir = output_dir / "vbench_partials"
+            partial_dir.mkdir(parents=True, exist_ok=True)
+            partial_file = partial_dir / f"rank_{rank}.csv"
+            df_results.to_csv(partial_file, index=False)
+            logger.info("Rank %d wrote partial results: %s", rank, partial_file)
+            barrier_fn()
+            if rank != 0:
+                logger.info(f"Rank {rank} finished distributed VBench worker.")
+                return
 
-    # Copy outputs to frontend/public/data
-    logger.info("\nCopying VBench outputs to frontend/public/data ...")
-    copy_outputs_to_frontend(
-        output_dir=output_dir,
-        paths_config=paths_config,
-        vbench_output=vbench_output,
-    )
+            partial_frames: list[pd.DataFrame] = []
+            for worker_rank in range(world_size):
+                rank_file = partial_dir / f"rank_{worker_rank}.csv"
+                if rank_file.exists():
+                    try:
+                        partial_frames.append(pd.read_csv(rank_file))
+                    except Exception as exc:
+                        logger.warning("Failed to read %s: %s", rank_file, exc)
+                else:
+                    logger.warning("Missing partial results for rank %d: %s", worker_rank, rank_file)
+            df_results = merge_rank_partial_results(partial_frames)
+            logger.info("Merged %d partial result files on CPU.", len(partial_frames))
 
-    if coverage_rows:
-        name_width = max(len("subtask"), max(len(name) for name, _, _ in coverage_rows))
-        logger.info("\nVBench Coverage Summary:")
-        logger.info(f"{'subtask':<{name_width}} | coverage | status")
-        logger.info(f"{'-' * name_width}-+----------+-------")
-        for name, covered, total in coverage_rows:
-            status = "OK" if covered == total else "MISS"
-            logger.info(f"{name:<{name_width}} | {covered:>4d}/{total:<4d} | {status}")
+        # Merge with metadata to get group info
+        df_meta = pd.DataFrame(video_records)[["video_id", "group"]].drop_duplicates(
+            subset=["video_id"]
+        )
+        if not df_results.empty:
+            df_results = df_results.merge(df_meta, on="video_id", how="left")
+        expected_count = len(video_records)
+        coverage_rows: list[tuple[str, int, int]] = []
+        for subtask in all_subtasks:
+            if subtask not in df_results.columns:
+                covered = 0
+                logger.warning("Missing subtask column in merged output: %s", subtask)
+            else:
+                covered = int(df_results[subtask].notna().sum())
+            coverage_rows.append((subtask, covered, expected_count))
+            if covered != expected_count:
+                logger.warning(
+                    "Subtask coverage mismatch for %s: %d/%d",
+                    subtask,
+                    covered,
+                    expected_count,
+                )
+
+        # Save results
+        df_results.to_csv(vbench_output, index=False)
+        logger.info(f"VBench results saved to: {vbench_output}")
+
+        # Print summary
+        if "vbench_temporal_score" in df_results.columns:
+            logger.info("\nVBench Temporal Score Summary by Group:")
+            summary = df_results.groupby("group")["vbench_temporal_score"].agg(["mean", "std"])
+            logger.info(f"\n{summary}")
+
+        # Copy outputs to frontend/public/data
+        logger.info("\nCopying VBench outputs to frontend/public/data ...")
+        copy_outputs_to_frontend(
+            output_dir=output_dir,
+            paths_config=paths_config,
+            vbench_output=vbench_output,
+        )
+
+        if coverage_rows:
+            name_width = max(len("subtask"), max(len(name) for name, _, _ in coverage_rows))
+            logger.info("\nVBench Coverage Summary:")
+            logger.info(f"{'subtask':<{name_width}} | coverage | status")
+            logger.info(f"{'-' * name_width}-+----------+-------")
+            for name, covered, total in coverage_rows:
+                status = "OK" if covered == total else "MISS"
+                logger.info(f"{name:<{name_width}} | {covered:>4d}/{total:<4d} | {status}")
+    finally:
+        if progress_reporter is not None:
+            progress_reporter.mark_done()
+        if progress_board is not None:
+            progress_board.stop()
 
 
 if __name__ == "__main__":

@@ -78,6 +78,11 @@ Pinned baseline for VBench-Long 16D compatibility:
 - `torchvision==0.16.2`
 - `timm<=1.0.12`
 
+Install `detectron2` (required by object-related dimensions in 16D):
+```bash
+uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
+```
+
 ### 3. Run Evaluation
 
 ```bash

@@ -34,6 +34,8 @@ apt install -y python3.10-dev build-essential
   - `torchvision==0.16.2`
   - `timm<=1.0.12`
   - 执行：`uv sync`
+- 16维里含检测相关维度时，安装 `detectron2`：
+  - `uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"`
 - `ModuleNotFoundError: yaml/pandas/PIL/decord/cv2`：
   - 运行 `uv sync` 后仍缺依赖时，补装：`uv pip install PyYAML pandas pillow decord opencv-python`
   - 服务器建议用无头版：`opencv-python-headless`

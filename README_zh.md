@@ -93,6 +93,11 @@ source .venv/bin/activate
 - `torchvision==0.16.2`
 - `timm<=1.0.12`
 
+16 维中涉及目标检测相关维度时，需要安装 `detectron2`：
+```bash
+uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
+```
+
 ### 3. 运行评测
 
 ```bash
