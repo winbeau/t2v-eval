@@ -581,7 +581,6 @@ class MultiGpuProgressBoard:
             self._stdout.write("\x1b[u")
             for line in lines:
                 self._stdout.write("\r\x1b[2K" + line + "\n")
-            self._stdout.write("\x1b[s")
             self._stdout.flush()
         else:
             now = time.time()
