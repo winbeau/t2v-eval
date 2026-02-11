@@ -127,6 +127,37 @@ PROMPT_STOPWORDS = {
 }
 
 
+def setup_log_file_handler(
+    log_path: Path,
+    rank: int = 0,
+    world_size: int = 1,
+) -> Path:
+    """Attach a file handler for current process logs."""
+    target_path = log_path
+    if world_size > 1 and rank > 0:
+        target_path = log_path.with_name(f"{log_path.stem}.rank{rank}{log_path.suffix}")
+
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    resolved = str(target_path.resolve())
+
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler) and handler.baseFilename == resolved:
+            return target_path
+
+    file_handler = logging.FileHandler(target_path, encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(
+        logging.Formatter(
+            fmt="%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(file_handler)
+    return target_path
+
+
 def check_vbench_installation() -> bool:
     """Check if VBench submodule is properly initialized."""
     vbench_init_file = VBENCH_ROOT / "vbench" / "__init__.py"
@@ -2375,6 +2406,29 @@ def main():
     runtime_config = config.get("runtime", {})
     rank, world_size, barrier_fn = init_distributed_if_needed()
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+
+    configured_log = os.environ.get("VBENCH_LOG_FILE") or paths_config.get("log_file")
+    log_file_path: Path | None = None
+    if configured_log:
+        log_file_path = resolve_path(str(configured_log))
+    else:
+        default_output = resolve_path(str(paths_config.get("output_dir", "./outputs"))) or PROJECT_ROOT / "outputs"
+        log_file_path = default_output / "run_vbench.log"
+
+    actual_log_path = setup_log_file_handler(
+        log_path=log_file_path,
+        rank=rank,
+        world_size=world_size,
+    )
+    if rank == 0:
+        if world_size > 1:
+            logger.info(
+                "VBench logging enabled: rank0 -> %s (other ranks -> .rankN suffix)",
+                actual_log_path,
+            )
+        else:
+            logger.info("VBench logging enabled: %s", actual_log_path)
+
     if rank == 0 and world_size > 1:
         logger.info(
             "Multi-process dimension-parallel mode enabled: world_size=%d (no torch.distributed init)",
