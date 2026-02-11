@@ -448,6 +448,7 @@ class MultiGpuProgressBoard:
         self._overwrite_supported = bool(getattr(self._stdout, "isatty", lambda: False)())
         self._last_non_tty_emit = 0.0
         self._last_lines: list[str] = []
+        self._anchor_ready = False
 
     def _status_file(self, rank: int) -> Path:
         return self.progress_dir / f"rank_{rank}.json"
@@ -523,8 +524,32 @@ class MultiGpuProgressBoard:
         print("Live Progress:", file=self._stdout)
         for _ in range(self.world_size):
             print("", file=self._stdout)
+        if self._overwrite_supported:
+            # Anchor at the first live progress line, then move cursor back below block.
+            self._stdout.write(f"\x1b[{self.world_size}A")
+            self._stdout.write("\x1b[s")
+            self._stdout.write(f"\x1b[{self.world_size}B")
+            self._anchor_ready = True
         self._stdout.flush()
         self._printed_live_block = True
+
+    def _derive_next_task(self, status: dict) -> str:
+        assigned = list(status.get("assigned_subtasks", []))
+        if not assigned:
+            return "-"
+
+        current = status.get("current_subtask")
+        completed = int(status.get("completed_subtasks", 0))
+        if current and current in assigned:
+            current_idx = assigned.index(current)
+            next_idx = current_idx + 1
+            if next_idx < len(assigned):
+                return assigned[next_idx]
+            return "-"
+
+        if 0 <= completed < len(assigned):
+            return assigned[completed]
+        return "-"
 
     def _format_live_line(self, status: dict) -> str:
         completed = int(status.get("completed_subtasks", 0))
@@ -532,7 +557,7 @@ class MultiGpuProgressBoard:
         percent = status.get("percent")
         pct_text = "--%" if percent is None else f"{int(percent):>3d}%"
         current = status.get("current_subtask") or "-"
-        next_task = status.get("next_subtask") or "-"
+        next_task = self._derive_next_task(status)
         state_text = status.get("status_text", "running")
         elapsed = int(status.get("elapsed_sec", 0))
         gpu_label = status.get("gpu", "?")
@@ -552,10 +577,11 @@ class MultiGpuProgressBoard:
         if not force and lines == self._last_lines:
             return
 
-        if self._overwrite_supported and self._printed_live_block:
-            self._stdout.write(f"\x1b[{self.world_size}A")
+        if self._overwrite_supported and self._printed_live_block and self._anchor_ready:
+            self._stdout.write("\x1b[u")
             for line in lines:
                 self._stdout.write("\r\x1b[2K" + line + "\n")
+            self._stdout.write("\x1b[s")
             self._stdout.flush()
         else:
             now = time.time()
@@ -1038,6 +1064,16 @@ def configure_warning_filters() -> None:
         "ignore",
         message=r"pkg_resources is deprecated as an API.*",
         category=UserWarning,
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"Importing from timm\.models\.layers is deprecated.*",
+        category=FutureWarning,
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"Importing from timm\.models\.registry is deprecated.*",
+        category=FutureWarning,
     )
 
 
