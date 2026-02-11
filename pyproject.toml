@@ -46,6 +46,7 @@ dependencies = [
     "dreamsim>=0.2.1",
     "omegaconf>=2.3.0",
     "openai-clip>=1.0.1",
+    "transformers==4.49.0",
     "setuptools<81",
     "pyiqa>=0.1.10",
     "fairscale>=0.4.4",
@@ -83,7 +84,7 @@ t2v-metrics-core = [
     # Minimal deps to import t2v_metrics + run CLIPScore on CPU
     "torch>=2.0.0",
     "open-clip-torch>=2.20.0",
-    "transformers>=4.30.0",
+    "transformers==4.49.0",
     "scikit-learn>=1.0.0",
 ]
 
