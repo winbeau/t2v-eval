@@ -158,7 +158,7 @@ class RankProgressReporter:
 # Multi-GPU progress board (rank-0 only)
 # =============================================================================
 class MultiGpuProgressBoard:
-    """Rank-0 terminal board rendering all rank progress lines."""
+    """Rank-0 terminal board rendering all rank progress as a bordered table."""
 
     def __init__(
         self,
@@ -173,26 +173,13 @@ class MultiGpuProgressBoard:
         self.gpu_map = gpu_map or {}
         self.world_size = len(assignment_map)
         self.refresh_sec = refresh_sec
-        self.non_tty_snapshot_sec = max(1.0, float(non_tty_snapshot_sec))
+        self.snapshot_sec = max(1.0, float(non_tty_snapshot_sec))
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
-        self._printed_live_block = False
         self._stdout = sys.__stdout__
-        stream_is_tty = bool(getattr(self._stdout, "isatty", lambda: False)())
-        force_overwrite = str(
-            os.environ.get("VBENCH_FORCE_PROGRESS_OVERWRITE", "")
-        ).strip().lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }
-        torchrun_like = bool(os.environ.get("TORCHELASTIC_RUN_ID"))
-        self._overwrite_supported = bool(
-            stream_is_tty or force_overwrite or torchrun_like
-        )
-        self._last_non_tty_emit = 0.0
         self._last_lines: list[str] = []
+        self._last_emit = 0.0
+        self._start_time = time.time()
 
     def _status_file(self, rank: int) -> Path:
         return self.progress_dir / f"rank_{rank}.json"
@@ -235,13 +222,7 @@ class MultiGpuProgressBoard:
             )
 
         headers = {"gpu": "GPU", "tasks": "Assigned Tasks", "done": "Done", "next": "Next Task"}
-        widths = {
-            "gpu": 4,
-            "tasks": 52,
-            "done": 4,
-            "next": 20,
-        }
-
+        widths = {"gpu": 4, "tasks": 52, "done": 4, "next": 20}
         sep = (
             "+"
             + "+".join("-" * (widths[key] + 2) for key in ["gpu", "tasks", "done", "next"])
@@ -265,19 +246,12 @@ class MultiGpuProgressBoard:
                 file=self._stdout,
             )
         print(sep, file=self._stdout)
-
-        # Print initial live status lines (will be overwritten in-place)
-        statuses = [self._read_rank_status(rank) for rank in range(self.world_size)]
-        for status in statuses:
-            print(self._format_live_line(status), file=self._stdout)
         self._stdout.flush()
-        self._printed_live_block = True
 
     def _derive_next_task(self, status: dict) -> str:
         assigned = list(status.get("assigned_subtasks", []))
         if not assigned:
             return "-"
-
         current = status.get("current_subtask")
         completed = int(status.get("completed_subtasks", 0))
         if current and current in assigned:
@@ -286,12 +260,12 @@ class MultiGpuProgressBoard:
             if next_idx < len(assigned):
                 return assigned[next_idx]
             return "-"
-
         if 0 <= completed < len(assigned):
             return assigned[completed]
         return "-"
 
-    def _format_live_line(self, status: dict) -> str:
+    def _format_row(self, status: dict) -> dict[str, str]:
+        """Format one rank's status into column values."""
         completed = int(status.get("completed_subtasks", 0))
         total = int(status.get("assigned_total", 0))
         percent = status.get("percent")
@@ -301,46 +275,70 @@ class MultiGpuProgressBoard:
         state_text = status.get("status_text", "running")
         elapsed = int(status.get("elapsed_sec", 0))
         gpu_label = status.get("gpu", "?")
-        base = (
-            f"GPU{gpu_label} | done {completed}/{total} | {pct_text} | "
-            f"cur: {_shorten_text(str(current), 24):<24} | "
-            f"next: {_shorten_text(str(next_task), 24):<24} | "
-            f"{_shorten_text(str(state_text), 24):<24} | {elapsed:>4}s"
-        )
-        if status.get("done", False):
-            base += " [DONE]"
-        return base
+        done_flag = " [DONE]" if status.get("done", False) else ""
+        return {
+            "gpu": f"GPU{gpu_label}",
+            "done": f"{completed}/{total}",
+            "pct": pct_text,
+            "cur": _shorten_text(str(current), 24),
+            "next": _shorten_text(str(next_task), 24),
+            "status": _shorten_text(str(state_text), 20),
+            "time": f"{elapsed:>4}s{done_flag}",
+        }
 
-    def _render_live_lines(self, force: bool = False) -> None:
+    def _render_table(self, force: bool = False) -> None:
         statuses = [self._read_rank_status(rank) for rank in range(self.world_size)]
-        lines = [self._format_live_line(status) for status in statuses]
-        if not force and lines == self._last_lines:
+        rows = [self._format_row(s) for s in statuses]
+        row_strs = [str(r) for r in rows]
+        if not force and row_strs == self._last_lines:
             return
+        now = time.time()
+        if not force and (now - self._last_emit) < self.snapshot_sec:
+            return
+        self._last_emit = now
 
-        if self._overwrite_supported and self._printed_live_block:
-            # Move cursor up N lines, overwrite each, cursor ends back below
-            self._stdout.write(f"\x1b[{self.world_size}A")
-            for line in lines:
-                self._stdout.write("\r\x1b[2K" + line + "\n")
-            self._stdout.flush()
-        else:
-            now = time.time()
-            if not force and (now - self._last_non_tty_emit) < self.non_tty_snapshot_sec:
-                return
-            self._last_non_tty_emit = now
-            print("\n".join(lines), file=self._stdout)
-            self._stdout.flush()
-        self._last_lines = lines
+        cols = ["gpu", "done", "pct", "cur", "next", "status", "time"]
+        headers = {
+            "gpu": "GPU",
+            "done": "Done",
+            "pct": "%",
+            "cur": "Current",
+            "next": "Next",
+            "status": "Status",
+            "time": "Time",
+        }
+        widths = {}
+        for c in cols:
+            widths[c] = max(len(headers[c]), *(len(r[c]) for r in rows))
+
+        def _sep(left: str, mid: str, right: str, fill: str = "─") -> str:
+            return left + mid.join(fill * (widths[c] + 2) for c in cols) + right
+
+        def _row(vals: dict[str, str]) -> str:
+            return "│" + "│".join(f" {vals[c]:<{widths[c]}} " for c in cols) + "│"
+
+        elapsed_total = int(now - self._start_time)
+        block = [
+            _sep("┌", "┬", "┐"),
+            _row(headers),
+            _sep("├", "┼", "┤"),
+            *(_row(r) for r in rows),
+            _sep("└", "┴", "┘") + f"  T+{elapsed_total}s",
+        ]
+        print("\n".join(block), file=self._stdout)
+        self._stdout.flush()
+        self._last_lines = row_strs
 
     def _run(self) -> None:
         while not self._stop.is_set():
-            self._render_live_lines(force=False)
+            self._render_table(force=False)
             if self._stop.wait(self.refresh_sec):
                 break
-        self._render_live_lines(force=True)
+        self._render_table(force=True)
 
     def start(self) -> None:
         self._print_assignment_table()
+        self._start_time = time.time()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
@@ -349,8 +347,6 @@ class MultiGpuProgressBoard:
             return
         self._stop.set()
         self._thread.join(timeout=2.0)
-        if self._overwrite_supported:
-            print("", file=self._stdout)
 
 
 # =============================================================================
