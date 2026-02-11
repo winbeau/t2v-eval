@@ -132,7 +132,7 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
 
     if dimension == "scene":
         first_clause = re.split(r"[,.;]", prompt_simple, maxsplit=1)[0]
-        return {"scene": extract_object_token(first_clause, default="outdoor")}
+        return {"scene": {"scene": extract_object_token(first_clause, default="outdoor")}}
 
     if dimension == "object_class":
         first_clause = re.split(r"[,.;]", prompt_simple, maxsplit=1)[0]
