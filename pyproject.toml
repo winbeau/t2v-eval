@@ -55,6 +55,7 @@ dependencies = [
     "wheel>=0.46.3",
     "ninja>=1.13.0",
     "hatchling>=1.28.0",
+    "detectron2",
 ]
 
 [project.optional-dependencies]
@@ -111,6 +112,9 @@ packages = ["scripts"]
 [tool.uv.extra-build-dependencies]
 detectron2 = ["torch"]
 t2v-eval = ["hatchling"]
+
+[tool.uv.sources]
+detectron2 = { git = "https://github.com/facebookresearch/detectron2.git" }
 
 [tool.ruff]
 line-length = 100

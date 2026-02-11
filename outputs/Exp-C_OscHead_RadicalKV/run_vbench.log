@@ -990,3 +990,25 @@ VBench Coverage Summary:
 2026-02-11 17:08:55 [ERROR]   |   error_file: <N/A>
 2026-02-11 17:08:55 [ERROR]   |   traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
 2026-02-11 17:08:55 [ERROR]   | ============================================================
+2026-02-11 17:15:56 [INFO] VBench logging enabled: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log
+2026-02-11 17:15:56 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
+2026-02-11 17:15:56 [INFO] Auto multi-GPU enabled: 4 visible GPUs, 16 subtasks -> launching 4 workers.
+2026-02-11 17:15:58 [INFO] VBench logging enabled: rank0 -> /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log (other ranks -> .rankN suffix)
+2026-02-11 17:15:58 [INFO] Multi-process dimension-parallel mode enabled: world_size=4 (no torch.distributed init)
+2026-02-11 17:15:58 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
+2026-02-11 17:15:58 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:15:58 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:15:58 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:15:58 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:15:58 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:15:58 [INFO] Loaded 100 videos for VBench evaluation
+2026-02-11 17:15:58 [INFO] Subtask distribution: total=16, world_size=4
+2026-02-11 17:15:58 [INFO]   rank 0 -> ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-11 17:15:58 [INFO]   rank 1 -> ['background_consistency', 'appearance_style', 'spatial_relationship', 'dynamic_degree']
+2026-02-11 17:15:58 [INFO]   rank 2 -> ['temporal_flickering', 'scene', 'human_action', 'imaging_quality']
+2026-02-11 17:15:58 [INFO]   rank 3 -> ['motion_smoothness', 'object_class', 'color', 'aesthetic_quality']
+2026-02-11 17:15:58 [INFO] Attempting VBench evaluation via Python API...
+2026-02-11 17:16:01 [INFO] Applied compatibility shim for `moviepy.editor` (VBench-Long expects legacy import path).
+2026-02-11 17:16:03 [INFO] Detected existing split clips for all videos; skip preprocessing and reuse cache.
+2026-02-11 17:16:03 [INFO] Running VBench-Long evaluation with subtasks: ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-11 17:16:03 [INFO] Evaluating subtask: subject_consistency

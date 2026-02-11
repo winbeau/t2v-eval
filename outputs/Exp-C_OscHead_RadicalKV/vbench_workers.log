@@ -2,138 +2,37 @@ WARNING:__main__:
 *****************************************
 Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
 *****************************************
-2026-02-11 17:08:52 [INFO] Metadata not found, building video list from local dataset paths...
-2026-02-11 17:08:52 [INFO] VBench logging enabled: rank0 -> /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log (other ranks -> .rankN suffix)
-2026-02-11 17:08:52 [INFO] Metadata not found, building video list from local dataset paths...
-2026-02-11 17:08:52 [INFO] Multi-process dimension-parallel mode enabled: world_size=4 (no torch.distributed init)
-2026-02-11 17:08:52 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
-2026-02-11 17:08:52 [INFO] Metadata not found, building video list from local dataset paths...
-2026-02-11 17:08:52 [INFO] Metadata not found, building video list from local dataset paths...
-2026-02-11 17:08:52 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
-2026-02-11 17:08:52 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
-2026-02-11 17:08:52 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
-2026-02-11 17:08:52 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
-2026-02-11 17:08:52 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
-2026-02-11 17:08:52 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
-2026-02-11 17:08:52 [WARNING] Remapped 100 records to unique video_id.
-2026-02-11 17:08:52 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
-2026-02-11 17:08:52 [WARNING] Remapped 100 records to unique video_id.
-2026-02-11 17:08:52 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
-2026-02-11 17:08:52 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
-2026-02-11 17:08:52 [WARNING] Remapped 100 records to unique video_id.
-2026-02-11 17:08:52 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
-2026-02-11 17:08:52 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
-2026-02-11 17:08:52 [INFO] Loaded 100 videos for VBench evaluation
-2026-02-11 17:08:52 [INFO] Subtask distribution: total=16, world_size=4
-2026-02-11 17:08:52 [WARNING] Remapped 100 records to unique video_id.
-2026-02-11 17:08:52 [INFO]   rank 0 -> ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
-2026-02-11 17:08:52 [INFO]   rank 1 -> ['background_consistency', 'appearance_style', 'spatial_relationship', 'dynamic_degree']
-2026-02-11 17:08:52 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
-2026-02-11 17:08:52 [INFO]   rank 2 -> ['temporal_flickering', 'scene', 'human_action', 'imaging_quality']
-2026-02-11 17:08:52 [INFO]   rank 3 -> ['motion_smoothness', 'object_class', 'color', 'aesthetic_quality']
-2026-02-11 17:08:52 [INFO] Attempting VBench evaluation via Python API...
-2026-02-11 17:08:54 [WARNING] Python API failed: detectron2 is required for VBench subtasks: multiple_objects. Install with:
-  uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
-2026-02-11 17:08:54 [ERROR] VBench-Long currently supports Python API path only in this pipeline.
-Traceback (most recent call last):
-  File "/workspace/t2v-eval/scripts/vbench_runner/env.py", line 333, in ensure_extended_dimension_dependencies
-    import detectron2  # noqa: F401
-ModuleNotFoundError: No module named 'detectron2'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/workspace/t2v-eval/scripts/run_vbench.py", line 20, in <module>
-    main()
-  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 771, in main
-    df_results = run_vbench_evaluation(
-  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 161, in run_vbench_evaluation
-    ensure_extended_dimension_dependencies(subtasks=subtasks)
-  File "/workspace/t2v-eval/scripts/vbench_runner/env.py", line 336, in ensure_extended_dimension_dependencies
-    raise ModuleNotFoundError(
-ModuleNotFoundError: detectron2 is required for VBench subtasks: multiple_objects. Install with:
-  uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
-Traceback (most recent call last):
-  File "/workspace/t2v-eval/scripts/vbench_runner/env.py", line 333, in ensure_extended_dimension_dependencies
-    import detectron2  # noqa: F401
-ModuleNotFoundError: No module named 'detectron2'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/workspace/t2v-eval/scripts/run_vbench.py", line 20, in <module>
-    main()
-  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 771, in main
-    df_results = run_vbench_evaluation(
-  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 161, in run_vbench_evaluation
-    ensure_extended_dimension_dependencies(subtasks=subtasks)
-  File "/workspace/t2v-eval/scripts/vbench_runner/env.py", line 336, in ensure_extended_dimension_dependencies
-    raise ModuleNotFoundError(
-ModuleNotFoundError: detectron2 is required for VBench subtasks: color, object_class. Install with:
-  uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
-Traceback (most recent call last):
-  File "/workspace/t2v-eval/scripts/vbench_runner/env.py", line 333, in ensure_extended_dimension_dependencies
-    import detectron2  # noqa: F401
-ModuleNotFoundError: No module named 'detectron2'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/workspace/t2v-eval/scripts/run_vbench.py", line 20, in <module>
-    main()
-  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 771, in main
-    df_results = run_vbench_evaluation(
-  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 161, in run_vbench_evaluation
-    ensure_extended_dimension_dependencies(subtasks=subtasks)
-  File "/workspace/t2v-eval/scripts/vbench_runner/env.py", line 336, in ensure_extended_dimension_dependencies
-    raise ModuleNotFoundError(
-ModuleNotFoundError: detectron2 is required for VBench subtasks: spatial_relationship. Install with:
-  uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
-W0211 17:08:55.473000 128029114664064 torch/distributed/elastic/multiprocessing/api.py:858] Sending process 1875555 closing signal SIGTERM
-E0211 17:08:55.637000 128029114664064 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 0 (pid: 1875553) of binary: /workspace/t2v-eval/.venv/bin/python3
-Traceback (most recent call last):
-  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
-    return _run_code(code, main_globals, None,
-  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
-    exec(code, run_globals)
-  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 905, in <module>
-    main()
-  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 348, in wrapper
-    return f(*args, **kwargs)
-  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 901, in main
-    run(args)
-  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 892, in run
-    elastic_launch(
-  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
-    return launch_agent(self._config, self._entrypoint, list(args))
-  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
-    raise ChildFailedError(
-torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
-============================================================
-/workspace/t2v-eval/scripts/run_vbench.py FAILED
-------------------------------------------------------------
-Failures:
-[1]:
-  time      : 2026-02-11_17:08:55
-  host      : 31e00ce47b71
-  rank      : 1 (local_rank: 1)
-  exitcode  : 1 (pid: 1875554)
-  error_file: <N/A>
-  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
-[2]:
-  time      : 2026-02-11_17:08:55
-  host      : 31e00ce47b71
-  rank      : 3 (local_rank: 3)
-  exitcode  : 1 (pid: 1875556)
-  error_file: <N/A>
-  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
-------------------------------------------------------------
-Root Cause (first observed failure):
-[0]:
-  time      : 2026-02-11_17:08:55
-  host      : 31e00ce47b71
-  rank      : 0 (local_rank: 0)
-  exitcode  : 1 (pid: 1875553)
-  error_file: <N/A>
-  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
-============================================================
+2026-02-11 17:15:58 [INFO] VBench logging enabled: rank0 -> /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log (other ranks -> .rankN suffix)
+2026-02-11 17:15:58 [INFO] Multi-process dimension-parallel mode enabled: world_size=4 (no torch.distributed init)
+2026-02-11 17:15:58 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
+2026-02-11 17:15:58 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:15:58 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:15:58 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:15:58 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:15:58 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:15:58 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:15:58 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:15:58 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:15:58 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:15:58 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:15:58 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:15:58 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:15:58 [INFO] Loaded 100 videos for VBench evaluation
+2026-02-11 17:15:58 [INFO] Subtask distribution: total=16, world_size=4
+2026-02-11 17:15:58 [INFO]   rank 0 -> ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-11 17:15:58 [INFO]   rank 1 -> ['background_consistency', 'appearance_style', 'spatial_relationship', 'dynamic_degree']
+2026-02-11 17:15:58 [INFO]   rank 2 -> ['temporal_flickering', 'scene', 'human_action', 'imaging_quality']
+2026-02-11 17:15:58 [INFO]   rank 3 -> ['motion_smoothness', 'object_class', 'color', 'aesthetic_quality']
+2026-02-11 17:15:58 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:15:58 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:15:58 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:15:58 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:15:58 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:15:58 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:15:58 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:15:58 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:15:58 [INFO] Attempting VBench evaluation via Python API...
+2026-02-11 17:16:01 [INFO] Applied compatibility shim for `moviepy.editor` (VBench-Long expects legacy import path).
+2026-02-11 17:16:03 [INFO] Detected existing split clips for all videos; skip preprocessing and reuse cache.
+2026-02-11 17:16:03 [INFO] Running VBench-Long evaluation with subtasks: ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-11 17:16:03 [INFO] Evaluating subtask: subject_consistency
