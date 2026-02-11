@@ -215,6 +215,8 @@ def maybe_auto_launch_multi_gpu(
             pass
 
     log_path = output_dir / "vbench_workers.log"
+    # Truncate log file before board starts to avoid reading stale content
+    log_path.write_text("", encoding="utf-8")
 
     try:
         from .progress import MultiGpuProgressBoard
