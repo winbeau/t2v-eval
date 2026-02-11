@@ -14,8 +14,8 @@ import json
 import os
 import sys
 import time
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 
 import pandas as pd
 
@@ -24,6 +24,7 @@ try:
         build_auxiliary_prompt_lookup,
         patch_long_custom_full_info_builder,
     )
+    from .compat import apply_vbench_compat_patches
     from .distributed import (
         _parse_visible_devices,
         init_distributed_if_needed,
@@ -71,6 +72,7 @@ except ImportError:
         build_auxiliary_prompt_lookup,
         patch_long_custom_full_info_builder,
     )
+    from vbench_runner.compat import apply_vbench_compat_patches
     from vbench_runner.distributed import (
         _parse_visible_devices,
         init_distributed_if_needed,
@@ -169,6 +171,8 @@ def run_vbench_evaluation(
         logger.error("Please ensure VBench dependencies are installed:")
         logger.error("  pip install -r third_party/VBench/requirements.txt")
         raise
+
+    apply_vbench_compat_patches()
 
     long_kwargs = {
         "use_semantic_splitting": bool(vbench_config.get("use_semantic_splitting", False)),
@@ -402,9 +406,7 @@ def run_vbench_evaluation(
                     results.extend(extracted)
 
                     if rank == 0:
-                        logger.info(
-                            f"Parsed {len(results) - count_before} results for {subtask}"
-                        )
+                        logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
             else:
                 logger.warning(f"[rank {rank}] Result file not found: {result_file}")
             if progress_reporter is not None:
@@ -868,9 +870,7 @@ def main():
                 )
 
         missing_coverage = [
-            (name, covered, total)
-            for name, covered, total in coverage_rows
-            if covered != total
+            (name, covered, total) for name, covered, total in coverage_rows if covered != total
         ]
 
         # Save results

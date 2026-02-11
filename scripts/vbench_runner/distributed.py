@@ -8,8 +8,8 @@ import subprocess
 import sys
 import threading
 import time
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 
 import pandas as pd
 
@@ -204,8 +204,7 @@ def maybe_auto_launch_multi_gpu(
         r: split_subtasks_for_rank(subtasks, r, worker_count) for r in range(worker_count)
     }
     gpu_map = {
-        r: visible_devices[r] if r < len(visible_devices) else str(r)
-        for r in range(worker_count)
+        r: visible_devices[r] if r < len(visible_devices) else str(r) for r in range(worker_count)
     }
     progress_dir = output_dir / "vbench_progress"
     progress_dir.mkdir(parents=True, exist_ok=True)

@@ -4,7 +4,6 @@ Progress reporting: live progress bars, multi-GPU progress board, stdout monitor
 
 import contextlib
 import json
-import os
 import re
 import sys
 import threading

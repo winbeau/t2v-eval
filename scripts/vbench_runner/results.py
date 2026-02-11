@@ -156,9 +156,5 @@ def extract_subtask_scores(
         return parsed_items
 
     df_long = pd.DataFrame(parsed_items)
-    agg = (
-        df_long.groupby(["video_id", "subtask"], as_index=False)["score"]
-        .mean()
-        .round(6)
-    )
+    agg = df_long.groupby(["video_id", "subtask"], as_index=False)["score"].mean().round(6)
     return agg.to_dict("records")

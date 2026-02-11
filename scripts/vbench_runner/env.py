@@ -219,6 +219,7 @@ def ensure_moviepy_editor_compat() -> None:
     """
     try:
         import moviepy.editor  # noqa: F401
+
         return
     except ModuleNotFoundError as e:
         if e.name == "moviepy":
