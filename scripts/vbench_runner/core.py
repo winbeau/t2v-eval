@@ -415,7 +415,7 @@ def run_vbench_evaluation(
             if progress_reporter is not None:
                 progress_reporter.finish_task(success=False, error=str(e))
             logger.warning(f"[rank {rank}] Failed to run subtask {subtask}: {e}")
-            logger.debug("Subtask traceback:", exc_info=True)
+            logger.warning("Subtask traceback:", exc_info=True)
             continue
 
     # Convert to DataFrame and pivot

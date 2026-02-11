@@ -7,6 +7,8 @@ Fixes known issues in the VBench submodule without modifying its source:
   3. transformers removed additional_special_tokens_ids dynamic resolution
   4. clip.tokenize() defaults to truncate=False, causing errors on long prompts
   5. GrIT model expects torch.device but receives a string
+  6. transformers >=4.50 removed GenerationMixin from PreTrainedModel bases
+  7. config.pruned_heads may not be a dict in some code paths
 """
 
 try:
@@ -236,10 +238,107 @@ def patch_pretrained_model_tied_weights() -> None:
     logger.debug("Patched PreTrainedModel with all_tied_weights_keys property.")
 
 
+def patch_config_pruned_heads() -> None:
+    """
+    Ensure config.pruned_heads is always a dict.
+
+    In some code paths (e.g. from_dict, from_json_file), pruned_heads may end up
+    as a list or other non-dict type. The transformers init_weights() and from_dict()
+    call ``config.pruned_heads.items()`` which fails on non-dict types.
+    """
+    try:
+        from transformers import PretrainedConfig
+    except ImportError:
+        return
+
+    if getattr(PretrainedConfig, "_patched_pruned_heads", False):
+        return
+
+    original_init = PretrainedConfig.__init__
+
+    def _patched_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        # Ensure pruned_heads is always a dict
+        if not isinstance(getattr(self, "pruned_heads", None), dict):
+            self.pruned_heads = {}
+
+    PretrainedConfig.__init__ = _patched_init
+    PretrainedConfig._patched_pruned_heads = True  # type: ignore[attr-defined]
+    logger.debug("Patched PretrainedConfig to ensure pruned_heads is always a dict.")
+
+
+def patch_generation_mixin() -> None:
+    """
+    Add GenerationMixin to tag2Text's BertLMHeadModel.
+
+    In transformers >=4.50, PreTrainedModel no longer inherits from GenerationMixin.
+    VBench's tag2Text/med.py BertLMHeadModel needs generate() for scene captioning.
+    We add GenerationMixin to the class bases and fix the prepare_inputs_for_generation
+    signature to match the new API.
+    """
+    try:
+        from transformers import GenerationConfig, GenerationMixin
+        from vbench.third_party.tag2Text import med as _med
+    except ImportError:
+        return
+
+    lm_head_cls = _med.BertLMHeadModel
+
+    # Already has GenerationMixin in MRO
+    if GenerationMixin in lm_head_cls.__mro__:
+        return
+
+    # Avoid double-patching
+    if getattr(lm_head_cls, "_patched_generation", False):
+        return
+
+    # 1. Add GenerationMixin as a base class
+    lm_head_cls.__bases__ = (GenerationMixin,) + lm_head_cls.__bases__
+
+    # 2. Fix prepare_inputs_for_generation to use past_key_values (new API)
+    #    instead of past (old API from transformers 4.15)
+    def _prepare_inputs_for_generation_compat(
+        self, input_ids, past_key_values=None, attention_mask=None, **model_kwargs
+    ):
+        input_shape = input_ids.shape
+        if attention_mask is None:
+            attention_mask = input_ids.new_ones(input_shape)
+        # Cut decoder_input_ids if past KV cache is provided
+        if past_key_values is not None:
+            input_ids = input_ids[:, -1:]
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "past_key_values": past_key_values,
+            "encoder_hidden_states": model_kwargs.get("encoder_hidden_states", None),
+            "encoder_attention_mask": model_kwargs.get("encoder_attention_mask", None),
+            "is_decoder": True,
+        }
+
+    lm_head_cls.prepare_inputs_for_generation = _prepare_inputs_for_generation_compat
+
+    # 3. Wrap generate to ensure generation_config exists.
+    #    During __init__, can_generate() returned False (before our patch),
+    #    so generation_config was set to None. We lazily create it on first use.
+    _orig_generate = GenerationMixin.generate
+
+    def _generate_with_config(self, *args, **kwargs):
+        if getattr(self, "generation_config", None) is None:
+            self.generation_config = GenerationConfig.from_model_config(self.config)
+        return _orig_generate(self, *args, **kwargs)
+
+    lm_head_cls.generate = _generate_with_config
+
+    lm_head_cls._patched_generation = True  # type: ignore[attr-defined]
+    logger.debug("Patched BertLMHeadModel with GenerationMixin for generate() support.")
+
+
 def apply_vbench_compat_patches() -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
     patch_pretrained_model_tied_weights()
+    patch_config_pruned_heads()
     patch_tokenizer_special_tokens_ids()
     patch_clip_tokenize_truncate()
     patch_grit_device_compat()
+    patch_generation_mixin()
