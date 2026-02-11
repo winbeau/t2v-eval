@@ -91,11 +91,8 @@ source .venv/bin/activate
 ### 3. 运行评测
 
 ```bash
-# 核心指标（不含 VBench）
-python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# VBench-Long（推荐 6 维）
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
+# VBench-Long（完整 16 维）
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
 ```
 
 ### 4. 启动前端
@@ -124,7 +121,7 @@ pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
 |------|----------|----------|------|----------|
 | **CLIPScore** | `clip_score` | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics |
 | **VQAScore** | `vqa_score` | 文本-视频一致性 | ↑ 越高越好 | 官方 t2v_metrics |
-| **VBench-Long（6维）** | `subject_consistency` / `background_consistency` / `motion_smoothness` / `dynamic_degree` / `imaging_quality` / `aesthetic_quality` | 长一致性与时序质量 | ↑ 越高越好 | 官方 VBench |
+| **VBench-Long（16维）** | `subject_consistency` / `background_consistency` / `temporal_flickering` / `motion_smoothness` / `temporal_style` / `appearance_style` / `scene` / `object_class` / `multiple_objects` / `spatial_relationship` / `human_action` / `color` / `overall_consistency` / `dynamic_degree` / `imaging_quality` / `aesthetic_quality` | 长一致性与时序质量 | ↑ 越高越好 | 官方 VBench |
 | **Temporal Flicker** | `flicker_mean` | 帧间稳定性 | ↓ 越低越好 | 本仓库实现 |
 | **NIQE** | `niqe_mean` | 视觉质量 | ↓ 越低越好 | pyiqa |
 | **#Frames / Duration** | `num_frames`, `duration_sec` | 生成规模 | — | 元数据 |
@@ -168,10 +165,20 @@ metrics:
 
 #### VBench 子任务
 
-当前默认运行 VBench-Long 6 维度：
+当前推荐配置可运行 VBench-Long 16 维度：
 - `subject_consistency`：主体一致性
 - `background_consistency`：背景一致性
+- `temporal_flickering`：时序闪烁
 - `motion_smoothness`：运动平滑度
+- `temporal_style`：时序风格一致性
+- `appearance_style`：外观风格一致性
+- `scene`：场景一致性
+- `object_class`：目标类别
+- `multiple_objects`：多目标关系
+- `spatial_relationship`：空间关系
+- `human_action`：人体动作
+- `color`：颜色一致性
+- `overall_consistency`：整体一致性
 - `dynamic_degree`：动态强度
 - `imaging_quality`：成像质量
 - `aesthetic_quality`：美学质量
@@ -188,7 +195,7 @@ t2v-eval/
 │   ├── export_from_hf.py      # 从 HuggingFace 导出数据集
 │   ├── preprocess_videos.py   # 视频预处理（统一格式）
 │   ├── run_clip_or_vqa.py     # CLIPScore/VQAScore 评测
-│   ├── run_vbench.py          # VBench-Long 6 维评测
+│   ├── run_vbench.py          # VBench-Long 评测入口（支持 6/16 维）
 │   ├── run_flicker.py         # 时序闪烁评测
 │   ├── run_niqe.py            # NIQE 图像质量评测
 │   ├── summarize.py           # 结果汇总
@@ -299,7 +306,7 @@ git submodule update --init --recursive
 1. 参考 VBench 官方文档下载权重：https://github.com/Vchitect/VBench#model-weights
 2. 先跑核心评测（不含 VBench）：
    ```bash
-   python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
+   python scripts/run_eval_core.py --config configs/Exp_72frames_OscStable_Head_Win.yaml
    ```
 3. VBench-Long 的安装与排障以 `docs/USAGE.md` 为准（`clip` / `pyiqa` / `PyAV` / `setuptools` 等依赖问题）。
 
@@ -377,7 +384,7 @@ python -c "from datasets import load_dataset; load_dataset('YOUR_REPO_ID')"
 | `n_videos` | 该组视频数量 |
 | `clip_score_mean` 或 `vqa_score_mean` | CLIP/VQA 均值（根据配置） |
 | `clip_score_std` 或 `vqa_score_std` | CLIP/VQA 标准差 |
-| `<vbench_dim>_mean` | VBench 各维度均值（6 维） |
+| `<vbench_dim>_mean` | VBench 各维度均值（6/16 维，取决于配置） |
 | ... | 其他指标同理 |
 
 ---

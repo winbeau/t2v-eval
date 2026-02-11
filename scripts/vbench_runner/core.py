@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -112,6 +113,146 @@ def init_distributed_if_needed() -> tuple[int, int, Callable[[], None]]:
         dist_init()
 
     return int(get_rank()), int(get_world_size()), barrier
+
+
+def _parse_visible_devices() -> list[str]:
+    """Parse visible CUDA device identifiers."""
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if visible is not None:
+        visible = visible.strip()
+        if not visible or visible == "-1":
+            return []
+        return [item.strip() for item in visible.split(",") if item.strip()]
+
+    try:
+        import torch
+
+        count = torch.cuda.device_count()
+    except Exception:
+        count = 0
+    return [str(i) for i in range(max(0, count))]
+
+
+def split_subtasks_for_rank(subtasks: list[str], rank: int, world_size: int) -> list[str]:
+    """Round-robin split: 16 dims, 4 ranks => each rank 4 dims (all videos)."""
+    if world_size <= 1:
+        return list(subtasks)
+    return [subtask for idx, subtask in enumerate(subtasks) if idx % world_size == rank]
+
+
+def merge_rank_partial_results(partial_frames: list[pd.DataFrame]) -> pd.DataFrame:
+    """Merge rank-local wide tables into one final wide table on CPU."""
+    long_rows = []
+    for frame in partial_frames:
+        if frame is None or frame.empty or "video_id" not in frame.columns:
+            continue
+        metric_cols = [
+            col
+            for col in frame.columns
+            if col not in {"video_id", "group", "vbench_temporal_score"}
+        ]
+        for col in metric_cols:
+            if frame[col].notna().any():
+                temp = frame[["video_id", col]].copy()
+                temp["subtask"] = col
+                temp = temp.rename(columns={col: "score"})
+                long_rows.append(temp)
+
+    if not long_rows:
+        return pd.DataFrame(columns=["video_id", "vbench_temporal_score"])
+
+    df_long = pd.concat(long_rows, ignore_index=True)
+    df_long = (
+        df_long.groupby(["video_id", "subtask"], as_index=False)["score"]
+        .mean()
+        .reset_index(drop=True)
+    )
+    df_wide = df_long.pivot(index="video_id", columns="subtask", values="score").reset_index()
+    metric_cols = [col for col in df_wide.columns if col != "video_id"]
+    if metric_cols:
+        df_wide["vbench_temporal_score"] = df_wide[metric_cols].mean(axis=1)
+    return df_wide
+
+
+def maybe_auto_launch_multi_gpu(
+    args: argparse.Namespace,
+    config: dict,
+    rank: int,
+    world_size: int,
+    output_dir: Path,
+) -> bool:
+    """
+    Auto-launch torch distributed when multiple GPUs are visible.
+
+    Default behavior:
+    - single visible GPU -> current process only
+    - multiple visible GPUs -> re-launch with torchrun and split by dimensions
+    """
+    if rank != 0 or world_size > 1:
+        return False
+    if getattr(args, "no_auto_multi_gpu", False):
+        return False
+    if os.environ.get("VBENCH_AUTO_MULTI_GPU_LAUNCHED") == "1":
+        return False
+
+    runtime_config = config.get("runtime", {})
+    device = str(runtime_config.get("device", "cuda")).lower()
+    if not device.startswith("cuda"):
+        return False
+
+    subtasks = get_vbench_subtasks(config)
+    if len(subtasks) <= 1:
+        return False
+
+    visible_devices = _parse_visible_devices()
+    if len(visible_devices) <= 1:
+        return False
+
+    worker_count = min(len(visible_devices), len(subtasks))
+    if worker_count <= 1:
+        return False
+
+    logger.info(
+        "Auto multi-GPU enabled: %d visible GPUs, %d subtasks -> launching %d workers.",
+        len(visible_devices),
+        len(subtasks),
+        worker_count,
+    )
+
+    entry_script = PROJECT_ROOT / "scripts" / "run_vbench.py"
+    cmd = [
+        sys.executable,
+        "-m",
+        "torch.distributed.run",
+        "--standalone",
+        "--nproc_per_node",
+        str(worker_count),
+        str(entry_script),
+        "--config",
+        str(args.config),
+    ]
+    if args.force:
+        cmd.append("--force")
+    if args.skip_on_error:
+        cmd.append("--skip-on-error")
+    if getattr(args, "no_auto_multi_gpu", False):
+        cmd.append("--no-auto-multi-gpu")
+
+    env = os.environ.copy()
+    env["VBENCH_AUTO_MULTI_GPU_LAUNCHED"] = "1"
+
+    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=env)
+    if result.returncode != 0:
+        logger.error("Auto multi-GPU torchrun failed with code %d.", result.returncode)
+        if args.skip_on_error:
+            logger.warning("Skipping VBench evaluation due to auto multi-GPU failure.")
+            pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
+                output_dir / "vbench_per_video.csv", index=False
+            )
+            return True
+        raise RuntimeError(f"torchrun failed with exit code {result.returncode}")
+
+    return True
 
 
 def load_config(config_path: str) -> dict:
@@ -1018,6 +1159,8 @@ def run_vbench_evaluation(
     rank: int = 0,
     world_size: int = 1,
     barrier_fn: Callable[[], None] | None = None,
+    subtasks_override: list[str] | None = None,
+    progress_total_subtasks: int | None = None,
 ) -> pd.DataFrame:
     """
     Run VBench evaluation on videos using official implementation.
@@ -1039,8 +1182,10 @@ def run_vbench_evaluation(
 
     # VBench configuration
     vbench_config = config.get("metrics", {}).get("vbench", {})
-    subtasks = get_vbench_subtasks(config)
+    subtasks = list(subtasks_override) if subtasks_override is not None else get_vbench_subtasks(config)
     eval_mode = vbench_config.get("mode", "long_custom_input" if long_mode else "custom_input")
+    total_subtasks = len(subtasks)
+    display_total_subtasks = progress_total_subtasks or total_subtasks
 
     ensure_pyav_dependency(long_mode=long_mode)
     ensure_clip_dependency(subtasks=subtasks)
@@ -1169,7 +1314,7 @@ def run_vbench_evaluation(
                 preprocess_stdout, saved_count = run_callable_with_progress(
                     task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
                     title="preprocess_clips",
-                    prefix="[0/6] ",
+                    prefix=f"[0/{display_total_subtasks}] ",
                     refresh_sec=1.0,
                     status_mode="clips",
                     enable_live=True,
@@ -1193,7 +1338,6 @@ def run_vbench_evaluation(
     if rank == 0:
         logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
 
-    total_subtasks = len(subtasks)
     for idx, subtask in enumerate(subtasks, start=1):
         if rank == 0:
             logger.info(f"Evaluating subtask: {subtask}")
@@ -1213,7 +1357,7 @@ def run_vbench_evaluation(
                 eval_kwargs=eval_kwargs,
                 subtask=subtask,
                 subtask_index=idx,
-                subtask_total=total_subtasks,
+                subtask_total=display_total_subtasks,
                 refresh_sec=1.0,
                 enable_live=(rank == 0),
             )
@@ -1222,8 +1366,6 @@ def run_vbench_evaluation(
             if rank == 0:
                 summarize_vbench_stdout(stdout_text, subtask)
 
-            if rank != 0:
-                continue
             # VBench saves results to {output_path}/{name}_eval_results.json
             result_file = results_dir / f"{subtask}_eval_results.json"
             if result_file.exists():
@@ -1241,17 +1383,15 @@ def run_vbench_evaluation(
                     )
                     results.extend(extracted)
 
-                    logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
+                    if rank == 0:
+                        logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
             else:
-                logger.warning(f"Result file not found: {result_file}")
+                if rank == 0:
+                    logger.warning(f"Result file not found: {result_file}")
         except Exception as e:
-            if rank == 0:
-                logger.warning(f"Failed to run subtask {subtask}: {e}")
-                logger.debug("Subtask traceback:", exc_info=True)
+            logger.warning(f"[rank {rank}] Failed to run subtask {subtask}: {e}")
+            logger.debug("Subtask traceback:", exc_info=True)
             continue
-
-    if rank != 0:
-        return pd.DataFrame()
 
     # Convert to DataFrame and pivot
     if results:
@@ -1270,7 +1410,7 @@ def run_vbench_evaluation(
 
         return df_pivot
     else:
-        logger.warning("No VBench results obtained")
+        logger.warning(f"[rank {rank}] No VBench results obtained")
         return pd.DataFrame()
 
 
@@ -1410,6 +1550,11 @@ def main():
         "--force", action="store_true",
         help="Overwrite existing results"
     )
+    parser.add_argument(
+        "--no-auto-multi-gpu",
+        action="store_true",
+        help="Disable auto-launch to multi-GPU torchrun",
+    )
     args = parser.parse_args()
     configure_warning_filters()
     configure_third_party_loggers()
@@ -1445,6 +1590,15 @@ def main():
         if rank == 0:
             logger.info(f"Force recomputing: {vbench_output}")
 
+    if maybe_auto_launch_multi_gpu(
+        args=args,
+        config=config,
+        rank=rank,
+        world_size=world_size,
+        output_dir=output_dir,
+    ):
+        return
+
     # Load video metadata / build from local dataset
     try:
         video_records = load_video_records_for_vbench(
@@ -1466,6 +1620,23 @@ def main():
     if rank == 0:
         logger.info(f"Loaded {len(video_records)} videos for VBench evaluation")
 
+    all_subtasks = get_vbench_subtasks(config)
+    assigned_subtasks = split_subtasks_for_rank(all_subtasks, rank=rank, world_size=world_size)
+    if rank == 0:
+        logger.info(
+            "Subtask distribution: total=%d, world_size=%d",
+            len(all_subtasks),
+            world_size,
+        )
+        if world_size > 1:
+            for worker_rank in range(world_size):
+                worker_subtasks = split_subtasks_for_rank(
+                    all_subtasks, rank=worker_rank, world_size=world_size
+                )
+                logger.info("  rank %d -> %s", worker_rank, worker_subtasks)
+    if not assigned_subtasks:
+        logger.warning("Rank %d has no assigned subtasks; producing empty partial.", rank)
+
     device = runtime_config.get("device", "cuda")
     if world_size > 1 and isinstance(device, str) and device.startswith("cuda"):
         device = f"cuda:{local_rank}"
@@ -1484,6 +1655,8 @@ def main():
             rank=rank,
             world_size=world_size,
             barrier_fn=barrier_fn,
+            subtasks_override=assigned_subtasks,
+            progress_total_subtasks=len(all_subtasks),
         )
     except Exception as e:
         if rank == 0:
@@ -1525,15 +1698,46 @@ def main():
             raise
 
     if world_size > 1:
+        partial_dir = output_dir / "vbench_partials"
+        partial_dir.mkdir(parents=True, exist_ok=True)
+        partial_file = partial_dir / f"rank_{rank}.csv"
+        df_results.to_csv(partial_file, index=False)
+        logger.info("Rank %d wrote partial results: %s", rank, partial_file)
         barrier_fn()
-    if rank != 0:
-        logger.info(f"Rank {rank} finished distributed VBench worker.")
-        return
+        if rank != 0:
+            logger.info(f"Rank {rank} finished distributed VBench worker.")
+            return
+
+        partial_frames: list[pd.DataFrame] = []
+        for worker_rank in range(world_size):
+            rank_file = partial_dir / f"rank_{worker_rank}.csv"
+            if rank_file.exists():
+                try:
+                    partial_frames.append(pd.read_csv(rank_file))
+                except Exception as exc:
+                    logger.warning("Failed to read %s: %s", rank_file, exc)
+            else:
+                logger.warning("Missing partial results for rank %d: %s", worker_rank, rank_file)
+        df_results = merge_rank_partial_results(partial_frames)
+        logger.info("Merged %d partial result files on CPU.", len(partial_frames))
 
     # Merge with metadata to get group info
     df_meta = pd.DataFrame(video_records)[["video_id", "group"]].drop_duplicates(subset=["video_id"])
     if not df_results.empty:
         df_results = df_results.merge(df_meta, on="video_id", how="left")
+        expected_count = len(video_records)
+        for subtask in all_subtasks:
+            if subtask not in df_results.columns:
+                logger.warning("Missing subtask column in merged output: %s", subtask)
+                continue
+            covered = int(df_results[subtask].notna().sum())
+            if covered != expected_count:
+                logger.warning(
+                    "Subtask coverage mismatch for %s: %d/%d",
+                    subtask,
+                    covered,
+                    expected_count,
+                )
 
     # Save results
     df_results.to_csv(vbench_output, index=False)

@@ -76,11 +76,8 @@ source .venv/bin/activate
 ### 3. Run Evaluation
 
 ```bash
-# Core metrics (non-VBench)
-python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
-
-# VBench-Long (recommended 6 dimensions)
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
+# VBench-Long (full 16 dimensions)
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
 ```
 
 ### 4. Launch Frontend
@@ -109,7 +106,7 @@ For complete and up-to-date instructions (Node/pnpm setup, dependency troublesho
 |--------|-------------|--------|-----------|----------------|
 | CLIPScore | `clip_score` | Text-video alignment | ↑ Higher is better | Official t2v_metrics |
 | VQAScore | `vqa_score` | Text-video alignment | ↑ Higher is better | Official t2v_metrics |
-| VBench-Long (6 dimensions) | `subject_consistency`, `background_consistency`, `motion_smoothness`, `dynamic_degree`, `imaging_quality`, `aesthetic_quality` | Long consistency & temporal quality | ↑ Higher is better | Official VBench |
+| VBench-Long (16 dimensions) | `subject_consistency`, `background_consistency`, `temporal_flickering`, `motion_smoothness`, `temporal_style`, `appearance_style`, `scene`, `object_class`, `multiple_objects`, `spatial_relationship`, `human_action`, `color`, `overall_consistency`, `dynamic_degree`, `imaging_quality`, `aesthetic_quality` | Long consistency & temporal quality | ↑ Higher is better | Official VBench |
 | Temporal Flicker | `flicker_mean` | Frame stability | ↓ Lower is better | Custom (this repo) |
 | NIQE | `niqe_mean` | Visual quality | ↓ Lower is better | pyiqa |
 | #Frames / Duration | `num_frames`, `duration_sec` | Generation scale | — | Metadata |
@@ -128,7 +125,7 @@ t2v-eval/
 │   ├── export_from_hf.py      # Export dataset from HuggingFace
 │   ├── preprocess_videos.py   # Unify video format
 │   ├── run_clip_or_vqa.py     # CLIPScore/VQAScore via t2v_metrics
-│   ├── run_vbench.py          # VBench-Long evaluation (6 dimensions)
+│   ├── run_vbench.py          # VBench-Long evaluation entry (supports 6/16 dimensions)
 │   ├── run_flicker.py         # Temporal flicker score
 │   ├── run_niqe.py            # NIQE image quality
 │   ├── summarize.py           # Aggregate results

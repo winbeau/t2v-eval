@@ -1,0 +1,83 @@
+# =============================================================================
+# VBench-Long 16D only config for:
+#   hf/AdaHead/Exp_OscStable_Head_Window
+# =============================================================================
+
+dataset:
+  repo_id: "kv-compression/AdaHead"
+  split: "train"
+  use_local_videos: true
+  local_video_dir: "hf/AdaHead/Exp_OscStable_Head_Window"
+  prompt_file: "hf/AdaHead/Exp_OscStable_Head_Window/prompts.csv"
+  video_dir: "videos/Exp_OscStable_Head_Window"
+
+groups:
+  - name: "frame_baseline_21"
+  - name: "frame_baseline_72"
+  - name: "head_baseline_21"
+  - name: "head_baseline_72"
+  - name: "osc_long_21"
+  - name: "osc_long_72"
+  - name: "osc_short_21"
+  - name: "osc_short_72"
+  - name: "stable_long_21"
+  - name: "stable_long_72"
+  - name: "stable_short_21"
+  - name: "stable_short_72"
+
+metrics:
+  enabled:
+    - "vbench_temporal"
+
+  vbench:
+    enabled: true
+    backend: "vbench_long"
+    use_long: true
+    dimension_profile: "long_16"
+    mode: "long_custom_input"
+    use_semantic_splitting: false
+    clip_length_config: "clip_length_mix.yaml"
+    static_filter_flag: false
+    scene_threshold: 35.0
+    sb_clip2clip_feat_extractor: "dino"
+    bg_clip2clip_feat_extractor: "clip"
+    subtasks:
+      - "subject_consistency"
+      - "background_consistency"
+      - "temporal_flickering"
+      - "motion_smoothness"
+      - "temporal_style"
+      - "appearance_style"
+      - "scene"
+      - "object_class"
+      - "multiple_objects"
+      - "spatial_relationship"
+      - "human_action"
+      - "color"
+      - "overall_consistency"
+      - "dynamic_degree"
+      - "imaging_quality"
+      - "aesthetic_quality"
+
+runtime:
+  device: "cuda"
+  batch_size: 1
+  num_workers: 4
+  seed: 42
+
+paths:
+  cache_dir: "./eval_cache"
+  output_dir: "./outputs/Exp_OscStable_Head_Window_vbench16"
+  metadata_file: "metadata.csv"
+  processed_metadata: "processed_metadata.csv"
+  per_video_metrics: "per_video_metrics.csv"
+  group_summary: "group_summary.csv"
+  runtime_csv: "runtime.csv"
+  figures_dir: "./outputs/Exp_OscStable_Head_Window_vbench16/figs"
+  experiment_output: "Exp_OscStable_Head_Window_vbench16.csv"
+
+logging:
+  level: "INFO"
+  log_file: "./outputs/Exp_OscStable_Head_Window_vbench16/eval.log"
+  console: true
+

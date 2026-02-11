@@ -74,41 +74,39 @@ python scripts/download_hf_subdir.py \
 ```
 
 ## 配置并运行
-1. 在 `configs/Exp_OscStable_Head_Window.yaml` 中启用本地模式：
+1. 使用 16 维 VBench 配置文件（已内置本地路径）：
 ```yaml
 dataset:
   use_local_videos: true
   local_video_dir: "hf/AdaHead/Exp_OscStable_Head_Window"
   prompt_file: "hf/AdaHead/Exp_OscStable_Head_Window/prompts.csv"
 ```
-2. 运行核心评测（不含 VBench）：
-```bash
-python scripts/run_eval_core.py --config configs/Exp_OscStable_Head_Window.yaml
-```
-兼容旧命令（已弃用）：`python scripts/run_eval_pipeline.py --config configs/Exp_OscStable_Head_Window.yaml`
-
-3. 仅跑 VBench-Long 6 维度（当前配置）：
+2. 仅跑 VBench-Long 16 维度（当前配置）：
 ```bash
 # 下载并准备好本地数据集后即可直接运行（不要求先预处理）
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
 ```
 运行结束后会自动把结果同步到 `frontend/public/data/`（并更新 `manifest.json`）。
-脚本会在开始时只做一次切片预处理，后续 6 个维度复用 `split_clip`，不再重复预处理。
+脚本会在开始时只做一次切片预处理，后续 16 个维度复用 `split_clip`，不再重复预处理。
 
 多卡并行（例如 4×L40）：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
-torchrun --standalone --nproc_per_node=4 \
-  scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window.yaml --force
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
 ```
-说明：多卡时仅 rank0 输出进度并写 `outputs/vbench_per_video.csv`，其余 rank 作为工作进程。
+说明：脚本会自动按“维度”均分到可见 GPU（如 16 维 / 4 卡 => 每卡 4 维，全视频），最终由 CPU 聚合输出 `outputs/Exp_OscStable_Head_Window_vbench16/vbench_per_video.csv`。
 
-4. 官方 VBench-Long 直跑 6 维度命令（可选）：
+如需手动关闭自动多卡：
+```bash
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force --no-auto-multi-gpu
+```
+
+3. 官方 VBench-Long 直跑 16 维度命令（可选）：
 ```bash
 cd third_party/VBench
 python vbench2_beta_long/eval_long.py \
   --videos_path <VIDEO_DIR> \
-  --dimension subject_consistency background_consistency motion_smoothness dynamic_degree imaging_quality aesthetic_quality \
+  --dimension subject_consistency background_consistency temporal_flickering motion_smoothness temporal_style appearance_style scene object_class multiple_objects spatial_relationship human_action color overall_consistency dynamic_degree imaging_quality aesthetic_quality \
   --mode long_custom_input \
   --dev_flag
 ```
