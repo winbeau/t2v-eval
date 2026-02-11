@@ -432,8 +432,10 @@ class MultiGpuProgressBoard:
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._printed_live_block = False
-        self._use_ansi = bool(getattr(sys.__stdout__, "isatty", lambda: False)())
+        self._stdout = sys.__stdout__
+        self._overwrite_supported = bool(getattr(self._stdout, "isatty", lambda: False)())
         self._last_non_tty_emit = 0.0
+        self._last_lines: list[str] = []
 
     def _status_file(self, rank: int) -> Path:
         return self.progress_dir / f"rank_{rank}.json"
@@ -486,29 +488,29 @@ class MultiGpuProgressBoard:
             + "+".join("-" * (widths[key] + 2) for key in ["gpu", "tasks", "done", "next"])
             + "+"
         )
-        print("\n[Multi-GPU Progress Board]", file=sys.__stdout__)
-        print(sep, file=sys.__stdout__)
+        print("\n[Multi-GPU Progress Board]", file=self._stdout)
+        print(sep, file=self._stdout)
         print(
             f"| {headers['gpu']:<{widths['gpu']}} "
             f"| {headers['tasks']:<{widths['tasks']}} "
             f"| {headers['done']:<{widths['done']}} "
             f"| {headers['next']:<{widths['next']}} |",
-            file=sys.__stdout__,
+            file=self._stdout,
         )
-        print(sep, file=sys.__stdout__)
+        print(sep, file=self._stdout)
         for row in rows:
             print(
                 f"| {row['gpu']:<{widths['gpu']}} "
                 f"| {row['tasks']:<{widths['tasks']}} "
                 f"| {row['done']:<{widths['done']}} "
                 f"| {row['next']:<{widths['next']}} |",
-                file=sys.__stdout__,
+                file=self._stdout,
             )
-        print(sep, file=sys.__stdout__)
-        print("Live Progress:", file=sys.__stdout__)
+        print(sep, file=self._stdout)
+        print("Live Progress:", file=self._stdout)
         for _ in range(self.world_size):
-            print("", file=sys.__stdout__)
-        sys.__stdout__.flush()
+            print("", file=self._stdout)
+        self._stdout.flush()
         self._printed_live_block = True
 
     def _format_live_line(self, status: dict) -> str:
@@ -534,20 +536,23 @@ class MultiGpuProgressBoard:
     def _render_live_lines(self, force: bool = False) -> None:
         statuses = [self._read_rank_status(rank) for rank in range(self.world_size)]
         lines = [self._format_live_line(status) for status in statuses]
+        if not force and lines == self._last_lines:
+            return
 
-        if self._use_ansi and self._printed_live_block:
-            sys.__stdout__.write(f"\x1b[{self.world_size}A")
+        if self._overwrite_supported and self._printed_live_block:
+            self._stdout.write(f"\x1b[{self.world_size}A")
             for line in lines:
-                sys.__stdout__.write("\r\x1b[2K" + line + "\n")
-            sys.__stdout__.flush()
+                self._stdout.write("\r\x1b[2K" + line + "\n")
+            self._stdout.flush()
         else:
             now = time.time()
             if not force and (now - self._last_non_tty_emit) < self.non_tty_snapshot_sec:
                 return
             self._last_non_tty_emit = now
-            print("[Live Progress Snapshot]", file=sys.__stdout__)
-            print("\n".join(lines), file=sys.__stdout__)
-            sys.__stdout__.flush()
+            print("[Live Progress Snapshot]", file=self._stdout)
+            print("\n".join(lines), file=self._stdout)
+            self._stdout.flush()
+        self._last_lines = lines
 
     def _run(self) -> None:
         while not self._stop.is_set():
@@ -566,8 +571,8 @@ class MultiGpuProgressBoard:
             return
         self._stop.set()
         self._thread.join(timeout=2.0)
-        if self._use_ansi:
-            print("", file=sys.__stdout__)
+        if self._overwrite_supported:
+            print("", file=self._stdout)
 
 
 def maybe_auto_launch_multi_gpu(
@@ -1013,6 +1018,11 @@ def configure_warning_filters() -> None:
         message=r"The video decoding and encoding capabilities of torchvision are deprecated.*",
         category=UserWarning,
         module=r"torchvision\.io\._video_deprecation_warning",
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"pkg_resources is deprecated as an API.*",
+        category=UserWarning,
     )
 
 
