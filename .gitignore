@@ -65,18 +65,16 @@ uv.lock
 # Evaluation Cache & Outputs
 # -----------------------------------------------------------------------------
 eval_cache/
-outputs/
-outputs/*.csv
-outputs/*.log
+outputs/*
+!outputs/.gitkeep
+!outputs/**/
+outputs/**/*.csv
 outputs/figs/
 vbench_cache/
 *.mp4
 *.avi
 *.mov
 *.webm
-
-# Keep output directory structure
-!outputs/.gitkeep
 
 # -----------------------------------------------------------------------------
 # Model Weights & Large Files
@@ -113,6 +111,9 @@ logs/
 wandb/
 tensorboard/
 runs/
+
+# Keep run logs in outputs for server<->local git sync
+!outputs/**/*.log
 
 # -----------------------------------------------------------------------------
 # System Files
