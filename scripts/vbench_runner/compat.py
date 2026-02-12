@@ -9,6 +9,7 @@ Fixes known issues in the VBench submodule without modifying its source:
   5. GrIT model expects torch.device but receives a string
   6. transformers >=4.50 removed GenerationMixin from PreTrainedModel bases
   7. config.pruned_heads may not be a dict in some code paths
+  8. human_action extracts labels from filenames; custom videos need prompt matching
 """
 
 try:
@@ -342,3 +343,167 @@ def apply_vbench_compat_patches() -> None:
     patch_clip_tokenize_truncate()
     patch_grit_device_compat()
     patch_generation_mixin()
+    patch_human_action_prompt_matching()
+
+
+def patch_human_action_prompt_matching() -> None:
+    """
+    Patch human_action to use prompt-based Kinetics-400 matching.
+
+    VBench's human_action extracts action labels from video filenames
+    (e.g. "person is running-001.mp4" -> "running"), which only works for
+    VBench's official benchmark videos. This patch matches prompt text against
+    Kinetics-400 categories so custom videos get meaningful scores.
+    """
+    try:
+        from vbench import human_action as _ha
+        from vbench.utils import load_dimension_info
+    except ImportError:
+        return
+
+    if getattr(_ha, "_patched_prompt_matching", False):
+        return
+
+    # Build K-400 category list sorted longest-first for greedy matching
+    _k400_cats = sorted(_ha.build_dict().values(), key=len, reverse=True)
+
+    def _match_k400(prompt_text):
+        """Find the longest K-400 category substring in the prompt."""
+        prompt_lower = prompt_text.lower()
+        for cat in _k400_cats:
+            if cat in prompt_lower:
+                return cat
+        return None
+
+    _orig_compute = _ha.compute_human_action
+
+    def _patched_compute_human_action(json_dir, device, submodules_list, **kwargs):
+        from vbench.distributed import (
+            distribute_list_to_rank,
+            gather_list_of_dict,
+            get_world_size,
+        )
+
+        umt_path = submodules_list[0]
+        video_list, prompt_dict_ls = load_dimension_info(
+            json_dir, dimension="human_action", lang="en"
+        )
+
+        # Build video_path -> K-400 label mapping from prompt text
+        label_map = {}
+        for info in prompt_dict_ls:
+            prompt_text = info.get("prompt", "")
+            label = _match_k400(prompt_text)
+            for vp in info.get("video_list", []):
+                label_map[vp] = label
+
+        video_list = distribute_list_to_rank(video_list)
+        all_results, video_results = _human_action_with_labels(
+            umt_path, video_list, device, label_map
+        )
+        if get_world_size() > 1:
+            video_results = gather_list_of_dict(video_results)
+            all_results = sum(d["cor_num_per_video"] for d in video_results) / len(video_results)
+        return all_results, video_results
+
+    def _human_action_with_labels(umt_path, video_list, device, label_map):
+        """Evaluate human_action using prompt-derived labels instead of filenames."""
+        import torch
+        from timm.models import create_model
+        from tqdm import tqdm
+        from vbench.distributed import get_rank
+        from vbench.third_party.umt.datasets.video_transforms import (
+            CenterCrop,
+            Compose,
+            Normalize,
+            Resize,
+        )
+        from vbench.third_party.umt.datasets.volume_transforms import ClipToTensor
+        from vbench.third_party.umt.models.modeling_finetune import (  # noqa: F401
+            vit_large_patch16_224,
+        )
+        from vbench.utils import load_video
+
+        state_dict = torch.load(umt_path, map_location="cpu")
+        model = create_model(
+            "vit_large_patch16_224",
+            pretrained=False,
+            num_classes=400,
+            all_frames=16,
+            tubelet_size=1,
+            use_learnable_pos_emb=False,
+            fc_drop_rate=0.0,
+            drop_rate=0.0,
+            drop_path_rate=0.2,
+            attn_drop_rate=0.0,
+            drop_block_rate=None,
+            use_checkpoint=False,
+            checkpoint_num=16,
+            use_mean_pooling=True,
+            init_scale=0.001,
+        )
+        data_transform = Compose(
+            [
+                Resize(256, interpolation="bilinear"),
+                CenterCrop(size=(224, 224)),
+                ClipToTensor(),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+        model = model.to(device)
+        model.load_state_dict(state_dict, strict=False)
+        model.eval()
+
+        cat_dict = _ha.build_dict()
+        cnt = 0
+        cor_num = 0
+        video_results = []
+
+        for video_path in tqdm(video_list, disable=get_rank() > 0):
+            # Prompt-based label with filename fallback
+            video_label = label_map.get(video_path)
+            if video_label is None:
+                video_label = (
+                    video_path.split("/")[-1]
+                    .lower()
+                    .split("-")[0]
+                    .split("person is ")[-1]
+                    .split("_")[0]
+                )
+
+            cnt += 1
+            images = load_video(video_path, data_transform, num_frames=16)
+            images = images.unsqueeze(0).to(device)
+
+            with torch.no_grad():
+                logits = torch.sigmoid(model(images))
+                top_results, indices = torch.topk(logits, 5, dim=1)
+
+            indices = indices.squeeze().tolist()
+            scores = [round(f, 4) for f in top_results.squeeze().tolist()]
+
+            cat_ls = [cat_dict[str(indices[i])] for i in range(5) if scores[i] >= 0.85]
+
+            cor_num_per_video = 0
+            flag = False
+            for cat in cat_ls:
+                if cat == video_label:
+                    cor_num += 1
+                    cor_num_per_video = 1
+                    flag = True
+                    break
+
+            video_results.append(
+                {
+                    "video_path": video_path,
+                    "video_results": flag,
+                    "cor_num_per_video": cor_num_per_video,
+                }
+            )
+
+        acc = cor_num / cnt if cnt > 0 else 0
+        return acc, video_results
+
+    _ha.compute_human_action = _patched_compute_human_action
+    _ha._patched_prompt_matching = True  # type: ignore[attr-defined]
+    logger.debug("Patched human_action for prompt-based K-400 category matching.")
