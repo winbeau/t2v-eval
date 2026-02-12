@@ -1224,3 +1224,50 @@ ModuleNotFoundError: No module named 'boto3'
 2026-02-12 03:45:20 [INFO] [overall_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_eval_results.json
 2026-02-12 03:45:20 [INFO] Parsed 100 results for overall_consistency
 2026-02-12 03:45:20 [INFO] Rank 0 wrote partial results: outputs/Exp-C_OscHead_RadicalKV/vbench_partials/rank_0.csv
+2026-02-12 04:16:56 [INFO] === Worker Summary ===
+2026-02-12 04:16:56 [INFO]   2026-02-12 01:54:01 [INFO] [subject_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_eval_results.json
+2026-02-12 04:16:56 [INFO]   2026-02-12 01:58:17 [INFO] [temporal_style] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_eval_results.json
+2026-02-12 04:16:56 [INFO]   2026-02-12 03:40:19 [INFO] [multiple_objects] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_eval_results.json
+2026-02-12 04:16:56 [INFO]   2026-02-12 03:45:20 [INFO] [overall_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_eval_results.json
+2026-02-12 04:16:56 [INFO]   raise TimeoutError(
+2026-02-12 04:16:56 [INFO]   TimeoutError: File barrier timeout at outputs/Exp-C_OscHead_RadicalKV/vbench_sync/17a98d9b-88da-496f-803b-bb50aa542d4a/stage_002 (3/4 ready)
+2026-02-12 04:16:56 [INFO]   E0212 04:16:55.602000 139705373250688 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 2 (pid: 1968081) of binary: /workspace/t2v-eval/.venv/bin/python3
+2026-02-12 04:16:56 [INFO]   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 348, in wrapper
+2026-02-12 04:16:56 [INFO]   raise ChildFailedError(
+2026-02-12 04:16:56 [INFO]   torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+2026-02-12 04:16:56 [INFO]   /workspace/t2v-eval/scripts/run_vbench.py FAILED
+2026-02-12 04:16:56 [INFO]   error_file: <N/A>
+2026-02-12 04:16:56 [INFO]   traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+2026-02-12 04:16:56 [INFO] Full worker log: outputs/Exp-C_OscHead_RadicalKV/vbench_workers.log
+2026-02-12 04:16:56 [ERROR] Auto multi-GPU torchrun failed with code 1.
+2026-02-12 04:16:56 [ERROR] Full worker log: outputs/Exp-C_OscHead_RadicalKV/vbench_workers.log
+2026-02-12 04:16:56 [ERROR]   |   File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+2026-02-12 04:16:56 [ERROR]   |     exec(code, run_globals)
+2026-02-12 04:16:56 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 905, in <module>
+2026-02-12 04:16:56 [ERROR]   |     main()
+2026-02-12 04:16:56 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 348, in wrapper
+2026-02-12 04:16:56 [ERROR]   |     return f(*args, **kwargs)
+2026-02-12 04:16:56 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 901, in main
+2026-02-12 04:16:56 [ERROR]   |     run(args)
+2026-02-12 04:16:56 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 892, in run
+2026-02-12 04:16:56 [ERROR]   |     elastic_launch(
+2026-02-12 04:16:56 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+2026-02-12 04:16:56 [ERROR]   |     return launch_agent(self._config, self._entrypoint, list(args))
+2026-02-12 04:16:56 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+2026-02-12 04:16:56 [ERROR]   |     raise ChildFailedError(
+2026-02-12 04:16:56 [ERROR]   | torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+2026-02-12 04:16:56 [ERROR]   | ============================================================
+2026-02-12 04:16:56 [ERROR]   | /workspace/t2v-eval/scripts/run_vbench.py FAILED
+2026-02-12 04:16:56 [ERROR]   | ------------------------------------------------------------
+2026-02-12 04:16:56 [ERROR]   | Failures:
+2026-02-12 04:16:56 [ERROR]   |   <NO_OTHER_FAILURES>
+2026-02-12 04:16:56 [ERROR]   | ------------------------------------------------------------
+2026-02-12 04:16:56 [ERROR]   | Root Cause (first observed failure):
+2026-02-12 04:16:56 [ERROR]   | [0]:
+2026-02-12 04:16:56 [ERROR]   |   time      : 2026-02-12_04:16:54
+2026-02-12 04:16:56 [ERROR]   |   host      : 31e00ce47b71
+2026-02-12 04:16:56 [ERROR]   |   rank      : 2 (local_rank: 2)
+2026-02-12 04:16:56 [ERROR]   |   exitcode  : 1 (pid: 1968081)
+2026-02-12 04:16:56 [ERROR]   |   error_file: <N/A>
+2026-02-12 04:16:56 [ERROR]   |   traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+2026-02-12 04:16:56 [ERROR]   | ============================================================
