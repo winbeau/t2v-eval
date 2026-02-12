@@ -3,6 +3,7 @@ Progress reporting: live progress bars, multi-GPU progress board, stdout monitor
 """
 
 import contextlib
+import datetime
 import json
 import re
 import sys
@@ -153,6 +154,17 @@ class RankProgressReporter:
             self._elapsed_sec = 0
             self._write_status()
 
+    def log_event(self, message: str, level: str = "INFO") -> None:
+        """Append a cross-GPU summary event to the shared events buffer file."""
+        events_path = self.progress_dir / "events.log"
+        ts = datetime.datetime.now().strftime("%H:%M:%S")
+        line = f"[{ts}] [{level}] [GPU{self._gpu_label()}] {message}\n"
+        try:
+            with open(events_path, "a", encoding="utf-8") as f:
+                f.write(line)
+        except OSError:
+            pass
+
 
 # =============================================================================
 # Multi-GPU progress board (rank-0 only)
@@ -182,7 +194,8 @@ class MultiGpuProgressBoard:
         self._overwrite = bool(getattr(self._stdout, "isatty", lambda: False)())
         self._start_time = time.time()
         self._block_height = 0
-        # Log tailing
+        # Log tailing — prefer events.log (cross-GPU summary), fall back to log_path
+        self._events_path = progress_dir / "events.log"
         self._log_path = log_path
         self._log_tail: deque[str] = deque(maxlen=self.LOG_TAIL_LINES)
         self._log_offset = 0
@@ -295,11 +308,13 @@ class MultiGpuProgressBoard:
         }
 
     def _update_log_tail(self) -> None:
-        """Read new complete lines from worker log file."""
-        if self._log_path is None:
+        """Read new complete lines from events buffer (preferred) or worker log."""
+        # Prefer events.log (cross-GPU summary), fall back to worker log
+        tail_path = self._events_path if self._events_path.exists() else self._log_path
+        if tail_path is None:
             return
         try:
-            with open(self._log_path, errors="replace") as f:
+            with open(tail_path, errors="replace") as f:
                 f.seek(self._log_offset)
                 chunk = f.read(65536)
                 if not chunk:

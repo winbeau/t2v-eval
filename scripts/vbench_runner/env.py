@@ -69,7 +69,7 @@ def setup_log_file_handler(
         if isinstance(handler, logging.FileHandler) and handler.baseFilename == resolved:
             return target_path
 
-    file_handler = logging.FileHandler(target_path, encoding="utf-8")
+    file_handler = logging.FileHandler(target_path, mode="w", encoding="utf-8")
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(
         logging.Formatter(

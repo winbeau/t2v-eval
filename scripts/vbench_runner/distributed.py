@@ -232,6 +232,9 @@ def maybe_auto_launch_multi_gpu(
             stale.unlink()
         except OSError:
             pass
+    # Clear events buffer so the board starts fresh
+    events_path = progress_dir / "events.log"
+    events_path.write_text("", encoding="utf-8")
 
     log_path = output_dir / "vbench_workers.log"
     # Truncate log file before board starts to avoid reading stale content

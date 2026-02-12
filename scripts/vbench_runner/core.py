@@ -433,8 +433,16 @@ def run_vbench_evaluation(
 
                     if rank == 0:
                         logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
+                        if progress_reporter is not None:
+                            progress_reporter.log_event(
+                                f"Parsed {len(results) - count_before} results for {subtask}"
+                            )
             else:
                 logger.warning(f"[rank {rank}] Result file not found: {result_file}")
+                if progress_reporter is not None:
+                    progress_reporter.log_event(
+                        f"Result file not found for {subtask}", level="WARN"
+                    )
             if progress_reporter is not None:
                 progress_reporter.finish_task(success=True)
             subtask_status[subtask] = (True, "OK")
@@ -444,6 +452,10 @@ def run_vbench_evaluation(
             subtask_status[subtask] = (False, str(e))
             logger.warning(f"[rank {rank}] Failed to run subtask {subtask}: {e}")
             logger.warning("Subtask traceback:", exc_info=True)
+            if progress_reporter is not None:
+                progress_reporter.log_event(
+                    f"{subtask} failed: {e}", level="ERROR"
+                )
             continue
 
     # Print per-subtask result summary (colored)
@@ -776,6 +788,8 @@ def main():
                     stale_file.unlink()
                 except OSError:
                     pass
+            # Clear events buffer for fresh run
+            (progress_dir / "events.log").write_text("", encoding="utf-8")
         barrier_fn()
         progress_reporter = RankProgressReporter(
             progress_dir=progress_dir,
