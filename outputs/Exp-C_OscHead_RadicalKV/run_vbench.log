@@ -1176,3 +1176,51 @@ ModuleNotFoundError: No module named 'boto3'
 2026-02-11 20:01:45 [ERROR]   |   error_file: <N/A>
 2026-02-11 20:01:45 [ERROR]   |   traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
 2026-02-11 20:01:45 [ERROR]   | ============================================================
+2026-02-12 01:45:52 [INFO] VBench logging enabled: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log
+2026-02-12 01:45:52 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
+2026-02-12 01:45:52 [INFO] Auto multi-GPU enabled: 4 visible GPUs, 16 subtasks -> launching 4 workers.
+2026-02-12 01:45:54 [INFO] VBench logging enabled: rank0 -> /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log (other ranks -> .rankN suffix)
+2026-02-12 01:45:54 [INFO] Multi-process dimension-parallel mode enabled: world_size=4 (no torch.distributed init)
+2026-02-12 01:45:54 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
+2026-02-12 01:45:54 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-12 01:45:54 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-12 01:45:54 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-12 01:45:54 [WARNING] Remapped 100 records to unique video_id.
+2026-02-12 01:45:54 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-12 01:45:54 [INFO] Loaded 100 videos for VBench evaluation
+2026-02-12 01:45:54 [INFO] Subtask distribution: total=16, world_size=4
+2026-02-12 01:45:54 [INFO]   rank 0 -> ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-12 01:45:54 [INFO]   rank 1 -> ['background_consistency', 'appearance_style', 'spatial_relationship', 'dynamic_degree']
+2026-02-12 01:45:54 [INFO]   rank 2 -> ['temporal_flickering', 'scene', 'human_action', 'imaging_quality']
+2026-02-12 01:45:54 [INFO]   rank 3 -> ['motion_smoothness', 'object_class', 'color', 'aesthetic_quality']
+2026-02-12 01:45:54 [INFO] Attempting VBench evaluation via Python API...
+2026-02-12 01:45:57 [INFO] Applied compatibility shim for `moviepy.editor` (VBench-Long expects legacy import path).
+2026-02-12 01:45:59 [INFO] Detected existing split clips for all videos; skip preprocessing and reuse cache.
+2026-02-12 01:45:59 [INFO] Running VBench-Long evaluation with subtasks: ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-12 01:45:59 [INFO] Evaluating subtask: subject_consistency
+2026-02-12 01:54:01 [INFO] [subject_consistency] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_full_info.json
+2026-02-12 01:54:01 [INFO] [subject_consistency] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_full_info.json
+2026-02-12 01:54:01 [INFO] [subject_consistency] /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/subject_consistency_cat_firstframes_videos has already been created, please check the path
+2026-02-12 01:54:01 [INFO] [subject_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_eval_results.json
+2026-02-12 01:54:01 [INFO] [subject_consistency] prefix fallback expanded 900 unresolved entries to 100 video assignments
+2026-02-12 01:54:01 [INFO] [subject_consistency] skipped 900 unresolved video ids from raw VBench output
+2026-02-12 01:54:01 [INFO] Parsed 100 results for subject_consistency
+2026-02-12 01:54:01 [INFO] Evaluating subtask: temporal_style
+2026-02-12 01:58:17 [INFO] [temporal_style] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_full_info.json
+2026-02-12 01:58:17 [INFO] [temporal_style] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_full_info.json
+2026-02-12 01:58:17 [INFO] [temporal_style] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_eval_results.json
+2026-02-12 01:58:18 [INFO] Parsed 100 results for temporal_style
+2026-02-12 01:58:18 [INFO] Evaluating subtask: multiple_objects
+2026-02-12 01:58:18 [INFO] [multiple_objects] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-12 01:58:22 [INFO] [DetectionCheckpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
+2026-02-12 01:58:22 [INFO] [Checkpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
+2026-02-12 03:40:19 [INFO] [multiple_objects] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_full_info.json
+2026-02-12 03:40:19 [INFO] [multiple_objects] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_full_info.json
+2026-02-12 03:40:19 [INFO] [multiple_objects] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_eval_results.json
+2026-02-12 03:40:19 [INFO] Parsed 100 results for multiple_objects
+2026-02-12 03:40:19 [INFO] Evaluating subtask: overall_consistency
+2026-02-12 03:45:20 [INFO] [overall_consistency] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_full_info.json
+2026-02-12 03:45:20 [INFO] [overall_consistency] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_full_info.json
+2026-02-12 03:45:20 [INFO] [overall_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_eval_results.json
+2026-02-12 03:45:20 [INFO] Parsed 100 results for overall_consistency
+2026-02-12 03:45:20 [INFO] Rank 0 wrote partial results: outputs/Exp-C_OscHead_RadicalKV/vbench_partials/rank_0.csv
