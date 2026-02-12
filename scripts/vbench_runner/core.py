@@ -117,6 +117,30 @@ except ImportError:
     )
 
 
+# ANSI color codes for terminal output
+_GREEN = "\033[32m"
+_RED = "\033[31m"
+_YELLOW = "\033[33m"
+_RESET = "\033[0m"
+_BOLD = "\033[1m"
+
+
+def _log_subtask_summary(subtask_status: dict[str, tuple[bool, str]], rank: int) -> None:
+    """Print per-subtask success/fail summary with colors."""
+    ok_count = sum(1 for ok, _ in subtask_status.values() if ok)
+    fail_count = len(subtask_status) - ok_count
+    logger.info(
+        f"[rank {rank}] Subtask summary: "
+        f"{_GREEN}{ok_count} passed{_RESET}, "
+        f"{_RED}{fail_count} failed{_RESET}"
+    )
+    for name, (ok, detail) in subtask_status.items():
+        if ok:
+            logger.info(f"  {_GREEN}PASS{_RESET}  {name}")
+        else:
+            logger.error(f"  {_RED}FAIL{_RESET}  {name}: {detail}")
+
+
 # =============================================================================
 # VBench evaluation (Python API)
 # =============================================================================
@@ -348,6 +372,8 @@ def run_vbench_evaluation(
     if rank == 0:
         logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
 
+    subtask_status: dict[str, tuple[bool, str]] = {}  # subtask -> (success, detail)
+
     for idx, subtask in enumerate(subtasks, start=1):
         if rank == 0:
             logger.info(f"Evaluating subtask: {subtask}")
@@ -411,12 +437,18 @@ def run_vbench_evaluation(
                 logger.warning(f"[rank {rank}] Result file not found: {result_file}")
             if progress_reporter is not None:
                 progress_reporter.finish_task(success=True)
+            subtask_status[subtask] = (True, "OK")
         except Exception as e:
             if progress_reporter is not None:
                 progress_reporter.finish_task(success=False, error=str(e))
+            subtask_status[subtask] = (False, str(e))
             logger.warning(f"[rank {rank}] Failed to run subtask {subtask}: {e}")
             logger.warning("Subtask traceback:", exc_info=True)
             continue
+
+    # Print per-subtask result summary (colored)
+    if subtask_status:
+        _log_subtask_summary(subtask_status, rank)
 
     # Convert to DataFrame and pivot
     if results:
@@ -894,11 +926,16 @@ def main():
         if coverage_rows:
             name_width = max(len("subtask"), max(len(name) for name, _, _ in coverage_rows))
             logger.info("\nVBench Coverage Summary:")
-            logger.info(f"{'subtask':<{name_width}} | coverage | status")
-            logger.info(f"{'-' * name_width}-+----------+-------")
+            logger.info(f"  {'subtask':<{name_width}} | coverage | status")
+            logger.info(f"  {'-' * name_width}-+----------+-------")
             for name, covered, total in coverage_rows:
-                status = "OK" if covered == total else "MISS"
-                logger.info(f"{name:<{name_width}} | {covered:>4d}/{total:<4d} | {status}")
+                if covered == total:
+                    status = f"{_GREEN}OK{_RESET}"
+                elif covered == 0:
+                    status = f"{_RED}FAIL{_RESET}"
+                else:
+                    status = f"{_YELLOW}PARTIAL{_RESET}"
+                logger.info(f"  {name:<{name_width}} | {covered:>4d}/{total:<4d} | {status}")
 
         profile = str(vbench_config.get("dimension_profile", "")).strip().lower()
         strict_full_coverage = bool(vbench_config.get("require_full_coverage", False))

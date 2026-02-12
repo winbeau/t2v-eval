@@ -291,10 +291,20 @@ def _print_run_summary(log_path: Path) -> None:
         "results saved to",
         "score summary",
         "coverage summary",
+        "subtask summary",
+        "PASS",
+        "FAIL",
         "error",
         "failed",
         "merged",
         "copied",
+        "traceback",
+        "ZeroDivisionError",
+        "TypeError",
+        "RuntimeError",
+        "KeyError",
+        "ValueError",
+        "AttributeError",
     ]
     important = []
     for line in lines:
@@ -307,6 +317,6 @@ def _print_run_summary(log_path: Path) -> None:
 
     if important:
         logger.info("=== Worker Summary ===")
-        for line in important[-20:]:
+        for line in important[-30:]:
             logger.info("  %s", line)
     logger.info("Full worker log: %s", log_path)

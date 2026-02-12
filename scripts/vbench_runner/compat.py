@@ -11,6 +11,7 @@ Fixes known issues in the VBench submodule without modifying its source:
   7. config.pruned_heads may not be a dict in some code paths
   8. human_action extracts labels from filenames; custom videos need prompt matching
   9. GrIT inference speedup: skip unused visualization + FP16 autocast
+ 10. color check_generate uses exact match; custom prompts are multi-word
 """
 
 try:
@@ -372,6 +373,79 @@ def patch_grit_fast_inference() -> None:
     logger.debug("Patched GrIT VisualizationDemo: skip visualization + FP16 autocast.")
 
 
+def patch_color_object_matching() -> None:
+    """
+    Patch color dimension for custom video prompts.
+
+    VBench's color check_generate uses exact match (``object_key == pred[1]``)
+    to compare a stripped prompt string against GrIT detection labels.  For
+    official VBench prompts like "a red car" this works (stripped to "car"),
+    but custom prompts like "a red car driving on a highway" strip to
+    "car driving on highway" which never matches the GrIT label "car".
+
+    Also guards against ZeroDivisionError when no objects are detected.
+    """
+    try:
+        from vbench import color as _color
+    except ImportError:
+        return
+
+    if getattr(_color, "_patched_color_matching", False):
+        return
+
+    def _check_generate_lenient(color_key, object_key, predictions):
+        cur_object_color, cur_object = 0, 0
+        object_key_lower = object_key.lower().strip()
+        for frame_pred in predictions:
+            object_flag, color_flag = False, False
+            for pred in frame_pred:
+                pred_type = str(pred[1]).lower().strip() if pred[1] else ""
+                # Lenient: GrIT label is a substring of object_key (e.g. "car" in "car driving")
+                if pred_type and pred_type in object_key_lower:
+                    for color_query in [
+                        "white",
+                        "red",
+                        "pink",
+                        "blue",
+                        "silver",
+                        "purple",
+                        "orange",
+                        "green",
+                        "gray",
+                        "yellow",
+                        "black",
+                        "grey",
+                    ]:
+                        if color_query in pred[0]:
+                            object_flag = True
+                    if color_key in pred[0]:
+                        color_flag = True
+            if color_flag:
+                cur_object_color += 1
+            if object_flag:
+                cur_object += 1
+        return cur_object, cur_object_color
+
+    _orig_color_fn = _color.color
+
+    def _color_safe(model, video_dict, device):
+        """Wrap color() with the lenient check_generate and zero-division guard."""
+        orig_cg = _color.check_generate
+        _color.check_generate = _check_generate_lenient
+        try:
+            result = _orig_color_fn(model, video_dict, device)
+        except ZeroDivisionError:
+            logger.warning("color dimension: no objects detected in any video, returning score 0.")
+            result = (0.0, [])
+        finally:
+            _color.check_generate = orig_cg
+        return result
+
+    _color.color = _color_safe
+    _color._patched_color_matching = True  # type: ignore[attr-defined]
+    logger.debug("Patched color check_generate for lenient object matching.")
+
+
 def apply_vbench_compat_patches() -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
@@ -382,6 +456,7 @@ def apply_vbench_compat_patches() -> None:
     patch_grit_device_compat()
     patch_generation_mixin()
     patch_grit_fast_inference()
+    patch_color_object_matching()
     patch_human_action_prompt_matching()
 
 
