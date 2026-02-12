@@ -167,6 +167,13 @@ def maybe_auto_launch_multi_gpu(
         return False
 
     subtasks = get_vbench_subtasks(config)
+
+    # Apply --skip filter so parent's progress board matches workers
+    skip_arg = getattr(args, "skip", "") or ""
+    if skip_arg:
+        skip_dims = {d.strip() for d in skip_arg.split(",") if d.strip()}
+        subtasks = [s for s in subtasks if s not in skip_dims]
+
     if len(subtasks) <= 1:
         return False
 
@@ -201,6 +208,9 @@ def maybe_auto_launch_multi_gpu(
         cmd.append("--force")
     if args.skip_on_error:
         cmd.append("--skip-on-error")
+    skip_arg = getattr(args, "skip", "") or ""
+    if skip_arg:
+        cmd.extend(["--skip", skip_arg])
     if getattr(args, "no_auto_multi_gpu", False):
         cmd.append("--no-auto-multi-gpu")
 
@@ -269,10 +279,32 @@ def maybe_auto_launch_multi_gpu(
             pass
 
         if args.skip_on_error:
-            logger.warning("Skipping VBench evaluation due to auto multi-GPU failure.")
-            pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
-                output_dir / "vbench_per_video.csv", index=False
+            logger.warning(
+                "torchrun failed but --skip-on-error is set. "
+                "Attempting to salvage partial results..."
             )
+            # Try to merge whatever partial results were written before the crash
+            partial_dir = output_dir / "vbench_partials"
+            partial_frames = []
+            if partial_dir.exists():
+                for rank_file in sorted(partial_dir.glob("rank_*.csv")):
+                    try:
+                        partial_frames.append(pd.read_csv(rank_file))
+                        logger.info("  Recovered partial: %s", rank_file.name)
+                    except Exception:
+                        pass
+            if partial_frames:
+                merged = merge_rank_partial_results(partial_frames)
+                merged.to_csv(output_dir / "vbench_per_video.csv", index=False)
+                logger.info(
+                    "Salvaged %d partial result files -> vbench_per_video.csv",
+                    len(partial_frames),
+                )
+            else:
+                pd.DataFrame(columns=["video_id", "vbench_temporal_score"]).to_csv(
+                    output_dir / "vbench_per_video.csv", index=False
+                )
+                logger.warning("No partial results to salvage, wrote empty CSV.")
             return True
         raise RuntimeError(f"torchrun failed with exit code {result.returncode}")
 

@@ -616,6 +616,12 @@ def main():
         help="Skip VBench if errors occur (don't fail pipeline)",
     )
     parser.add_argument(
+        "--skip",
+        type=str,
+        default="",
+        help="Comma-separated list of dimensions to skip (e.g. --skip color,object_class)",
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Overwrite existing results",
@@ -729,6 +735,18 @@ def main():
         logger.info(f"Loaded {len(video_records)} videos for VBench evaluation")
 
     all_subtasks = get_vbench_subtasks(config)
+
+    # Filter out skipped dimensions
+    skip_dims = set()
+    skip_arg = getattr(args, "skip", "") or os.environ.get("VBENCH_SKIP_DIMS", "")
+    if skip_arg:
+        skip_dims = {d.strip() for d in skip_arg.split(",") if d.strip()}
+    if skip_dims:
+        skipped = sorted(skip_dims & set(all_subtasks))
+        if skipped and rank == 0:
+            logger.info("Skipping dimensions (--skip): %s", skipped)
+        all_subtasks = [s for s in all_subtasks if s not in skip_dims]
+
     assigned_subtasks = split_subtasks_for_rank(all_subtasks, rank=rank, world_size=world_size)
     visible_devices = _parse_visible_devices()
     if rank == 0:
@@ -946,11 +964,18 @@ def main():
             short_msg = ", ".join(
                 f"{name}:{covered}/{total}" for name, covered, total in missing_coverage
             )
-            raise RuntimeError(
-                "VBench coverage check failed under strict mode: "
-                f"{short_msg}. "
-                "Install missing dependencies / inspect failed subtasks, then rerun."
-            )
+            if args.skip_on_error:
+                logger.warning(
+                    f"{_YELLOW}Coverage incomplete (non-fatal with --skip-on-error): "
+                    f"{short_msg}{_RESET}"
+                )
+            else:
+                raise RuntimeError(
+                    "VBench coverage check failed under strict mode: "
+                    f"{short_msg}. "
+                    "Use --skip-on-error to save partial results, or "
+                    "--skip <dim> to exclude known-failing dimensions."
+                )
     finally:
         if progress_reporter is not None:
             progress_reporter.mark_done()
