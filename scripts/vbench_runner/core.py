@@ -380,6 +380,9 @@ def run_vbench_evaluation(
         try:
             if progress_reporter is not None:
                 progress_reporter.start_task(subtask)
+                progress_reporter.log_event(
+                    f"Starting {subtask} ({idx}/{display_total_subtasks})"
+                )
             eval_kwargs = {
                 "videos_path": video_dir_str,
                 "name": subtask,
@@ -433,10 +436,10 @@ def run_vbench_evaluation(
 
                     if rank == 0:
                         logger.info(f"Parsed {len(results) - count_before} results for {subtask}")
-                        if progress_reporter is not None:
-                            progress_reporter.log_event(
-                                f"Parsed {len(results) - count_before} results for {subtask}"
-                            )
+                    if progress_reporter is not None:
+                        progress_reporter.log_event(
+                            f"Parsed {len(results) - count_before} results for {subtask}"
+                        )
             else:
                 logger.warning(f"[rank {rank}] Result file not found: {result_file}")
                 if progress_reporter is not None:

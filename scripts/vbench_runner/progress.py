@@ -198,6 +198,7 @@ class MultiGpuProgressBoard:
         self._events_path = progress_dir / "events.log"
         self._log_path = log_path
         self._log_tail: deque[str] = deque(maxlen=self.LOG_TAIL_LINES)
+        self._events_offset = 0
         self._log_offset = 0
         # Non-TTY fallback
         self._last_row_strs: list[str] = []
@@ -308,21 +309,27 @@ class MultiGpuProgressBoard:
         }
 
     def _update_log_tail(self) -> None:
-        """Read new complete lines from events buffer (preferred) or worker log."""
-        # Prefer events.log (cross-GPU summary), fall back to worker log
-        tail_path = self._events_path if self._events_path.exists() else self._log_path
-        if tail_path is None:
-            return
+        """Read new lines from events buffer; fall back to worker log if empty."""
+        found = self._read_tail_from(self._events_path, "_events_offset")
+        if not found:
+            self._read_tail_from(self._log_path, "_log_offset")
+
+    def _read_tail_from(self, path: Path | None, offset_attr: str) -> bool:
+        """Read new complete lines from a file, return True if any lines were added."""
+        if path is None or not path.exists():
+            return False
         try:
-            with open(tail_path, errors="replace") as f:
-                f.seek(self._log_offset)
+            offset = getattr(self, offset_attr, 0)
+            with open(path, errors="replace") as f:
+                f.seek(offset)
                 chunk = f.read(65536)
                 if not chunk:
-                    return
+                    return False
                 last_nl = chunk.rfind("\n")
                 if last_nl < 0:
-                    return
-                self._log_offset += last_nl + 1
+                    return False
+                setattr(self, offset_attr, offset + last_nl + 1)
+                added = False
                 for line in chunk[:last_nl].splitlines():
                     stripped = line.strip()
                     if not stripped or "█" in stripped:
@@ -330,8 +337,10 @@ class MultiGpuProgressBoard:
                     if len(stripped) > 120:
                         stripped = stripped[:117] + "..."
                     self._log_tail.append(stripped)
+                    added = True
+                return added
         except Exception:
-            pass
+            return False
 
     def _build_table_lines(self, rows: list[dict[str, str]]) -> list[str]:
         cols = ["gpu", "done", "pct", "cur", "next", "status", "time"]
