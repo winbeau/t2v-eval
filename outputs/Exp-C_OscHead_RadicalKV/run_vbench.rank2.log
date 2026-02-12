@@ -241,3 +241,35 @@ AttributeError: 'list' object has no attribute 'items'
 2026-02-11 17:15:58 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
 2026-02-11 17:15:58 [WARNING] Remapped 100 records to unique video_id.
 2026-02-11 17:15:58 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:18:00 [INFO] [scene] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 17:19:54 [WARNING] [rank 2] Failed to run subtask scene: string indices must be integers
+2026-02-11 17:19:54 [WARNING] Subtask traceback:
+Traceback (most recent call last):
+  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 367, in run_vbench_evaluation
+    stdout_text, saved_count = run_evaluate_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 701, in run_evaluate_with_progress
+    return run_callable_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 684, in run_callable_with_progress
+    raise worker_error[0]
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 582, in _worker
+    task_fn()
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 702, in <lambda>
+    task_fn=lambda: vbench.evaluate(**eval_kwargs),
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/__init__.py", line 113, in evaluate
+    results = evaluate_func(cur_full_info_path, self.device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/scene.py", line 7, in compute_long_scene
+    all_results, detailed_results = compute_scene(json_dir, device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/scene.py", line 73, in compute_scene
+    all_results, video_results = scene(model, prompt_dict_ls, device)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/scene.py", line 53, in scene
+    cur_success_frame_count = check_generate(scene_info, cur_video_pred)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/scene.py", line 31, in check_generate
+    key = key_info['scene']
+TypeError: string indices must be integers
+2026-02-11 17:30:43 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:30:43 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:30:43 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:30:43 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:30:43 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:32:54 [INFO] [scene] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 18:01:43 [INFO] Rank 2 wrote partial results: outputs/Exp-C_OscHead_RadicalKV/vbench_partials/rank_2.csv

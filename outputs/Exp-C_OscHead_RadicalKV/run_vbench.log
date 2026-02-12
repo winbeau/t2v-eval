@@ -1012,3 +1012,167 @@ VBench Coverage Summary:
 2026-02-11 17:16:03 [INFO] Detected existing split clips for all videos; skip preprocessing and reuse cache.
 2026-02-11 17:16:03 [INFO] Running VBench-Long evaluation with subtasks: ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
 2026-02-11 17:16:03 [INFO] Evaluating subtask: subject_consistency
+2026-02-11 17:23:40 [INFO] [subject_consistency] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_full_info.json
+2026-02-11 17:23:40 [INFO] [subject_consistency] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_full_info.json
+2026-02-11 17:23:40 [INFO] [subject_consistency] /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/subject_consistency_cat_firstframes_videos has already been created, please check the path
+2026-02-11 17:23:40 [INFO] [subject_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_eval_results.json
+2026-02-11 17:23:40 [INFO] [subject_consistency] prefix fallback expanded 900 unresolved entries to 100 video assignments
+2026-02-11 17:23:40 [INFO] [subject_consistency] skipped 900 unresolved video ids from raw VBench output
+2026-02-11 17:23:40 [INFO] Parsed 100 results for subject_consistency
+2026-02-11 17:23:40 [INFO] Evaluating subtask: temporal_style
+2026-02-11 17:27:44 [INFO] [temporal_style] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_full_info.json
+2026-02-11 17:27:44 [INFO] [temporal_style] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_full_info.json
+2026-02-11 17:27:44 [INFO] [temporal_style] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_eval_results.json
+2026-02-11 17:27:44 [INFO] Parsed 100 results for temporal_style
+2026-02-11 17:27:44 [INFO] Evaluating subtask: multiple_objects
+2026-02-11 17:27:44 [INFO] [multiple_objects] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 17:27:46 [WARNING] [rank 0] Failed to run subtask multiple_objects: No module named 'boto3'
+2026-02-11 17:27:46 [WARNING] Subtask traceback:
+Traceback (most recent call last):
+  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 367, in run_vbench_evaluation
+    stdout_text, saved_count = run_evaluate_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 701, in run_evaluate_with_progress
+    return run_callable_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 684, in run_callable_with_progress
+    raise worker_error[0]
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 582, in _worker
+    task_fn()
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 702, in <lambda>
+    task_fn=lambda: vbench.evaluate(**eval_kwargs),
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/__init__.py", line 113, in evaluate
+    results = evaluate_func(cur_full_info_path, self.device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/multiple_objects.py", line 6, in compute_long_multiple_objects
+    all_results, detailed_results = compute_multiple_objects(json_dir, device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/multiple_objects.py", line 78, in compute_multiple_objects
+    dense_caption_model.initialize_model_det(**submodules_dict)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_model.py", line 17, in initialize_model_det
+    self.demo = init_demo(self.device, model_weight = model_weight, task="ObjectDet")
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/image_dense_captions.py", line 109, in init_demo
+    demo = VisualizationDemo(cfg)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/predictor.py", line 102, in __init__
+    self.predictor = SingleDefaultPredictor(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/engine/defaults.py", line 314, in __init__
+    self.model = build_model(self.cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/meta_arch/build.py", line 22, in build_model
+    model = META_ARCH_REGISTRY.get(meta_arch)(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 189, in wrapped
+    explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 245, in _get_args_from_config
+    ret = from_config_func(*args, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/meta_arch/grit.py", line 20, in from_config
+    ret = super().from_config(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/meta_arch/rcnn.py", line 77, in from_config
+    "roi_heads": build_roi_heads(cfg, backbone.output_shape()),
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/roi_heads/roi_heads.py", line 43, in build_roi_heads
+    return ROI_HEADS_REGISTRY.get(name)(cfg, input_shape)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 189, in wrapped
+    explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 245, in _get_args_from_config
+    ret = from_config_func(*args, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/roi_heads/grit_roi_heads.py", line 91, in from_config
+    text_decoder_transformer = TransformerDecoderTextualHead(
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/text_decoder.py", line 268, in __init__
+    self.transformer = create_transformer(
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/text_decoder.py", line 182, in create_transformer
+    from .modeling_bert import BertConfig, BertEncoder
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/modeling_bert.py", line 30, in <module>
+    from .file_utils import cached_path
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/file_utils.py", line 18, in <module>
+    import boto3
+ModuleNotFoundError: No module named 'boto3'
+2026-02-11 17:27:46 [INFO] Evaluating subtask: overall_consistency
+2026-02-11 17:30:41 [INFO] VBench logging enabled: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log
+2026-02-11 17:30:41 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
+2026-02-11 17:30:41 [INFO] Auto multi-GPU enabled: 4 visible GPUs, 16 subtasks -> launching 4 workers.
+2026-02-11 17:30:43 [INFO] VBench logging enabled: rank0 -> /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/run_vbench.log (other ranks -> .rankN suffix)
+2026-02-11 17:30:43 [INFO] Multi-process dimension-parallel mode enabled: world_size=4 (no torch.distributed init)
+2026-02-11 17:30:43 [INFO] Force recomputing: outputs/Exp-C_OscHead_RadicalKV/vbench_per_video.csv
+2026-02-11 17:30:43 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:30:43 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:30:43 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:30:43 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:30:43 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:30:43 [INFO] Loaded 100 videos for VBench evaluation
+2026-02-11 17:30:43 [INFO] Subtask distribution: total=16, world_size=4
+2026-02-11 17:30:43 [INFO]   rank 0 -> ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-11 17:30:43 [INFO]   rank 1 -> ['background_consistency', 'appearance_style', 'spatial_relationship', 'dynamic_degree']
+2026-02-11 17:30:43 [INFO]   rank 2 -> ['temporal_flickering', 'scene', 'human_action', 'imaging_quality']
+2026-02-11 17:30:43 [INFO]   rank 3 -> ['motion_smoothness', 'object_class', 'color', 'aesthetic_quality']
+2026-02-11 17:30:43 [INFO] Attempting VBench evaluation via Python API...
+2026-02-11 17:30:46 [INFO] Applied compatibility shim for `moviepy.editor` (VBench-Long expects legacy import path).
+2026-02-11 17:30:48 [INFO] Detected existing split clips for all videos; skip preprocessing and reuse cache.
+2026-02-11 17:30:48 [INFO] Running VBench-Long evaluation with subtasks: ['subject_consistency', 'temporal_style', 'multiple_objects', 'overall_consistency']
+2026-02-11 17:30:48 [INFO] Evaluating subtask: subject_consistency
+2026-02-11 17:39:05 [INFO] [subject_consistency] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_full_info.json
+2026-02-11 17:39:05 [INFO] [subject_consistency] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_full_info.json
+2026-02-11 17:39:05 [INFO] [subject_consistency] /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/input_videos/subject_consistency_cat_firstframes_videos has already been created, please check the path
+2026-02-11 17:39:05 [INFO] [subject_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_eval_results.json
+2026-02-11 17:39:05 [INFO] [subject_consistency] prefix fallback expanded 900 unresolved entries to 100 video assignments
+2026-02-11 17:39:05 [INFO] [subject_consistency] skipped 900 unresolved video ids from raw VBench output
+2026-02-11 17:39:05 [INFO] Parsed 100 results for subject_consistency
+2026-02-11 17:39:05 [INFO] Evaluating subtask: temporal_style
+2026-02-11 17:43:21 [INFO] [temporal_style] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_full_info.json
+2026-02-11 17:43:21 [INFO] [temporal_style] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_full_info.json
+2026-02-11 17:43:21 [INFO] [temporal_style] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_eval_results.json
+2026-02-11 17:43:21 [INFO] Parsed 100 results for temporal_style
+2026-02-11 17:43:21 [INFO] Evaluating subtask: multiple_objects
+2026-02-11 17:43:21 [INFO] [multiple_objects] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 17:43:25 [INFO] [DetectionCheckpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
+2026-02-11 17:43:25 [INFO] [Checkpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
+2026-02-11 19:25:58 [INFO] [multiple_objects] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_full_info.json
+2026-02-11 19:25:58 [INFO] [multiple_objects] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_full_info.json
+2026-02-11 19:25:58 [INFO] [multiple_objects] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_eval_results.json
+2026-02-11 19:25:58 [INFO] Parsed 100 results for multiple_objects
+2026-02-11 19:25:58 [INFO] Evaluating subtask: overall_consistency
+2026-02-11 19:30:57 [INFO] [overall_consistency] Evaluation meta data saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_full_info.json
+2026-02-11 19:30:57 [INFO] [overall_consistency] cur_full_info_path: /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_full_info.json
+2026-02-11 19:30:57 [INFO] [overall_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_eval_results.json
+2026-02-11 19:30:57 [INFO] Parsed 100 results for overall_consistency
+2026-02-11 19:30:57 [INFO] Rank 0 wrote partial results: outputs/Exp-C_OscHead_RadicalKV/vbench_partials/rank_0.csv
+2026-02-11 20:01:45 [INFO] === Worker Summary ===
+2026-02-11 20:01:45 [INFO]   2026-02-11 17:39:05 [INFO] [subject_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/subject_consistency_eval_results.json
+2026-02-11 20:01:45 [INFO]   2026-02-11 17:43:21 [INFO] [temporal_style] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/temporal_style_eval_results.json
+2026-02-11 20:01:45 [INFO]   2026-02-11 19:25:58 [INFO] [multiple_objects] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/multiple_objects_eval_results.json
+2026-02-11 20:01:45 [INFO]   2026-02-11 19:30:57 [INFO] [overall_consistency] Evaluation results saved to /workspace/t2v-eval/outputs/Exp-C_OscHead_RadicalKV/vbench_results/overall_consistency_eval_results.json
+2026-02-11 20:01:45 [INFO]   raise TimeoutError(
+2026-02-11 20:01:45 [INFO]   TimeoutError: File barrier timeout at outputs/Exp-C_OscHead_RadicalKV/vbench_sync/a87ed8d8-775f-437f-a749-c29af4c1ab54/stage_002 (3/4 ready)
+2026-02-11 20:01:45 [INFO]   E0211 20:01:45.393000 139572213564544 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 2 (pid: 1912649) of binary: /workspace/t2v-eval/.venv/bin/python3
+2026-02-11 20:01:45 [INFO]   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 348, in wrapper
+2026-02-11 20:01:45 [INFO]   raise ChildFailedError(
+2026-02-11 20:01:45 [INFO]   torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+2026-02-11 20:01:45 [INFO]   /workspace/t2v-eval/scripts/run_vbench.py FAILED
+2026-02-11 20:01:45 [INFO]   error_file: <N/A>
+2026-02-11 20:01:45 [INFO]   traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+2026-02-11 20:01:45 [INFO] Full worker log: outputs/Exp-C_OscHead_RadicalKV/vbench_workers.log
+2026-02-11 20:01:45 [ERROR] Auto multi-GPU torchrun failed with code 1.
+2026-02-11 20:01:45 [ERROR] Full worker log: outputs/Exp-C_OscHead_RadicalKV/vbench_workers.log
+2026-02-11 20:01:45 [ERROR]   |   File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+2026-02-11 20:01:45 [ERROR]   |     exec(code, run_globals)
+2026-02-11 20:01:45 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 905, in <module>
+2026-02-11 20:01:45 [ERROR]   |     main()
+2026-02-11 20:01:45 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 348, in wrapper
+2026-02-11 20:01:45 [ERROR]   |     return f(*args, **kwargs)
+2026-02-11 20:01:45 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 901, in main
+2026-02-11 20:01:45 [ERROR]   |     run(args)
+2026-02-11 20:01:45 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/run.py", line 892, in run
+2026-02-11 20:01:45 [ERROR]   |     elastic_launch(
+2026-02-11 20:01:45 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+2026-02-11 20:01:45 [ERROR]   |     return launch_agent(self._config, self._entrypoint, list(args))
+2026-02-11 20:01:45 [ERROR]   |   File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+2026-02-11 20:01:45 [ERROR]   |     raise ChildFailedError(
+2026-02-11 20:01:45 [ERROR]   | torch.distributed.elastic.multiprocessing.errors.ChildFailedError:
+2026-02-11 20:01:45 [ERROR]   | ============================================================
+2026-02-11 20:01:45 [ERROR]   | /workspace/t2v-eval/scripts/run_vbench.py FAILED
+2026-02-11 20:01:45 [ERROR]   | ------------------------------------------------------------
+2026-02-11 20:01:45 [ERROR]   | Failures:
+2026-02-11 20:01:45 [ERROR]   |   <NO_OTHER_FAILURES>
+2026-02-11 20:01:45 [ERROR]   | ------------------------------------------------------------
+2026-02-11 20:01:45 [ERROR]   | Root Cause (first observed failure):
+2026-02-11 20:01:45 [ERROR]   | [0]:
+2026-02-11 20:01:45 [ERROR]   |   time      : 2026-02-11_20:01:44
+2026-02-11 20:01:45 [ERROR]   |   host      : 31e00ce47b71
+2026-02-11 20:01:45 [ERROR]   |   rank      : 2 (local_rank: 2)
+2026-02-11 20:01:45 [ERROR]   |   exitcode  : 1 (pid: 1912649)
+2026-02-11 20:01:45 [ERROR]   |   error_file: <N/A>
+2026-02-11 20:01:45 [ERROR]   |   traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+2026-02-11 20:01:45 [ERROR]   | ============================================================

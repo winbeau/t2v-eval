@@ -166,3 +166,124 @@
 2026-02-11 17:15:58 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
 2026-02-11 17:15:58 [WARNING] Remapped 100 records to unique video_id.
 2026-02-11 17:15:58 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:23:47 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 17:23:49 [WARNING] [rank 3] Failed to run subtask object_class: No module named 'boto3'
+2026-02-11 17:23:49 [WARNING] Subtask traceback:
+Traceback (most recent call last):
+  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 367, in run_vbench_evaluation
+    stdout_text, saved_count = run_evaluate_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 701, in run_evaluate_with_progress
+    return run_callable_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 684, in run_callable_with_progress
+    raise worker_error[0]
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 582, in _worker
+    task_fn()
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 702, in <lambda>
+    task_fn=lambda: vbench.evaluate(**eval_kwargs),
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/__init__.py", line 113, in evaluate
+    results = evaluate_func(cur_full_info_path, self.device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/object_class.py", line 7, in compute_long_object_class
+    all_results, detailed_results = compute_object_class(json_dir, device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/object_class.py", line 74, in compute_object_class
+    dense_caption_model.initialize_model_det(**submodules_dict)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_model.py", line 17, in initialize_model_det
+    self.demo = init_demo(self.device, model_weight = model_weight, task="ObjectDet")
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/image_dense_captions.py", line 109, in init_demo
+    demo = VisualizationDemo(cfg)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/predictor.py", line 102, in __init__
+    self.predictor = SingleDefaultPredictor(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/engine/defaults.py", line 314, in __init__
+    self.model = build_model(self.cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/meta_arch/build.py", line 22, in build_model
+    model = META_ARCH_REGISTRY.get(meta_arch)(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 189, in wrapped
+    explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 245, in _get_args_from_config
+    ret = from_config_func(*args, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/meta_arch/grit.py", line 20, in from_config
+    ret = super().from_config(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/meta_arch/rcnn.py", line 77, in from_config
+    "roi_heads": build_roi_heads(cfg, backbone.output_shape()),
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/roi_heads/roi_heads.py", line 43, in build_roi_heads
+    return ROI_HEADS_REGISTRY.get(name)(cfg, input_shape)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 189, in wrapped
+    explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 245, in _get_args_from_config
+    ret = from_config_func(*args, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/roi_heads/grit_roi_heads.py", line 91, in from_config
+    text_decoder_transformer = TransformerDecoderTextualHead(
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/text_decoder.py", line 268, in __init__
+    self.transformer = create_transformer(
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/text_decoder.py", line 182, in create_transformer
+    from .modeling_bert import BertConfig, BertEncoder
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/modeling_bert.py", line 30, in <module>
+    from .file_utils import cached_path
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/file_utils.py", line 18, in <module>
+    import boto3
+ModuleNotFoundError: No module named 'boto3'
+2026-02-11 17:23:49 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 17:23:51 [WARNING] [rank 3] Failed to run subtask color: No module named 'boto3'
+2026-02-11 17:23:51 [WARNING] Subtask traceback:
+Traceback (most recent call last):
+  File "/workspace/t2v-eval/scripts/vbench_runner/core.py", line 367, in run_vbench_evaluation
+    stdout_text, saved_count = run_evaluate_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 701, in run_evaluate_with_progress
+    return run_callable_with_progress(
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 684, in run_callable_with_progress
+    raise worker_error[0]
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 582, in _worker
+    task_fn()
+  File "/workspace/t2v-eval/scripts/vbench_runner/progress.py", line 702, in <lambda>
+    task_fn=lambda: vbench.evaluate(**eval_kwargs),
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/__init__.py", line 113, in evaluate
+    results = evaluate_func(cur_full_info_path, self.device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench2_beta_long/color.py", line 7, in compute_long_color
+    all_results, detailed_results = compute_color(json_dir, device, submodules_list, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/color.py", line 95, in compute_color
+    dense_caption_model.initialize_model(**submodules_dict)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_model.py", line 14, in initialize_model
+    self.demo = init_demo(self.device, model_weight=model_weight)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/image_dense_captions.py", line 109, in init_demo
+    demo = VisualizationDemo(cfg)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/predictor.py", line 102, in __init__
+    self.predictor = SingleDefaultPredictor(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/engine/defaults.py", line 314, in __init__
+    self.model = build_model(self.cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/meta_arch/build.py", line 22, in build_model
+    model = META_ARCH_REGISTRY.get(meta_arch)(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 189, in wrapped
+    explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 245, in _get_args_from_config
+    ret = from_config_func(*args, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/meta_arch/grit.py", line 20, in from_config
+    ret = super().from_config(cfg)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/meta_arch/rcnn.py", line 77, in from_config
+    "roi_heads": build_roi_heads(cfg, backbone.output_shape()),
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/modeling/roi_heads/roi_heads.py", line 43, in build_roi_heads
+    return ROI_HEADS_REGISTRY.get(name)(cfg, input_shape)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 189, in wrapped
+    explicit_args = _get_args_from_config(from_config_func, *args, **kwargs)
+  File "/workspace/t2v-eval/.venv/lib/python3.10/site-packages/detectron2/config/config.py", line 245, in _get_args_from_config
+    ret = from_config_func(*args, **kwargs)
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/roi_heads/grit_roi_heads.py", line 91, in from_config
+    text_decoder_transformer = TransformerDecoderTextualHead(
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/text_decoder.py", line 268, in __init__
+    self.transformer = create_transformer(
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/text_decoder.py", line 182, in create_transformer
+    from .modeling_bert import BertConfig, BertEncoder
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/modeling_bert.py", line 30, in <module>
+    from .file_utils import cached_path
+  File "/workspace/t2v-eval/third_party/VBench/vbench/third_party/grit_src/grit/modeling/text/file_utils.py", line 18, in <module>
+    import boto3
+ModuleNotFoundError: No module named 'boto3'
+2026-02-11 17:30:43 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-11 17:30:43 [INFO] Loaded prompts from: /workspace/t2v-eval/hf/AdaHead/Exp-C_OscHead_RadicalKV/c1_self_forcing_baseline_72/prompts.csv (25 rows)
+2026-02-11 17:30:43 [WARNING] Detected duplicate video_id values across groups (25 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-11 17:30:43 [WARNING] Remapped 100 records to unique video_id.
+2026-02-11 17:30:43 [INFO] Group alias mapping for duplicate IDs: {'c1_self_forcing_baseline_72': 'g1', 'c2_headkv_aligned_baseline_72': 'g2', 'c3_osc_class_windowed_select_72': 'g3', 'c4_osc_class_global_select_72': 'g4'}
+2026-02-11 17:38:30 [INFO] [object_class] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 17:38:34 [INFO] [DetectionCheckpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
+2026-02-11 17:38:34 [INFO] [Checkpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
+2026-02-11 19:16:15 [INFO] [color] auxiliary_info ready for 100 videos (heuristic=100)
+2026-02-11 19:16:19 [INFO] [DetectionCheckpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
+2026-02-11 19:16:19 [INFO] [Checkpointer] Loading from /root/.cache/vbench/grit_model/grit_b_densecap_objectdet.pth ...
