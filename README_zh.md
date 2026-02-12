@@ -101,8 +101,22 @@ uv pip install --no-build-isolation "detectron2 @ git+https://github.com/faceboo
 ### 3. 运行评测
 
 ```bash
-# VBench-Long（完整 16 维）
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
+# VBench-Long 12 维（推荐 — 跳过 4 个基于 GrIT 的极慢维度）
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --skip color,object_class,multiple_objects,spatial_relationship \
+    --force
+```
+
+> **为什么跳过 4 个维度？** `color`、`object_class`、`multiple_objects`、`spatial_relationship` 依赖 GrIT 密集描述模型（每帧需 beam search 文本生成，约 6 秒/帧），这 4 个维度占总运行时间的 80% 以上。跳过后 4 卡运行从数小时缩短至约 20 分钟，其余 12 维不受影响。
+
+如需运行**全部 16 维**（耗时极长）：
+```bash
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --force
 ```
 
 ### 4. 启动前端

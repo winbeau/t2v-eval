@@ -93,25 +93,48 @@ dataset:
   local_video_dir: "hf/AdaHead/Exp_OscStable_Head_Window"
   prompt_file: "hf/AdaHead/Exp_OscStable_Head_Window/prompts.csv"
 ```
-2. 仅跑 VBench-Long 16 维度（当前配置）：
+2. 运行 VBench-Long 评测（**推荐 12 维，跳过 4 个 GrIT 慢维度**）：
 ```bash
-# 下载并准备好本地数据集后即可直接运行（不要求先预处理）
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --skip color,object_class,multiple_objects,spatial_relationship \
+    --force
 ```
+
+> **说明**：`color`、`object_class`、`multiple_objects`、`spatial_relationship` 依赖 GrIT 密集描述模型（每帧 beam search 文本生成约 6s），这 4 维占总时间 80% 以上。跳过后 4 卡约 20 分钟完成，其余 12 维不受影响。
+
+如需运行全部 16 维（极慢，4×L40 约数小时）：
+```bash
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --force
+```
+
 运行结束后会自动把结果同步到 `frontend/public/data/`（并更新 `manifest.json`）。
-脚本会在开始时只做一次切片预处理，后续 16 个维度复用 `split_clip`，不再重复预处理。
+脚本会在开始时只做一次切片预处理，后续维度复用 `split_clip`，不再重复预处理。
+
+### CLI 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `--config` | YAML 配置文件路径 |
+| `--force` | 覆盖已有结果，强制重新计算 |
+| `--skip-on-error` | 某个维度失败时跳过而非终止，聚合已成功的部分结果 |
+| `--skip <dims>` | 跳过指定维度（逗号分隔），如 `--skip color,object_class` |
+| `--no-auto-multi-gpu` | 禁用自动多卡并行 |
 
 多卡并行（例如 4×L40）：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --skip color,object_class,multiple_objects,spatial_relationship \
+    --force
 ```
-说明：脚本会自动按“维度”均分到可见 GPU（如 16 维 / 4 卡 => 每卡 4 维，全视频），最终由 CPU 聚合输出 `outputs/Exp_OscStable_Head_Window_vbench16/vbench_per_video.csv`。
-
-如需手动关闭自动多卡：
-```bash
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force --no-auto-multi-gpu
-```
+说明：脚本会自动按"维度"均分到可见 GPU（如 12 维 / 4 卡 => 每卡 3 维，全视频），最终由 CPU 聚合输出 `outputs/<experiment>/vbench_per_video.csv`。
 
 3. 官方 VBench-Long 直跑 16 维度命令（可选）：
 ```bash
@@ -135,4 +158,11 @@ pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
 
 ## 常见提示
 - 若提示缺少依赖（如 `pandas`/`pyyaml`），在虚拟环境中补装：`uv pip install pandas PyYAML`。
-- VBench 现为独立步骤，请单独运行：`python scripts/run_vbench.py --config <your_config>.yaml --force`。
+- VBench 现为独立步骤，推荐用法：
+  ```bash
+  python scripts/run_vbench.py \
+      --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+      --skip-on-error \
+      --skip color,object_class,multiple_objects,spatial_relationship \
+      --force
+  ```

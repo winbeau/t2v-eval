@@ -86,8 +86,22 @@ uv pip install --no-build-isolation "detectron2 @ git+https://github.com/faceboo
 ### 3. Run Evaluation
 
 ```bash
-# VBench-Long (full 16 dimensions)
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
+# VBench-Long 12D (recommended — skips 4 GrIT-based dims that are extremely slow)
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --skip color,object_class,multiple_objects,spatial_relationship \
+    --force
+```
+
+> **Why skip 4 dimensions?** The `color`, `object_class`, `multiple_objects`, and `spatial_relationship` dimensions rely on GrIT (a dense captioning model with per-frame beam search), which takes ~6 s/frame — making these 4 dims alone account for 80%+ of total runtime. Skipping them reduces a 4-GPU run from hours to ~20 minutes while keeping the other 12 dimensions intact.
+
+To run **all 16 dimensions** (much slower):
+```bash
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --force
 ```
 
 ### 4. Launch Frontend
