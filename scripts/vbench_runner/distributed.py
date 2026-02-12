@@ -55,11 +55,20 @@ def _parse_visible_devices() -> list[str]:
     return [str(i) for i in range(max(0, count))]
 
 
+# GrIT-based dimensions that are significantly heavier than others (~5-10x slower).
+# Placing them first in the reordered list ensures round-robin spreads them across ranks.
+_HEAVY_DIMS = {"object_class", "multiple_objects", "spatial_relationship", "color"}
+
+
 def split_subtasks_for_rank(subtasks: list[str], rank: int, world_size: int) -> list[str]:
-    """Round-robin split: 16 dims, 4 ranks => each rank 4 dims (all videos)."""
+    """Cost-aware round-robin: spread heavy (GrIT) dims across ranks first."""
     if world_size <= 1:
         return list(subtasks)
-    return [subtask for idx, subtask in enumerate(subtasks) if idx % world_size == rank]
+    # Place heavy dims first so round-robin distributes them to different ranks
+    heavy = [s for s in subtasks if s in _HEAVY_DIMS]
+    light = [s for s in subtasks if s not in _HEAVY_DIMS]
+    reordered = heavy + light
+    return [subtask for idx, subtask in enumerate(reordered) if idx % world_size == rank]
 
 
 def merge_rank_partial_results(partial_frames: list[pd.DataFrame]) -> pd.DataFrame:

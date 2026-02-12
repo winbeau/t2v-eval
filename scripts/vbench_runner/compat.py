@@ -10,6 +10,7 @@ Fixes known issues in the VBench submodule without modifying its source:
   6. transformers >=4.50 removed GenerationMixin from PreTrainedModel bases
   7. config.pruned_heads may not be a dict in some code paths
   8. human_action extracts labels from filenames; custom videos need prompt matching
+  9. GrIT inference speedup: skip unused visualization + FP16 autocast
 """
 
 try:
@@ -334,6 +335,43 @@ def patch_generation_mixin() -> None:
     logger.debug("Patched BertLMHeadModel with GenerationMixin for generate() support.")
 
 
+def patch_grit_fast_inference() -> None:
+    """
+    Patch GrIT inference for ~2-3x speedup.
+
+    Two optimizations applied to VisualizationDemo.run_on_image:
+      1. Skip visualization: draw_instance_predictions renders bounding boxes
+         and text onto images (CPU-heavy), but none of the 4 GrIT-based
+         dimensions (color, object_class, multiple_objects, spatial_relationship)
+         use the visualized output.
+      2. FP16 autocast: GrIT runs in FP32 by default. Mixed precision halves
+         memory bandwidth and improves throughput on modern GPUs.
+    """
+    try:
+        import torch
+        from vbench.third_party.grit_src.grit.predictor import VisualizationDemo
+    except ImportError:
+        return
+
+    if getattr(VisualizationDemo, "_patched_fast", False):
+        return
+
+    _orig_run_on_image = VisualizationDemo.run_on_image
+
+    def _run_on_image_fast(self, image):
+        if torch.cuda.is_available():
+            with torch.amp.autocast("cuda"):
+                predictions = self.predictor(image)
+        else:
+            predictions = self.predictor(image)
+        # Skip visualization entirely — no caller uses visualized_output
+        return predictions, None
+
+    VisualizationDemo.run_on_image = _run_on_image_fast
+    VisualizationDemo._patched_fast = True  # type: ignore[attr-defined]
+    logger.debug("Patched GrIT VisualizationDemo: skip visualization + FP16 autocast.")
+
+
 def apply_vbench_compat_patches() -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
@@ -343,6 +381,7 @@ def apply_vbench_compat_patches() -> None:
     patch_clip_tokenize_truncate()
     patch_grit_device_compat()
     patch_generation_mixin()
+    patch_grit_fast_inference()
     patch_human_action_prompt_matching()
 
 
