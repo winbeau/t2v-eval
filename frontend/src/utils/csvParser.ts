@@ -132,8 +132,10 @@ function aggregatePerVideoToGroupSummary(data: unknown[]): GroupSummary[] {
       const count = acc.counts[metric];
       if (!count) continue;
 
-      const mean = acc.sums[metric] / count;
-      const variance = Math.max(0, acc.sumsSq[metric] / count - mean * mean);
+      const sum = acc.sums[metric] ?? 0;
+      const sumSq = acc.sumsSq[metric] ?? 0;
+      const mean = sum / count;
+      const variance = Math.max(0, sumSq / count - mean * mean);
       const std = Math.sqrt(variance);
 
       summary[`${metric}_mean`] = mean;

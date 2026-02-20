@@ -53,8 +53,7 @@ function formatMetricLabel(key: string): string {
 }
 
 function formatMetricShortLabel(key: string): string {
-  const label = formatMetricLabel(key);
-  return label.length > 10 ? label.substring(0, 8) + '...' : label;
+  return formatMetricLabel(key);
 }
 
 function guessDirection(key: string): 'higher' | 'lower' {
@@ -166,7 +165,7 @@ function toggleDirection(metric: MetricConfig) {
 }
 
 .metric-item {
-  @apply flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors duration-150;
+  @apply flex items-center gap-1.5 px-1 py-1.5 rounded-lg cursor-pointer transition-colors duration-150;
 }
 
 .metric-item:hover {
@@ -182,15 +181,15 @@ function toggleDirection(metric: MetricConfig) {
 }
 
 .metric-info {
-  @apply flex items-center justify-between flex-1 min-w-0;
+  @apply flex items-center gap-1 flex-1 min-w-0;
 }
 
 .metric-label {
-  @apply text-sm text-gray-700 truncate;
+  @apply text-sm text-gray-700 whitespace-normal leading-5 flex-1 min-w-0;
 }
 
 .metric-direction {
-  @apply text-xs font-medium cursor-pointer hover:underline;
+  @apply text-xs font-medium cursor-pointer hover:underline whitespace-nowrap flex-shrink-0 ml-1;
 }
 
 .empty-state {
