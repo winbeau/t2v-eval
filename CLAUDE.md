@@ -26,10 +26,11 @@ git submodule update --init --recursive
 # Install detectron2 for VBench 16D object-related dimensions
 uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
 
-# Run evaluation
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
+# Run evaluation (CLI entry point: t2v-eval = scripts.run_eval_core:main)
+t2v-eval --config configs/<exp>.yaml
 python scripts/run_eval_core.py --config configs/<exp>.yaml
 python scripts/run_eval_core.py --config configs/<exp>.yaml --skip-vbench
+python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
 
 # Linting & formatting
 black --check --line-length 100 scripts/
@@ -52,6 +53,20 @@ pnpm preview                # Preview production build
 
 ## Architecture
 
+### Data Flow
+
+```
+Input videos (per group/method)
+  → preprocess_videos.py (unify to 8fps, 16 frames, 256px) → eval_cache/
+  → Metric runners in parallel:
+      run_clip_or_vqa.py → clipvqa_per_video.csv
+      run_vbench.py      → vbench_per_video.csv
+      run_flicker.py     → flicker_per_video.csv
+      run_niqe.py        → niqe_per_video.csv
+  → summarize.py (merge + aggregate mean ± std) → outputs/group_summary.csv
+  → Copy to frontend/public/data/ for LaTeX table generation
+```
+
 ### Python Pipeline (`scripts/`)
 
 Entry points are independent metric runners that read YAML configs from `configs/`:
@@ -62,9 +77,20 @@ Entry points are independent metric runners that read YAML configs from `configs
 - `run_niqe.py` — NIQE image quality via pyiqa
 - `summarize.py` — aggregates per-video CSVs into group summaries (mean ± std)
 
-`scripts/vbench_runner/` contains a custom VBench runner with a **dimension registry pattern**: `dimensions/registry.py` registers dimension implementations, and each dimension has its own module under `dimensions/`. New VBench dimensions are added by creating a new dimension file and registering it.
+### VBench Dimension Registry (`scripts/vbench_runner/`)
 
-Data flow: Input videos → preprocess to `eval_cache/` → run metrics → per-video CSVs in `outputs/` → `summarize.py` → `group_summary.csv`
+Custom VBench runner using a **dimension registry pattern**. To add a new dimension:
+
+1. Create `scripts/vbench_runner/dimensions/my_dimension.py` with a `SPEC = DimensionSpec(...)` (see `base.py` for fields: key, description, requires_clip, requires_pyiqa, long_mode_only)
+2. Import and add the SPEC to the preset lists in `dimensions/registry.py`
+
+Two presets exist: `LONG_DIMENSIONS_16` (all 16, slow) and `LONG_DIMENSIONS_6_RECOMMENDED` (fast subset, skips 4 GrIT-based dimensions: object_class, multiple_objects, spatial_relationship, color).
+
+Key runner modules: `core.py` (orchestrator with multi-GPU support), `distributed.py` (GPU distribution), `results.py` (result extraction), `env.py` (dependency checks).
+
+### YAML Config Structure (`configs/`)
+
+Configs have these sections: `dataset` (source videos/prompts), `groups` (methods to compare), `protocol` (fps, frames, resolution), `metrics` (which metrics + per-metric params), `runtime` (device, batch_size), `paths` (output dirs), `logging`. See `configs/Exp_.yaml.example` for a full template.
 
 ### Frontend (`frontend/src/`)
 
@@ -75,19 +101,27 @@ Vue 3 Composition API with `<script setup>`, styled with Tailwind CSS.
 - `utils/csvParser.ts` — smart auto-detection: recognizes group summary vs per-video CSV, auto-aggregates per-video data
 - `utils/latexGenerator.ts` — generates booktabs-format LaTeX tables with best-value highlighting
 - `types/metrics.ts` — TypeScript interfaces (`VideoMetric`, `GroupSummary`, `MetricConfig`, `LatexTableOptions`)
-- `components/` — UI: FileUpload (drag-drop CSV), TablePreview (KaTeX rendering), CodeBlock (LaTeX output), MetricSelector, OptionsPanel, LocalDataModal
 
 ### Metric Direction Convention
 
-Some metrics are "higher is better" (CLIPScore, VQAScore, VBench dimensions), others are "lower is better" (Flicker, NIQE). This is encoded in `MetricConfig.direction` in the frontend and affects best-value highlighting in LaTeX output.
+Higher is better: CLIPScore, VQAScore, all 16 VBench dimensions. Lower is better: Flicker, NIQE. This is encoded in `MetricConfig.direction` in the frontend and affects best-value highlighting in LaTeX output.
 
 ## Coding Conventions
 
 - **Python**: `black` (line-length 100), `ruff` (rules: E, F, W, I, N, UP, B, C4; E501 ignored). snake_case functions, explicit CLI args.
+- **Package management**: Use `uv add <pkg>` to add dependencies (not `pip install`). Use `uv run` to run Python scripts (e.g. `uv run python scripts/run_vbench.py ...`).
 - **Frontend**: TypeScript, PascalCase components, camelCase variables. Vue 3 Composition API.
 - **Commits**: Conventional Commits — `feat:`, `fix:`, `docs:`, `style:`, `chores:`
 - **Python version**: 3.10 (strict — `>=3.10,<3.11` in pyproject.toml)
 
+## Reference
+
+Detailed operational tutorial (setup, troubleshooting, multi-GPU usage, CLI flags): `docs/USAGE.md`
+
+## Key Version Constraints
+
+Torch ecosystem is pinned for VBench-16D stability: `torch==2.4.*`, `torchvision==0.19.*`, `timm<=1.0.12`, `transformers==4.49.0`. Do not bump these without testing all 16 VBench dimensions.
+
 ## Submodules
 
-Pinned in `third_party/`. Always initialize before running metrics. When updating a submodule, commit the new pin with a message like `chore: update VBench`.
+Pinned in `third_party/` (VBench @ `98b1951`, t2v_metrics @ `0bd9bfc`). Always initialize before running metrics. When updating a submodule, commit the new pin with a message like `chore: update VBench`.

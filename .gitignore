@@ -93,7 +93,7 @@ checkpoints/
 # -----------------------------------------------------------------------------
 data/
 datasets/
-hf/AdaHead/
+hf/
 *.tar
 *.tar.gz
 *.zip
@@ -111,9 +111,6 @@ logs/
 wandb/
 tensorboard/
 runs/
-
-# Keep run logs in outputs for server<->local git sync
-!outputs/**/*.log
 
 # -----------------------------------------------------------------------------
 # System Files

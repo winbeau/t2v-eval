@@ -12,6 +12,7 @@ Usage:
 import argparse
 import json
 import os
+import shutil
 import sys
 import time
 from collections.abc import Callable
@@ -612,6 +613,19 @@ def run_vbench_cli_fallback(
     return pd.DataFrame()
 
 
+def _cleanup_intermediates(output_dir: Path) -> None:
+    """Remove intermediate files after a successful VBench run."""
+    for dirname in ("vbench_partials", "vbench_sync", "vbench_progress"):
+        d = output_dir / dirname
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+            logger.info(f"Cleaned up: {d}")
+    workers_log = output_dir / "vbench_workers.log"
+    if workers_log.exists():
+        workers_log.unlink(missing_ok=True)
+        logger.info(f"Cleaned up: {workers_log}")
+
+
 # =============================================================================
 # CLI entry point
 # =============================================================================
@@ -706,10 +720,13 @@ def main():
             world_size=world_size,
         )
 
-    vbench_output = output_dir / "vbench_per_video.csv"
+    config_stem = Path(args.config).stem
+    vbench_output = output_dir / f"vbench_{config_stem}.csv"
     vbench_config = config.get("metrics", {}).get("vbench", {})
 
     # Check if already exists
+    if rank == 0:
+        logger.info(f"VBench output target: {vbench_output}")
     if vbench_output.exists() and not args.force:
         if rank == 0:
             logger.info(f"VBench results already exist: {vbench_output}")
@@ -957,6 +974,9 @@ def main():
             paths_config=paths_config,
             vbench_output=vbench_output,
         )
+
+        # Clean up intermediate files (partials, sync, progress, worker logs)
+        _cleanup_intermediates(output_dir)
 
         if coverage_rows:
             name_width = max(len("subtask"), max(len(name) for name, _, _ in coverage_rows))
