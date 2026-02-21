@@ -67,9 +67,6 @@ uv.lock
 eval_cache/
 outputs/*
 !outputs/.gitkeep
-!outputs/**/
-outputs/**/*.csv
-outputs/figs/
 vbench_cache/
 *.mp4
 *.avi
@@ -102,6 +99,9 @@ hf/
 # Track frontend output data for table UI
 !frontend/public/data/
 !frontend/public/data/**
+# Ignore run-generated VBench per-config exports (keep stable baseline file)
+frontend/public/data/vbench_*.csv
+!frontend/public/data/vbench_per_video.csv
 
 # -----------------------------------------------------------------------------
 # Logs
