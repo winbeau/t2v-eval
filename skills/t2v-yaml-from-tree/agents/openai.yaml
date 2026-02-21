@@ -1,0 +1,4 @@
+interface:
+  display_name: "T2V YAML From Tree"
+  short_description: "Generate T2V eval YAML from folder tree input"
+  default_prompt: "Generate a t2v-eval config YAML from this directory tree."
