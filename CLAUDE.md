@@ -26,19 +26,24 @@ git submodule update --init --recursive
 # Install detectron2 for VBench 16D object-related dimensions
 uv pip install --no-build-isolation "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
 
+# Package management — always use uv
+uv add <package>              # Add a dependency
+uv add --dev <package>        # Add a dev dependency
+
 # Run evaluation (CLI entry point: t2v-eval = scripts.run_eval_core:main)
 t2v-eval --config configs/<exp>.yaml
-python scripts/run_eval_core.py --config configs/<exp>.yaml
-python scripts/run_eval_core.py --config configs/<exp>.yaml --skip-vbench
-python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
+uv run python scripts/run_eval_core.py --config configs/<exp>.yaml
+uv run python scripts/run_eval_core.py --config configs/<exp>.yaml --skip-vbench
+uv run python scripts/run_vbench.py --config configs/Exp_OscStable_Head_Window_vbench16.yaml --force
 
 # Linting & formatting
-black --check --line-length 100 scripts/
-ruff check scripts/
+uv run black --check --line-length 100 scripts/
+uv run ruff check scripts/
 
-# Tests (no tests/ directory exists yet)
-pytest
-pytest --cov
+# Tests
+uv run pytest
+uv run pytest --cov
+uv run pytest tests/test_flicker.py -v    # Run single test file
 ```
 
 ### Frontend (Vue 3 + TypeScript)
