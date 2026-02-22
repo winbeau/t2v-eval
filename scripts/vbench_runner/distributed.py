@@ -214,6 +214,12 @@ def maybe_auto_launch_multi_gpu(
     preprocess_workers = getattr(args, "preprocess_workers", None)
     if preprocess_workers is not None:
         cmd.extend(["--preprocess-workers", str(preprocess_workers)])
+    if getattr(args, "no_prefetch_assets", False):
+        cmd.append("--no-prefetch-assets")
+    if getattr(args, "no_verify_asset_sha256", False):
+        cmd.append("--no-verify-asset-sha256")
+    if getattr(args, "no_repair_corrupted_assets", False):
+        cmd.append("--no-repair-corrupted-assets")
     if getattr(args, "no_auto_multi_gpu", False):
         cmd.append("--no-auto-multi-gpu")
 

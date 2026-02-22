@@ -129,6 +129,7 @@ Core 预处理相关 CLI 参数（`run_all.py` / `run_eval_core.py`）：
 
 3. 运行 VBench-Long 评测（**推荐 12 维，跳过 4 个 GrIT 慢维度**）：
 `run_vbench.py` 会在本地视频模式下自动做一次 `split_clip` 预处理（仅 rank0），后续维度复用缓存。
+同时会在评测前自动预取并校验 CLIP 权重（`ViT-B-32.pt` / `ViT-L-14.pt`），若检测到损坏会自动修复，避免 `invalid load key` 类报错。
 `configs/Exp-C_OscHead_RadicalKV_vbench.yaml` 已内置：
 ```yaml
 metrics:
@@ -158,6 +159,17 @@ python scripts/run_vbench.py \
 
 > **说明**：`color`、`object_class`、`multiple_objects`、`spatial_relationship` 依赖 GrIT 密集描述模型（每帧 beam search 文本生成约 6s），这 4 维占总时间 80% 以上。跳过后 4 卡约 20 分钟完成，其余 12 维不受影响。
 
+可选资产预取参数（默认均开启）：
+```yaml
+metrics:
+  vbench:
+    prefetch_assets: true
+    verify_asset_sha256: true
+    repair_corrupted_assets: true
+```
+也可用 CLI 临时关闭：
+`--no-prefetch-assets` / `--no-verify-asset-sha256` / `--no-repair-corrupted-assets`
+
 如需运行全部 16 维（极慢，4×L40 约数小时）：
 ```bash
 python scripts/run_vbench.py \
@@ -178,6 +190,9 @@ python scripts/run_vbench.py \
 | `--skip-on-error` | 某个维度失败时跳过而非终止，聚合已成功的部分结果 |
 | `--skip <dims>` | 跳过指定维度（逗号分隔），如 `--skip color,object_class` |
 | `--preprocess-workers` | VBench-Long 一次性切片预处理进程数（CLI 覆盖 `metrics.vbench.preprocess_workers`） |
+| `--no-prefetch-assets` | 关闭评测前 CLIP 权重预取与校验 |
+| `--no-verify-asset-sha256` | 关闭 CLIP 权重 SHA256 校验 |
+| `--no-repair-corrupted-assets` | 检测到损坏权重时不自动修复（直接报错） |
 | `--no-auto-multi-gpu` | 禁用自动多卡并行 |
 
 多卡并行（例如 4×L40）：

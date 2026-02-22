@@ -21,6 +21,7 @@ from pathlib import Path
 import pandas as pd
 
 try:
+    from .assets import ensure_clip_assets_for_subtasks, required_clip_asset_keys
     from .auxiliary import (
         build_auxiliary_prompt_lookup,
         patch_long_custom_full_info_builder,
@@ -53,6 +54,7 @@ try:
         setup_vbench_path,
         use_vbench_long,
     )
+    from .preprocess_long import parallel_split_long_clips
     from .progress import (
         MultiGpuProgressBoard,
         RankProgressReporter,
@@ -60,7 +62,6 @@ try:
         run_evaluate_with_progress,
         summarize_vbench_stdout,
     )
-    from .preprocess_long import parallel_split_long_clips
     from .results import extract_subtask_scores
     from .video_records import (
         are_split_clips_ready,
@@ -70,6 +71,7 @@ try:
         load_video_records_for_vbench,
     )
 except ImportError:
+    from vbench_runner.assets import ensure_clip_assets_for_subtasks, required_clip_asset_keys
     from vbench_runner.auxiliary import (
         build_auxiliary_prompt_lookup,
         patch_long_custom_full_info_builder,
@@ -102,6 +104,7 @@ except ImportError:
         setup_vbench_path,
         use_vbench_long,
     )
+    from vbench_runner.preprocess_long import parallel_split_long_clips
     from vbench_runner.progress import (
         MultiGpuProgressBoard,
         RankProgressReporter,
@@ -109,7 +112,6 @@ except ImportError:
         run_evaluate_with_progress,
         summarize_vbench_stdout,
     )
-    from vbench_runner.preprocess_long import parallel_split_long_clips
     from vbench_runner.results import extract_subtask_scores
     from vbench_runner.video_records import (
         are_split_clips_ready,
@@ -177,6 +179,25 @@ def _resolve_preprocess_workers(
         return 1, "default"
 
     return workers, "config"
+
+
+def _resolve_float_option(vbench_config: dict, key: str, default: float) -> float:
+    """Parse float option from metrics.vbench with fallback and warning."""
+    raw_value = vbench_config.get(key, default)
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        logger.warning("Invalid metrics.vbench.%s=%r, fallback to %s", key, raw_value, default)
+        return default
+    if value <= 0:
+        logger.warning(
+            "metrics.vbench.%s=%r must be > 0, fallback to %s",
+            key,
+            raw_value,
+            default,
+        )
+        return default
+    return value
 
 
 # =============================================================================
@@ -781,6 +802,21 @@ def main():
             "(CLI overrides config)"
         ),
     )
+    parser.add_argument(
+        "--no-prefetch-assets",
+        action="store_true",
+        help="Disable preflight download/validation for shared CLIP checkpoints",
+    )
+    parser.add_argument(
+        "--no-verify-asset-sha256",
+        action="store_true",
+        help="Disable SHA256 validation for prefetched CLIP checkpoints",
+    )
+    parser.add_argument(
+        "--no-repair-corrupted-assets",
+        action="store_true",
+        help="Disable auto-repair when prefetched CLIP checkpoints are corrupted",
+    )
     args = parser.parse_args()
     if args.preprocess_workers is not None and args.preprocess_workers < 1:
         parser.error("--preprocess-workers must be >= 1")
@@ -907,6 +943,67 @@ def main():
         if skipped and rank == 0:
             logger.info("Skipping dimensions (--skip): %s", skipped)
         all_subtasks = [s for s in all_subtasks if s not in skip_dims]
+
+    prefetch_assets = bool(vbench_config.get("prefetch_assets", True))
+    verify_asset_sha256 = bool(vbench_config.get("verify_asset_sha256", True))
+    repair_corrupted_assets = bool(vbench_config.get("repair_corrupted_assets", True))
+    if args.no_prefetch_assets:
+        prefetch_assets = False
+    if args.no_verify_asset_sha256:
+        verify_asset_sha256 = False
+    if args.no_repair_corrupted_assets:
+        repair_corrupted_assets = False
+
+    asset_lock_timeout_sec = _resolve_float_option(
+        vbench_config=vbench_config,
+        key="asset_lock_timeout_sec",
+        default=1800.0,
+    )
+    asset_download_timeout_sec = _resolve_float_option(
+        vbench_config=vbench_config,
+        key="asset_download_timeout_sec",
+        default=600.0,
+    )
+    clip_asset_keys = required_clip_asset_keys(all_subtasks)
+    if rank == 0:
+        logger.info(
+            "VBench asset prefetch: enabled=%s verify_sha256=%s repair_corrupted=%s required=%s",
+            prefetch_assets,
+            verify_asset_sha256,
+            repair_corrupted_assets,
+            clip_asset_keys,
+        )
+
+    prefetch_error: Exception | None = None
+    if prefetch_assets and clip_asset_keys:
+        if rank == 0:
+            try:
+                prefetch_summary = ensure_clip_assets_for_subtasks(
+                    subtasks=all_subtasks,
+                    verify_sha256=verify_asset_sha256,
+                    repair_corrupted=repair_corrupted_assets,
+                    lock_timeout_sec=asset_lock_timeout_sec,
+                    download_timeout_sec=asset_download_timeout_sec,
+                )
+                logger.info(
+                    "VBench asset prefetch summary: required=%d reused=%d downloaded=%d repaired=%d",
+                    prefetch_summary["required"],
+                    prefetch_summary["reused"],
+                    prefetch_summary["downloaded"],
+                    prefetch_summary["repaired"],
+                )
+            except Exception as exc:
+                prefetch_error = exc
+                logger.error("VBench asset prefetch failed: %s", exc)
+        if world_size > 1:
+            barrier_fn()
+        if prefetch_error is not None:
+            if args.skip_on_error:
+                logger.warning(
+                    "Continue without strict asset prefetch because --skip-on-error is set."
+                )
+            else:
+                raise prefetch_error
 
     assigned_subtasks = split_subtasks_for_rank(all_subtasks, rank=rank, world_size=world_size)
     visible_devices = _parse_visible_devices()
