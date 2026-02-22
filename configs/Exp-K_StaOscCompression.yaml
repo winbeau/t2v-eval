@@ -1,68 +1,52 @@
 # =============================================================================
 # T2V-Eval Configuration - Exp-K_StaOscCompression
-# 4 groups x 25 videos = 100 videos
+# 7 groups (local videos)
 # =============================================================================
-#
-# Data layout (local):
-#   hf/AdaHead/Exp-K_StaOscCompression/<group_name>/*.mp4
-#   hf/AdaHead/Exp-K_StaOscCompression/<group_name>/prompts.csv
-#
-# NOTE:
-#   export_from_hf.py currently uses a single prompt_file.
-#   This config assumes all 4 groups share the same prompt set keyed by video_id.
-#   If prompts differ by group, merge prompts first and update prompt_file.
-#
 
 dataset:
   repo_id: "kv-compression/AdaHead"
   split: "train"
   use_local_videos: true
   local_video_dir: "hf/AdaHead/Exp-K_StaOscCompression"
+  # This pipeline currently accepts a single prompt_file.
+  # Assume all groups share the same prompt set keyed by video_id.
+  # If prompts differ by group, merge prompts first and then update prompt_file.
   prompt_file: "hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv"
   video_dir: "videos/Exp-K_StaOscCompression"
 
 groups:
   - name: "k1_selfforcing_absolute21_baseline"
     description: "Self-forcing absolute-21 baseline"
-    latent_frames: 21
-    actual_frames: 84
-
+    latent_frames: 120
+    actual_frames: 480
   - name: "k2_selfforcing_dynamic21_baseline"
     description: "Self-forcing dynamic-21 baseline"
-    latent_frames: 21
-    actual_frames: 84
-
+    latent_frames: 120
+    actual_frames: 480
   - name: "k3_sta_posneg_osc_phase6_tail4"
-    description: "Stable/oscillating compression with phase6 tail4"
-    latent_frames: 21
-    actual_frames: 84
-
+    description: "Static pos/neg oscillation, phase6 tail4"
+    latent_frames: 120
+    actual_frames: 480
   - name: "k4_dynamic_sink1_af_quality"
-    description: "Dynamic sink1 adaptive-focus quality variant"
-    latent_frames: 21
-    actual_frames: 84
-
-group_categories:
-  by_method:
-    selfforcing_baseline:
-      - "k1_selfforcing_absolute21_baseline"
-      - "k2_selfforcing_dynamic21_baseline"
-    compression_variant:
-      - "k3_sta_posneg_osc_phase6_tail4"
-      - "k4_dynamic_sink1_af_quality"
-
-  by_schedule:
-    absolute:
-      - "k1_selfforcing_absolute21_baseline"
-    dynamic:
-      - "k2_selfforcing_dynamic21_baseline"
-      - "k4_dynamic_sink1_af_quality"
-    oscillating:
-      - "k3_sta_posneg_osc_phase6_tail4"
+    description: "Dynamic sink1 AF quality variant"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "k5_sta_posneg_osc_phase6_tail4_nodynrope"
+    description: "Static pos/neg oscillation phase6 tail4 (no dynrope)"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "k6_deep_forcing"
+    description: "Deep forcing variant"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "k7_native_self_forcing_static21_sink1"
+    description: "Native self-forcing static21 sink1"
+    latent_frames: 120
+    actual_frames: 480
 
 protocol:
   fps_eval: 8
-  num_frames: 50
+  num_frames: 288
   resize: 256
   frame_sampling: "uniform"
   frame_padding: "loop"
@@ -78,7 +62,7 @@ metrics:
     mode: "clip"
     model_name: "ViT-B-32"
     pretrained: "openai"
-    num_frames_for_score: 50
+    num_frames_for_score: 288
     aggregation: "mean"
 
   vbench:
@@ -119,7 +103,7 @@ metrics:
 
   niqe:
     enabled: true
-    num_frames_for_niqe: 50
+    num_frames_for_niqe: 288
     block_size: 96
     alternative: "niqe"
 
