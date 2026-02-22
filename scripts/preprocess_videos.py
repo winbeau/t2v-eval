@@ -26,6 +26,11 @@ import yaml
 from tqdm import tqdm
 
 try:
+    from vbench_runner.video_records import build_video_list_from_local_dataset
+except ImportError:
+    from scripts.vbench_runner.video_records import build_video_list_from_local_dataset
+
+try:
     import decord
     decord.bridge.set_bridge("native")
     USE_DECORD = True
@@ -304,6 +309,37 @@ def _build_processed_record(
     }
 
 
+def load_input_records(config: dict, output_dir: Path, paths_config: dict) -> pd.DataFrame:
+    """
+    Load preprocess input records.
+
+    Priority:
+    1) outputs/<metadata_file>
+    2) build from dataset.local_video_dir (same fallback idea as run_vbench)
+    """
+    metadata_path = output_dir / paths_config["metadata_file"]
+    if metadata_path.exists():
+        df = pd.read_csv(metadata_path)
+        logger.info("Loaded %d videos from metadata: %s", len(df), metadata_path)
+    else:
+        logger.warning("Metadata file not found: %s", metadata_path)
+        logger.info("Falling back to local dataset scan (run_vbench-style record loading)")
+        records = build_video_list_from_local_dataset(config)
+        df = pd.DataFrame(records)
+        logger.info("Built %d videos from local dataset directory", len(df))
+
+    required_columns = {"video_id", "group", "video_path"}
+    missing = required_columns - set(df.columns)
+    if missing:
+        missing_cols = ", ".join(sorted(missing))
+        raise ValueError(f"Input records missing required columns: {missing_cols}")
+
+    if "prompt" not in df.columns:
+        df["prompt"] = ""
+
+    return df
+
+
 def preprocess_video_task(
     row: Dict[str, Any],
     processed_dir: str,
@@ -414,21 +450,18 @@ def main():
 
     # Setup paths
     output_dir = Path(paths_config["output_dir"])
+    output_dir.mkdir(parents=True, exist_ok=True)
     cache_dir = Path(paths_config["cache_dir"])
     processed_dir = cache_dir / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
-
-    metadata_path = output_dir / paths_config["metadata_file"]
     processed_metadata_path = output_dir / paths_config["processed_metadata"]
 
-    if not metadata_path.exists():
-        logger.error(f"Metadata file not found: {metadata_path}")
-        logger.error("Run export_from_hf.py first to generate metadata.")
+    # Load input records (metadata first, then local dataset fallback)
+    try:
+        df = load_input_records(config=config, output_dir=output_dir, paths_config=paths_config)
+    except Exception as exc:
+        logger.error("Failed to prepare input records for preprocessing: %s", exc)
         sys.exit(1)
-
-    # Load metadata
-    df = pd.read_csv(metadata_path)
-    logger.info(f"Loaded {len(df)} videos from metadata")
 
     if args.limit:
         df = df.head(args.limit)

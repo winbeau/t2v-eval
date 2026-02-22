@@ -60,6 +60,7 @@ try:
         run_evaluate_with_progress,
         summarize_vbench_stdout,
     )
+    from .preprocess_long import parallel_split_long_clips
     from .results import extract_subtask_scores
     from .video_records import (
         are_split_clips_ready,
@@ -108,6 +109,7 @@ except ImportError:
         run_evaluate_with_progress,
         summarize_vbench_stdout,
     )
+    from vbench_runner.preprocess_long import parallel_split_long_clips
     from vbench_runner.results import extract_subtask_scores
     from vbench_runner.video_records import (
         are_split_clips_ready,
@@ -142,6 +144,41 @@ def _log_subtask_summary(subtask_status: dict[str, tuple[bool, str]], rank: int)
             logger.error(f"  {_RED}FAIL{_RESET}  {name}: {detail}")
 
 
+def _resolve_preprocess_workers(
+    args: argparse.Namespace,
+    vbench_config: dict,
+) -> tuple[int, str]:
+    """
+    Resolve VBench preprocess worker count.
+
+    Priority: CLI > config > default(1).
+    """
+    if args.preprocess_workers is not None:
+        return int(args.preprocess_workers), "cli"
+
+    cfg_value = vbench_config.get("preprocess_workers")
+    if cfg_value is None:
+        return 1, "default"
+
+    try:
+        workers = int(cfg_value)
+    except (TypeError, ValueError):
+        logger.warning(
+            "Invalid metrics.vbench.preprocess_workers=%r, fallback to 1",
+            cfg_value,
+        )
+        return 1, "default"
+
+    if workers < 1:
+        logger.warning(
+            "metrics.vbench.preprocess_workers=%r must be >= 1, fallback to 1",
+            cfg_value,
+        )
+        return 1, "default"
+
+    return workers, "config"
+
+
 # =============================================================================
 # VBench evaluation (Python API)
 # =============================================================================
@@ -150,6 +187,7 @@ def run_vbench_evaluation(
     output_dir: Path,
     config: dict,
     device: str = "cuda",
+    preprocess_workers: int = 1,
     rank: int = 0,
     world_size: int = 1,
     barrier_fn: Callable[[], None] | None = None,
@@ -300,6 +338,14 @@ def run_vbench_evaluation(
     if long_mode:
         input_videos = get_input_video_files(video_dir)
         split_ready = are_split_clips_ready(video_dir, input_videos)
+        semantic_splitting = bool(long_kwargs.get("use_semantic_splitting", False))
+        eval_mode_name = str(eval_mode).strip().lower()
+        use_parallel_preprocess = (
+            preprocess_workers > 1
+            and eval_mode_name == "long_custom_input"
+            and not semantic_splitting
+        )
+
         if split_ready:
             if rank == 0:
                 logger.info(
@@ -308,48 +354,114 @@ def run_vbench_evaluation(
                 )
         else:
             if rank == 0:
-                logger.info("Preprocessing videos into long clips once before subtasks...")
-                preprocess_kwargs = {
-                    "videos_path": video_dir_str,
-                    "mode": eval_mode,
-                    **long_kwargs,
-                }
-                if progress_reporter is not None:
-                    progress_reporter.start_task("preprocess_clips")
-                try:
-                    preprocess_stdout, saved_count = run_callable_with_progress(
-                        task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
-                        title="preprocess_clips",
-                        prefix=f"[0/{display_total_subtasks}] ",
-                        refresh_sec=1.0,
-                        status_mode="clips",
-                        enable_live=(world_size <= 1),
-                        expected_units=len(video_records),
-                        progress_callback=(
-                            (
-                                lambda payload: progress_reporter.update_live(
-                                    percent=payload.get("percent"),
-                                    status_text=str(payload.get("status_text", "running")),
-                                    elapsed_sec=int(payload.get("elapsed_sec", 0)),
-                                )
-                            )
-                            if progress_reporter is not None
-                            else None
-                        ),
+                if use_parallel_preprocess:
+                    logger.info(
+                        "Preprocessing long clips once before subtasks "
+                        "(parallel, workers=%d)...",
+                        preprocess_workers,
                     )
                     if progress_reporter is not None:
-                        progress_reporter.finish_task(success=True, count_completion=False)
-                except Exception as exc:
-                    if progress_reporter is not None:
-                        progress_reporter.finish_task(
-                            success=False,
-                            error=str(exc),
-                            count_completion=False,
+                        progress_reporter.start_task("preprocess_clips")
+                    try:
+                        summary = parallel_split_long_clips(
+                            video_dir=video_dir,
+                            input_videos=input_videos,
+                            duration=2,
+                            fps=8,
+                            workers=preprocess_workers,
+                            show_progress=(world_size <= 1 and progress_reporter is None),
+                            progress_callback=(
+                                (
+                                    lambda payload: progress_reporter.update_live(
+                                        percent=payload.get("percent"),
+                                        status_text=str(payload.get("status_text", "running")),
+                                        elapsed_sec=int(payload.get("elapsed_sec", 0)),
+                                    )
+                                )
+                                if progress_reporter is not None
+                                else None
+                            ),
                         )
-                    raise
-                if saved_count > 0:
-                    logger.info(f"[preprocess] Saved split clips: {saved_count}")
-                summarize_vbench_stdout(preprocess_stdout, "preprocess")
+                        if summary["failed"] > 0:
+                            raise RuntimeError(
+                                "Parallel preprocess failed for "
+                                f"{summary['failed']} videos"
+                            )
+                        if progress_reporter is not None:
+                            progress_reporter.finish_task(success=True, count_completion=False)
+                    except Exception as exc:
+                        if progress_reporter is not None:
+                            progress_reporter.finish_task(
+                                success=False,
+                                error=str(exc),
+                                count_completion=False,
+                            )
+                        raise
+                    logger.info(
+                        "[preprocess] Parallel split done: videos=%d, clips=%d, skipped=%d, "
+                        "elapsed=%ds",
+                        summary["total_videos"],
+                        summary["clips"],
+                        summary["skipped"],
+                        summary["elapsed_sec"],
+                    )
+                else:
+                    if preprocess_workers > 1:
+                        if semantic_splitting:
+                            logger.info(
+                                "preprocess_workers=%d requested but "
+                                "use_semantic_splitting=true; fallback to native preprocess.",
+                                preprocess_workers,
+                            )
+                        elif eval_mode_name != "long_custom_input":
+                            logger.info(
+                                "preprocess_workers=%d requested but mode=%s; "
+                                "fallback to native preprocess.",
+                                preprocess_workers,
+                                eval_mode,
+                            )
+                    logger.info("Preprocessing videos into long clips once before subtasks...")
+                    preprocess_kwargs = {
+                        "videos_path": video_dir_str,
+                        "mode": eval_mode,
+                        **long_kwargs,
+                    }
+                    if progress_reporter is not None:
+                        progress_reporter.start_task("preprocess_clips")
+                    try:
+                        preprocess_stdout, saved_count = run_callable_with_progress(
+                            task_fn=lambda: vbench.preprocess(**preprocess_kwargs),
+                            title="preprocess_clips",
+                            prefix=f"[0/{display_total_subtasks}] ",
+                            refresh_sec=1.0,
+                            status_mode="clips",
+                            enable_live=(world_size <= 1),
+                            expected_units=len(video_records),
+                            progress_callback=(
+                                (
+                                    lambda payload: progress_reporter.update_live(
+                                        percent=payload.get("percent"),
+                                        status_text=str(payload.get("status_text", "running")),
+                                        elapsed_sec=int(payload.get("elapsed_sec", 0)),
+                                    )
+                                )
+                                if progress_reporter is not None
+                                else None
+                            ),
+                        )
+                        if progress_reporter is not None:
+                            progress_reporter.finish_task(success=True, count_completion=False)
+                    except Exception as exc:
+                        if progress_reporter is not None:
+                            progress_reporter.finish_task(
+                                success=False,
+                                error=str(exc),
+                                count_completion=False,
+                            )
+                        raise
+                    if saved_count > 0:
+                        logger.info(f"[preprocess] Saved split clips: {saved_count}")
+                    summarize_vbench_stdout(preprocess_stdout, "preprocess")
             else:
                 if progress_reporter is not None:
                     progress_reporter.start_task(
@@ -660,7 +772,18 @@ def main():
         action="store_true",
         help="Disable auto-launch to multi-GPU torchrun",
     )
+    parser.add_argument(
+        "--preprocess-workers",
+        type=int,
+        default=None,
+        help=(
+            "Worker processes for one-time VBench-Long clip preprocessing "
+            "(CLI overrides config)"
+        ),
+    )
     args = parser.parse_args()
+    if args.preprocess_workers is not None and args.preprocess_workers < 1:
+        parser.error("--preprocess-workers must be >= 1")
     configure_warning_filters()
     configure_third_party_loggers()
 
@@ -723,10 +846,16 @@ def main():
     config_stem = Path(args.config).stem
     vbench_output = output_dir / f"vbench_{config_stem}.csv"
     vbench_config = config.get("metrics", {}).get("vbench", {})
+    preprocess_workers, workers_source = _resolve_preprocess_workers(args, vbench_config)
 
     # Check if already exists
     if rank == 0:
         logger.info(f"VBench output target: {vbench_output}")
+        logger.info(
+            "VBench long preprocess workers: %d (source=%s)",
+            preprocess_workers,
+            workers_source,
+        )
     if vbench_output.exists() and not args.force:
         if rank == 0:
             logger.info(f"VBench results already exist: {vbench_output}")
@@ -857,6 +986,7 @@ def main():
                 output_dir=output_dir,
                 config=config,
                 device=device,
+                preprocess_workers=preprocess_workers,
                 rank=rank,
                 world_size=world_size,
                 barrier_fn=barrier_fn,

@@ -211,6 +211,9 @@ def maybe_auto_launch_multi_gpu(
     skip_arg = getattr(args, "skip", "") or ""
     if skip_arg:
         cmd.extend(["--skip", skip_arg])
+    preprocess_workers = getattr(args, "preprocess_workers", None)
+    if preprocess_workers is not None:
+        cmd.extend(["--preprocess-workers", str(preprocess_workers)])
     if getattr(args, "no_auto_multi_gpu", False):
         cmd.append("--no-auto-multi-gpu")
 

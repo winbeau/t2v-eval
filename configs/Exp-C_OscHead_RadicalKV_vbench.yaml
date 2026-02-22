@@ -71,6 +71,7 @@ metrics:
     enabled: true
     backend: "vbench_long"
     use_long: true
+    preprocess_workers: 48
     dimension_profile: "long_16"
     mode: "long_custom_input"
     use_semantic_splitting: false

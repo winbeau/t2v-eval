@@ -128,19 +128,29 @@ Core 预处理相关 CLI 参数（`run_all.py` / `run_eval_core.py`）：
 > 建议：大机器上优先使用 `--preprocess-workers 48 --ffmpeg-threads 1`，避免总线程数过高导致争用。
 
 3. 运行 VBench-Long 评测（**推荐 12 维，跳过 4 个 GrIT 慢维度**）：
-先并行预处理（48 进程）：
-```bash
-python scripts/preprocess_videos.py \
-    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
-    --preprocess-workers 48 \
-    --ffmpeg-threads 1 \
-    --force
+`run_vbench.py` 会在本地视频模式下自动做一次 `split_clip` 预处理（仅 rank0），后续维度复用缓存。
+`configs/Exp-C_OscHead_RadicalKV_vbench.yaml` 已内置：
+```yaml
+metrics:
+  vbench:
+    preprocess_workers: 48
 ```
+若 `use_semantic_splitting: true`，当前会回退到 VBench 原生预处理流程。
 
-再运行 VBench-Long（推荐 12 维）：
+直接运行（不改你原命令）：
 ```bash
 python scripts/run_vbench.py \
     --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --skip-on-error \
+    --skip color,object_class,multiple_objects,spatial_relationship \
+    --force
+```
+
+如需临时覆盖并发度（CLI 优先级高于 YAML）：
+```bash
+python scripts/run_vbench.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --preprocess-workers 48 \
     --skip-on-error \
     --skip color,object_class,multiple_objects,spatial_relationship \
     --force
@@ -167,6 +177,7 @@ python scripts/run_vbench.py \
 | `--force` | 覆盖已有结果，强制重新计算 |
 | `--skip-on-error` | 某个维度失败时跳过而非终止，聚合已成功的部分结果 |
 | `--skip <dims>` | 跳过指定维度（逗号分隔），如 `--skip color,object_class` |
+| `--preprocess-workers` | VBench-Long 一次性切片预处理进程数（CLI 覆盖 `metrics.vbench.preprocess_workers`） |
 | `--no-auto-multi-gpu` | 禁用自动多卡并行 |
 
 多卡并行（例如 4×L40）：
