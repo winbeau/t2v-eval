@@ -93,7 +93,51 @@ dataset:
   local_video_dir: "hf/AdaHead/Exp_OscStable_Head_Window"
   prompt_file: "hf/AdaHead/Exp_OscStable_Head_Window/prompts.csv"
 ```
-2. 运行 VBench-Long 评测（**推荐 12 维，跳过 4 个 GrIT 慢维度**）：
+2. 运行核心评测流程（含导出/预处理/CLIP(or VQA)/Flicker/NIQE）并开启并行预处理：
+```bash
+python scripts/run_all.py \
+    --config configs/Exp-K_StaOscCompression.yaml \
+    --preprocess-workers 48 \
+    --ffmpeg-threads 1
+```
+
+等价推荐入口（非别名）：
+```bash
+python scripts/run_eval_core.py \
+    --config configs/Exp-K_StaOscCompression.yaml \
+    --preprocess-workers 48 \
+    --ffmpeg-threads 1
+```
+
+仅运行预处理（便于单独压测）：
+```bash
+python scripts/preprocess_videos.py \
+    --config configs/Exp-K_StaOscCompression.yaml \
+    --preprocess-workers 48 \
+    --ffmpeg-threads 1 \
+    --force
+```
+
+Core 预处理相关 CLI 参数（`run_all.py` / `run_eval_core.py`）：
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--preprocess-workers` | `1` | 预处理进程数（显式设置，不做自动探测） |
+| `--ffmpeg-threads` | `1` | 每个预处理进程内 ffmpeg 线程数 |
+
+> 建议：大机器上优先使用 `--preprocess-workers 48 --ffmpeg-threads 1`，避免总线程数过高导致争用。
+
+3. 运行 VBench-Long 评测（**推荐 12 维，跳过 4 个 GrIT 慢维度**）：
+先并行预处理（48 进程）：
+```bash
+python scripts/preprocess_videos.py \
+    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
+    --preprocess-workers 48 \
+    --ffmpeg-threads 1 \
+    --force
+```
+
+再运行 VBench-Long（推荐 12 维）：
 ```bash
 python scripts/run_vbench.py \
     --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
@@ -136,7 +180,7 @@ python scripts/run_vbench.py \
 ```
 说明：脚本会自动按"维度"均分到可见 GPU（如 12 维 / 4 卡 => 每卡 3 维，全视频），最终由 CPU 聚合输出 `outputs/<experiment>/vbench_per_video.csv`。
 
-3. 官方 VBench-Long 直跑 16 维度命令（可选）：
+4. 官方 VBench-Long 直跑 16 维度命令（可选）：
 ```bash
 cd third_party/VBench
 python vbench2_beta_long/eval_long.py \

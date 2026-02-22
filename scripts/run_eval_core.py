@@ -324,7 +324,19 @@ def main():
         "--force", action="store_true",
         help="Force recomputation of all metrics"
     )
+    parser.add_argument(
+        "--preprocess-workers", type=int, default=1,
+        help="Number of worker processes for preprocess_videos.py"
+    )
+    parser.add_argument(
+        "--ffmpeg-threads", type=int, default=1,
+        help="FFmpeg threads per preprocess worker"
+    )
     args = parser.parse_args()
+    if args.preprocess_workers < 1:
+        parser.error("--preprocess-workers must be >= 1")
+    if args.ffmpeg_threads < 1:
+        parser.error("--ffmpeg-threads must be >= 1")
 
     config_path = str(Path(args.config).resolve())
 
@@ -361,6 +373,12 @@ def main():
         extra_args.append("--force")
         logger.info("🔄 Force mode enabled: All metrics will be recomputed")
 
+    preprocess_args = list(extra_args)
+    preprocess_args.extend([
+        "--preprocess-workers", str(args.preprocess_workers),
+        "--ffmpeg-threads", str(args.ffmpeg_threads),
+    ])
+
     # Step 1: Export from HuggingFace
     if not args.skip_export:
         logger.info("\n[Step 1/6] Exporting dataset from HuggingFace...")
@@ -373,7 +391,12 @@ def main():
     # Step 2: Preprocess videos
     if not args.skip_preprocess:
         logger.info("\n[Step 2/6] Preprocessing videos...")
-        if not run_script("preprocess_videos.py", config_path, extra_args):
+        logger.info(
+            "Preprocess settings: workers=%d, ffmpeg_threads=%d",
+            args.preprocess_workers,
+            args.ffmpeg_threads,
+        )
+        if not run_script("preprocess_videos.py", config_path, preprocess_args):
             logger.error("Preprocessing failed.")
             sys.exit(1)
     else:

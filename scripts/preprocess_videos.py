@@ -12,12 +12,13 @@ Output: eval_cache/{group}/{video_id}.mp4 + processed_metadata.csv
 """
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -144,6 +145,7 @@ def write_video_ffmpeg(
     output_path: str,
     fps: int,
     size: Tuple[int, int],
+    ffmpeg_threads: int = 1,
 ) -> bool:
     """
     Write frames to video using ffmpeg.
@@ -154,7 +156,7 @@ def write_video_ffmpeg(
         fps: Target FPS
         size: (width, height) tuple
     """
-    n_frames, h, w, c = frames.shape
+    _, h, w, _ = frames.shape
 
     # Resize if needed
     if (w, h) != size:
@@ -177,6 +179,7 @@ def write_video_ffmpeg(
         "-r", str(fps),
         "-i", "-",  # Read from stdin
         "-c:v", "libx264",
+        "-threads", str(ffmpeg_threads),
         "-pix_fmt", "yuv420p",
         "-preset", "medium",
         "-crf", "18",
@@ -205,6 +208,7 @@ def preprocess_single_video(
     target_size: int,
     sampling: str,
     padding: str,
+    ffmpeg_threads: int,
 ) -> dict:
     """
     Preprocess a single video.
@@ -229,7 +233,13 @@ def preprocess_single_video(
 
     # Write processed video
     size = (target_size, target_size)
-    success = write_video_ffmpeg(frames, output_path, target_fps, size)
+    success = write_video_ffmpeg(
+        frames,
+        output_path,
+        target_fps,
+        size,
+        ffmpeg_threads=ffmpeg_threads,
+    )
 
     return {
         "original_frames": orig_frames,
@@ -239,6 +249,126 @@ def preprocess_single_video(
         "duration_sec": round(duration_sec, 3),
         "processed_frames": len(indices),
         "processed": success,
+    }
+
+
+def _safe_prompt_value(prompt: Any) -> str:
+    """Normalize prompt value loaded from metadata CSV."""
+    if pd.isna(prompt):
+        return ""
+    return str(prompt)
+
+
+def _video_info_for_existing_output(output_path: str, target_frames: int) -> Dict[str, Any]:
+    """Read info for an already-processed output file."""
+    try:
+        info = get_video_info(output_path)
+        return {
+            "original_frames": info[0],
+            "original_fps": info[1],
+            "original_width": info[2],
+            "original_height": info[3],
+            "duration_sec": round(info[0] / info[1], 3) if info[1] > 0 else 0,
+            "processed_frames": target_frames,
+            "processed": True,
+        }
+    except Exception:
+        return {
+            "original_frames": 0,
+            "original_fps": 0,
+            "original_width": 0,
+            "original_height": 0,
+            "duration_sec": 0,
+            "processed_frames": target_frames,
+            "processed": True,
+        }
+
+
+def _build_processed_record(
+    video_id: str,
+    group: str,
+    prompt: str,
+    output_path: Path,
+    video_info: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Build one row for processed metadata."""
+    return {
+        "video_id": video_id,
+        "group": group,
+        "prompt": prompt,
+        "video_path": str(output_path),
+        "num_frames": video_info["processed_frames"],
+        "duration_sec": video_info["duration_sec"],
+        "original_frames": video_info["original_frames"],
+        "original_fps": video_info["original_fps"],
+    }
+
+
+def preprocess_video_task(
+    row: Dict[str, Any],
+    processed_dir: str,
+    target_fps: int,
+    target_frames: int,
+    target_size: int,
+    sampling: str,
+    padding: str,
+    force: bool,
+    ffmpeg_threads: int,
+) -> Dict[str, Any]:
+    """Process one video task and return structured result."""
+    video_id = str(row["video_id"])
+    group = str(row["group"])
+    prompt = _safe_prompt_value(row.get("prompt", ""))
+    input_path = str(row["video_path"])
+
+    group_dir = Path(processed_dir) / group
+    group_dir.mkdir(parents=True, exist_ok=True)
+    output_path = group_dir / f"{video_id}.mp4"
+
+    skipped = False
+    if output_path.exists() and not force:
+        video_info = _video_info_for_existing_output(str(output_path), target_frames)
+        skipped = True
+    else:
+        if not os.path.exists(input_path):
+            return {
+                "ok": False,
+                "reason": "missing_input",
+                "video_id": video_id,
+                "message": f"Input video not found: {input_path}",
+            }
+        try:
+            video_info = preprocess_single_video(
+                input_path=input_path,
+                output_path=str(output_path),
+                target_fps=target_fps,
+                target_frames=target_frames,
+                target_size=target_size,
+                sampling=sampling,
+                padding=padding,
+                ffmpeg_threads=ffmpeg_threads,
+            )
+        except Exception as exc:
+            return {
+                "ok": False,
+                "reason": "preprocess_exception",
+                "video_id": video_id,
+                "message": f"Failed to preprocess video: {exc}",
+            }
+
+    if not video_info.get("processed", False):
+        return {
+            "ok": False,
+            "reason": "write_failed",
+            "video_id": video_id,
+            "message": "Failed to write processed video",
+        }
+
+    return {
+        "ok": True,
+        "video_id": video_id,
+        "skipped": skipped,
+        "record": _build_processed_record(video_id, group, prompt, output_path, video_info),
     }
 
 
@@ -253,7 +383,23 @@ def main():
     parser.add_argument(
         "--limit", type=int, default=None, help="Limit number of videos (for testing)"
     )
+    parser.add_argument(
+        "--preprocess-workers",
+        type=int,
+        default=1,
+        help="Number of worker processes for video preprocessing",
+    )
+    parser.add_argument(
+        "--ffmpeg-threads",
+        type=int,
+        default=1,
+        help="Number of threads per ffmpeg process",
+    )
     args = parser.parse_args()
+    if args.preprocess_workers < 1:
+        parser.error("--preprocess-workers must be >= 1")
+    if args.ffmpeg_threads < 1:
+        parser.error("--ffmpeg-threads must be >= 1")
 
     # Load configuration
     config = load_config(args.config)
@@ -289,85 +435,73 @@ def main():
         logger.info(f"Limited to {len(df)} videos")
 
     # Process videos
+    rows = df.to_dict(orient="records")
     processed_records = []
+    skipped_count = 0
+    failed_count = 0
 
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Preprocessing videos"):
-        video_id = row["video_id"]
-        group = row["group"]
-        prompt = row["prompt"]
-        input_path = row["video_path"]
+    task_kwargs = {
+        "processed_dir": str(processed_dir),
+        "target_fps": target_fps,
+        "target_frames": target_frames,
+        "target_size": target_size,
+        "sampling": sampling,
+        "padding": padding,
+        "force": args.force,
+        "ffmpeg_threads": args.ffmpeg_threads,
+    }
 
-        # Create group subdirectory
-        group_dir = processed_dir / group
-        group_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(
+        "Preprocess concurrency: workers=%d, ffmpeg_threads=%d",
+        args.preprocess_workers,
+        args.ffmpeg_threads,
+    )
 
-        output_path = group_dir / f"{video_id}.mp4"
-
-        # Skip if exists and not forcing
-        if output_path.exists() and not args.force:
-            # Still need to get video info for metadata
-            try:
-                info = get_video_info(str(output_path))
-                video_info = {
-                    "original_frames": info[0],
-                    "original_fps": info[1],
-                    "original_width": info[2],
-                    "original_height": info[3],
-                    "duration_sec": round(info[0] / info[1], 3) if info[1] > 0 else 0,
-                    "processed_frames": target_frames,
-                    "processed": True,
-                }
-            except Exception:
-                video_info = {
-                    "original_frames": 0,
-                    "original_fps": 0,
-                    "original_width": 0,
-                    "original_height": 0,
-                    "duration_sec": 0,
-                    "processed_frames": target_frames,
-                    "processed": True,
-                }
-            logger.debug(f"Skipping existing: {output_path}")
-        else:
-            # Process the video
-            if not os.path.exists(input_path):
-                logger.warning(f"Input video not found: {input_path}")
+    if args.preprocess_workers == 1:
+        for row in tqdm(rows, total=len(rows), desc="Preprocessing videos"):
+            result = preprocess_video_task(row=row, **task_kwargs)
+            if result["ok"]:
+                if result["skipped"]:
+                    skipped_count += 1
+                processed_records.append(result["record"])
                 continue
 
-            try:
-                video_info = preprocess_single_video(
-                    input_path=input_path,
-                    output_path=str(output_path),
-                    target_fps=target_fps,
-                    target_frames=target_frames,
-                    target_size=target_size,
-                    sampling=sampling,
-                    padding=padding,
-                )
-            except Exception as e:
-                logger.error(f"Failed to process {video_id}: {e}")
-                continue
+            failed_count += 1
+            level = logger.warning if result["reason"] == "missing_input" else logger.error
+            level("%s: %s", result["video_id"], result["message"])
+    else:
+        with ProcessPoolExecutor(max_workers=args.preprocess_workers) as executor:
+            futures = [
+                executor.submit(preprocess_video_task, row=row, **task_kwargs)
+                for row in rows
+            ]
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Preprocessing videos"):
+                try:
+                    result = future.result()
+                except Exception as exc:
+                    failed_count += 1
+                    logger.error("Worker crashed during preprocessing: %s", exc)
+                    continue
 
-        if not video_info.get("processed", False):
-            logger.warning(f"Failed to write processed video: {video_id}")
-            continue
+                if result["ok"]:
+                    if result["skipped"]:
+                        skipped_count += 1
+                    processed_records.append(result["record"])
+                    continue
 
-        processed_records.append({
-            "video_id": video_id,
-            "group": group,
-            "prompt": prompt,
-            "video_path": str(output_path),
-            "num_frames": video_info["processed_frames"],
-            "duration_sec": video_info["duration_sec"],
-            "original_frames": video_info["original_frames"],
-            "original_fps": video_info["original_fps"],
-        })
+                failed_count += 1
+                level = logger.warning if result["reason"] == "missing_input" else logger.error
+                level("%s: %s", result["video_id"], result["message"])
 
     # Save processed metadata
     df_processed = pd.DataFrame(processed_records)
+    if not df_processed.empty:
+        df_processed = df_processed.sort_values(["group", "video_id"]).reset_index(drop=True)
     df_processed.to_csv(processed_metadata_path, index=False)
     logger.info(f"Processed metadata saved to: {processed_metadata_path}")
     logger.info(f"Total videos processed: {len(df_processed)}")
+    logger.info(f"Skipped existing videos: {skipped_count}")
+    logger.info(f"Failed videos: {failed_count}")
 
     # Print summary
     logger.info("\nPreprocessing Configuration:")
@@ -376,6 +510,8 @@ def main():
     logger.info(f"  Target Size: {target_size}x{target_size}")
     logger.info(f"  Sampling: {sampling}")
     logger.info(f"  Padding: {padding}")
+    logger.info(f"  Preprocess Workers: {args.preprocess_workers}")
+    logger.info(f"  FFmpeg Threads: {args.ffmpeg_threads}")
 
 
 if __name__ == "__main__":
