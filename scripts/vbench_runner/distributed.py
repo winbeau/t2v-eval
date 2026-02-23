@@ -15,8 +15,10 @@ import pandas as pd
 
 try:
     from .env import PROJECT_ROOT, get_vbench_subtasks, logger
+    from .scaling import apply_output_percent_scaling
 except ImportError:
     from vbench_runner.env import PROJECT_ROOT, get_vbench_subtasks, logger
+    from vbench_runner.scaling import apply_output_percent_scaling
 
 
 def init_distributed_if_needed() -> tuple[int, int, Callable[[], None]]:
@@ -307,6 +309,22 @@ def maybe_auto_launch_multi_gpu(
                         pass
             if partial_frames:
                 merged = merge_rank_partial_results(partial_frames)
+                vbench_config = config.get("metrics", {}).get("vbench", {})
+                scaled_columns, temporal_cols = apply_output_percent_scaling(
+                    df=merged,
+                    vbench_config=vbench_config,
+                    candidate_columns=subtasks,
+                )
+                if scaled_columns:
+                    logger.info(
+                        "Applied output percent scaling (x100) during salvage: %s",
+                        scaled_columns,
+                    )
+                    if temporal_cols:
+                        logger.info(
+                            "Recomputed vbench_temporal_score during salvage using: %s",
+                            temporal_cols,
+                        )
                 merged.to_csv(output_dir / "vbench_per_video.csv", index=False)
                 logger.info(
                     "Salvaged %d partial result files -> vbench_per_video.csv",

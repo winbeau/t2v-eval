@@ -157,14 +157,38 @@ def resolve_scale_to_percent(vbench_config: dict, comparison_profile: str | None
     return []
 
 
+def _looks_like_zero_one_scale(
+    series: pd.Series,
+    tolerance: float = 0.01,
+    min_ratio_within: float = 0.98,
+) -> bool:
+    """Heuristic check for [0,1] scale with tiny-noise tolerance."""
+    numeric = pd.to_numeric(series, errors="coerce").dropna()
+    if numeric.empty:
+        return False
+    within_ratio = ((numeric >= -tolerance) & (numeric <= 1.0 + tolerance)).mean()
+    if within_ratio < min_ratio_within:
+        return False
+    q01 = float(numeric.quantile(0.01))
+    q99 = float(numeric.quantile(0.99))
+    return q01 >= -tolerance and q99 <= 1.0 + tolerance
+
+
 def apply_percent_scaling(df: pd.DataFrame, columns: list[str]) -> list[str]:
-    """Scale numeric columns by 100 in-place. Returns actually scaled columns."""
+    """
+    Scale [0,1]-like numeric columns by 100 in-place.
+
+    Idempotent for columns that are already in 0-100 scale.
+    Returns actually scaled columns.
+    """
     scaled: list[str] = []
     for col in columns:
         if col not in df.columns:
             continue
         series = pd.to_numeric(df[col], errors="coerce")
         if series.notna().sum() == 0:
+            continue
+        if not _looks_like_zero_one_scale(series):
             continue
         df[col] = series * 100.0
         scaled.append(col)

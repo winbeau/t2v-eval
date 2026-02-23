@@ -170,6 +170,10 @@ metrics:
     prefetch_assets: true
     verify_asset_sha256: true
     repair_corrupted_assets: true
+    # run_vbench 输出口径：默认仅将 0-1 维度转为 0-100
+    output_percent_scale: true
+    output_percent_mode: "auto_01_only"   # 可选: "explicit_list"
+    # output_percent_columns: ["dynamic_degree", "motion_smoothness"]  # explicit_list 时生效
     # 可选：多卡聚合时等待各 rank partial 的超时与轮询间隔
     partial_collect_timeout_sec: 43200
     partial_collect_poll_sec: 2.0
@@ -186,6 +190,8 @@ metrics:
     # 额外导出 profile 摘要（不影响主 group_summary.csv）
     profile_output: "group_summary_deep_forcing_8d.csv"
 ```
+说明：`auto_01_only` 会自动把 `dynamic_degree` / `subject_consistency` 等 0-1 维度转成百分制，
+`imaging_quality` 这类原本非 0-1 量纲的维度保持原值，不会被误乘 100。
 也可用 CLI 临时关闭：
 `--no-prefetch-assets` / `--no-verify-asset-sha256` / `--no-repair-corrupted-assets`
 

@@ -63,6 +63,7 @@ try:
         summarize_vbench_stdout,
     )
     from .results import extract_subtask_scores
+    from .scaling import apply_output_percent_scaling
     from .video_records import (
         are_split_clips_ready,
         copy_outputs_to_frontend,
@@ -113,6 +114,7 @@ except ImportError:
         summarize_vbench_stdout,
     )
     from vbench_runner.results import extract_subtask_scores
+    from vbench_runner.scaling import apply_output_percent_scaling
     from vbench_runner.video_records import (
         are_split_clips_ready,
         copy_outputs_to_frontend,
@@ -1234,6 +1236,24 @@ def main():
         missing_coverage = [
             (name, covered, total) for name, covered, total in coverage_rows if covered != total
         ]
+
+        # Optional output normalization: convert 0-1 dimensions to 0-100.
+        if not df_results.empty:
+            scaled_columns, temporal_cols = apply_output_percent_scaling(
+                df=df_results,
+                vbench_config=vbench_config,
+                candidate_columns=all_subtasks,
+            )
+            if scaled_columns:
+                logger.info(
+                    "Applied output percent scaling (x100) for columns: %s",
+                    scaled_columns,
+                )
+                if temporal_cols:
+                    logger.info(
+                        "Recomputed vbench_temporal_score using columns: %s",
+                        temporal_cols,
+                    )
 
         # Save results
         df_results.to_csv(vbench_output, index=False)

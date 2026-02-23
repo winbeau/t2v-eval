@@ -160,6 +160,18 @@ class TestProfileAndScalingHelpers:
         # Not selected -> unchanged
         assert df.loc[0, "imaging_quality"] == pytest.approx(69.31, abs=1e-6)
 
+    def test_apply_percent_scaling_is_idempotent_for_percent_columns(self):
+        df = pd.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "dynamic_degree": [57.56, 57.19],
+            }
+        )
+        scaled = apply_percent_scaling(df, ["dynamic_degree"])
+        assert scaled == []
+        assert df.loc[0, "dynamic_degree"] == pytest.approx(57.56, abs=1e-6)
+        assert df.loc[1, "dynamic_degree"] == pytest.approx(57.19, abs=1e-6)
+
     def test_resolve_profile_metric_cols(self):
         cols = resolve_profile_metric_cols(
             profile="deep_forcing_8d",
