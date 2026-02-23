@@ -199,12 +199,17 @@ python scripts/run_vbench.py \
 诊断“实现问题 vs 口径问题”（只读）：
 ```bash
 python scripts/diagnose_vbench_alignment.py \
-    --output-dir outputs/Exp-K_StaOscCompression
+    --output-dir outputs/Exp-K_StaOscCompression \
+    --config configs/Exp-K_StaOscCompression.yaml \
+    --pair overall_consistency,temporal_style \
+    --report-out outputs/Exp-K_StaOscCompression/alignment_report.md
 ```
 该脚本会同时检查：
 1) `vbench_*.csv` 聚合后的统计；
 2) `vbench_results/*_eval_results.json` 原始子任务输出；
-3) `overall_consistency` 与 `temporal_style` 的逐样本一致度。
+3) `overall_consistency` 与 `temporal_style` 的逐样本一致度；
+4) `*_full_info.json` 输入（`prompt_en`/`video_list`）是否一致；
+5) `third_party/VBench/vbench` 中两个维度实现的源码相似度。
 
 ### CLI 参数说明
 
