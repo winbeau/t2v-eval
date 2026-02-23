@@ -1,0 +1,8 @@
+group,n_videos,vbench_temporal_score_mean,vbench_temporal_score_std,background_consistency_mean,background_consistency_std,temporal_flickering_mean,temporal_flickering_std,temporal_style_mean,temporal_style_std,appearance_style_mean,appearance_style_std,human_action_mean,human_action_std,overall_consistency_mean,overall_consistency_std,imaging_quality_mean,imaging_quality_std,aesthetic_quality_mean,aesthetic_quality_std
+k1_selfforcing_absolute21_baseline,128,9.0086,0.9899,95.4398,0.0,0.9698,0.0302,0.2337,0.0541,0.2167,0.0243,0.0333,0.1759,23.3709,5.4051,68.8607,7.8381,56.6043,7.3104
+k2_selfforcing_dynamic21_baseline,128,9.1577,0.8346,96.3272,0.0,0.9771,0.0206,0.051,0.0288,0.213,0.0152,0.0,0.0,5.0971,2.88,70.4312,6.6688,57.4849,7.2494
+k3_sta_posneg_osc_phase6_tail4,128,9.2322,0.801,96.1091,0.0,0.975,0.0166,0.0462,0.0299,0.2106,0.017,0.0,0.0,4.6154,2.9851,71.0222,6.3974,59.6456,7.4313
+k4_dynamic_sink1_af_quality,128,9.2194,0.8164,96.1482,0.0,0.9731,0.0182,0.0477,0.0296,0.214,0.0167,0.0,0.0,4.7715,2.9588,70.923,6.5304,58.7882,7.2461
+k5_sta_posneg_osc_phase6_tail4_nodynrope,128,8.1179,1.5754,96.7497,0.0,0.9852,0.0056,0.0559,0.0286,0.2238,0.0161,0.0,0.0,5.5924,2.8619,62.1246,12.5987,53.0546,7.6072
+k6_deep_forcing,128,8.8937,1.1857,95.8091,0.0,0.9638,0.0276,0.0479,0.0305,0.2151,0.0164,0.0,0.0,4.7855,3.0517,68.3112,9.4613,60.5451,7.651
+k7_native_self_forcing_static21_sink1,128,9.0602,1.0235,96.0332,0.0,0.9757,0.0268,0.0523,0.0315,0.2146,0.015,0.0,0.0,5.2251,3.1509,69.6541,8.1748,57.2303,7.1963

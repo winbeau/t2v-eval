@@ -1,0 +1,81 @@
+2026-02-23 02:04:25 [INFO] VBench logging enabled: rank0 -> /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/run_vbench.log (other ranks -> .rankN suffix)
+2026-02-23 02:04:25 [INFO] Multi-process dimension-parallel mode enabled: world_size=6 (no torch.distributed init)
+2026-02-23 02:04:25 [INFO] VBench output target: outputs/Exp-K_StaOscCompression/vbench_Exp-K_StaOscCompression.csv
+2026-02-23 02:04:25 [INFO] VBench long preprocess workers: 48 (source=config)
+2026-02-23 02:04:25 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-23 02:04:25 [INFO] Loaded prompts from: /data/chenjiayu/wenbiao_zhao/t2v-eval/hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv (128 rows)
+2026-02-23 02:04:25 [WARNING] Detected duplicate video_id values across groups (128 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-23 02:04:25 [WARNING] Remapped 896 records to unique video_id.
+2026-02-23 02:04:25 [INFO] Group alias mapping for duplicate IDs: {'k1_selfforcing_absolute21_baseline': 'g1', 'k2_selfforcing_dynamic21_baseline': 'g2', 'k3_sta_posneg_osc_phase6_tail4': 'g3', 'k4_dynamic_sink1_af_quality': 'g4', 'k5_sta_posneg_osc_phase6_tail4_nodynrope': 'g5', 'k6_deep_forcing': 'g6', 'k7_native_self_forcing_static21_sink1': 'g7'}
+2026-02-23 02:04:25 [INFO] Loaded 896 videos for VBench evaluation
+2026-02-23 02:04:25 [INFO] Skipping dimensions (--skip): ['color', 'multiple_objects', 'object_class', 'spatial_relationship']
+2026-02-23 02:04:25 [INFO] VBench asset prefetch: enabled=True verify_sha256=True repair_corrupted=True required=['vit_b_32', 'vit_l_14']
+2026-02-23 02:04:26 [INFO] VBench asset prefetch summary: required=2 reused=2 downloaded=0 repaired=0
+2026-02-23 02:04:26 [INFO] Subtask distribution: total=12, world_size=6
+2026-02-23 02:04:26 [INFO]   rank 0 -> ['subject_consistency', 'scene']
+2026-02-23 02:04:26 [INFO]   rank 1 -> ['background_consistency', 'human_action']
+2026-02-23 02:04:26 [INFO]   rank 2 -> ['temporal_flickering', 'overall_consistency']
+2026-02-23 02:04:26 [INFO]   rank 3 -> ['motion_smoothness', 'dynamic_degree']
+2026-02-23 02:04:26 [INFO]   rank 4 -> ['temporal_style', 'imaging_quality']
+2026-02-23 02:04:26 [INFO]   rank 5 -> ['appearance_style', 'aesthetic_quality']
+2026-02-23 02:04:26 [INFO] Attempting VBench evaluation via Python API...
+2026-02-23 02:04:27 [INFO] Applied compatibility shim for `moviepy.editor` (VBench-Long expects legacy import path).
+2026-02-23 02:04:40 [INFO] Detected existing split clips for all videos; skip preprocessing and reuse cache.
+2026-02-23 02:04:40 [INFO] Running VBench-Long evaluation with subtasks: ['subject_consistency', 'scene']
+2026-02-23 02:04:40 [INFO] Evaluating subtask: subject_consistency
+2026-02-23 03:50:08 [INFO] [subject_consistency] Evaluation meta data saved to /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/vbench_results/subject_consistency_full_info.json
+2026-02-23 03:50:08 [INFO] [subject_consistency] cur_full_info_path: /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/vbench_results/subject_consistency_full_info.json
+2026-02-23 03:50:08 [INFO] [subject_consistency] /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/vbench_results/input_videos/subject_consistency_cat_firstframes_videos has already been created, please check the path
+2026-02-23 03:50:08 [INFO] [subject_consistency] Evaluation results saved to /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/vbench_results/subject_consistency_eval_results.json
+2026-02-23 03:50:08 [INFO] [subject_consistency] prefix fallback expanded 13436 unresolved entries to 896 video assignments
+2026-02-23 03:50:08 [INFO] [subject_consistency] skipped 13436 unresolved video ids from raw VBench output
+2026-02-23 03:50:08 [INFO] Parsed 896 results for subject_consistency
+2026-02-23 03:50:08 [INFO] Evaluating subtask: scene
+2026-02-23 03:50:08 [INFO] [scene] auxiliary_info ready for 896 videos (heuristic=896)
+2026-02-23 06:13:32 [INFO] [scene] Evaluation meta data saved to /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/vbench_results/scene_full_info.json
+2026-02-23 06:13:32 [INFO] [scene] cur_full_info_path: /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/vbench_results/scene_full_info.json
+2026-02-23 06:13:32 [INFO] [scene] load checkpoint from /data/chenjiayu/.cache/vbench/caption_model/tag2text_swin_14m.pth
+2026-02-23 06:13:32 [INFO] [scene] Evaluation results saved to /data/chenjiayu/wenbiao_zhao/t2v-eval/outputs/Exp-K_StaOscCompression/vbench_results/scene_eval_results.json
+2026-02-23 06:13:32 [INFO] Parsed 896 results for scene
+2026-02-23 06:13:32 [INFO] [rank 0] Subtask summary: [32m2 passed[0m, [31m0 failed[0m
+2026-02-23 06:13:32 [INFO]   [32mPASS[0m  subject_consistency
+2026-02-23 06:13:32 [INFO]   [32mPASS[0m  scene
+2026-02-23 06:13:32 [INFO] Rank 0 wrote partial results: outputs/Exp-K_StaOscCompression/vbench_partials/rank_0.csv
+2026-02-23 06:13:32 [INFO] Merged 6 partial result files on CPU.
+2026-02-23 06:13:32 [INFO] VBench results saved to: outputs/Exp-K_StaOscCompression/vbench_Exp-K_StaOscCompression.csv
+2026-02-23 06:13:32 [INFO] 
+VBench Temporal Score Summary by Group:
+2026-02-23 06:13:32 [INFO] 
+                                              mean       std
+group                                                       
+k1_selfforcing_absolute21_baseline        6.225986  0.659074
+k2_selfforcing_dynamic21_baseline         6.304649  0.548822
+k3_sta_posneg_osc_phase6_tail4            6.359201  0.529828
+k4_dynamic_sink1_af_quality               6.352547  0.539008
+k5_sta_posneg_osc_phase6_tail4_nodynrope  5.579237  1.050870
+k6_deep_forcing                           6.142720  0.781722
+k7_native_self_forcing_static21_sink1     6.239499  0.675201
+2026-02-23 06:13:32 [INFO] 
+Copying VBench outputs to frontend/public/data ...
+2026-02-23 06:13:32 [INFO]   Copied: vbench_Exp-K_StaOscCompression.csv
+2026-02-23 06:13:32 [INFO]   Updated manifest.json with 5 files
+2026-02-23 06:13:32 [INFO] Cleaned up: outputs/Exp-K_StaOscCompression/vbench_partials
+2026-02-23 06:13:32 [INFO] Cleaned up: outputs/Exp-K_StaOscCompression/vbench_sync
+2026-02-23 06:13:32 [INFO] Cleaned up: outputs/Exp-K_StaOscCompression/vbench_progress
+2026-02-23 06:13:32 [INFO] Cleaned up: outputs/Exp-K_StaOscCompression/vbench_workers.log
+2026-02-23 06:13:32 [INFO] 
+VBench Coverage Summary:
+2026-02-23 06:13:32 [INFO]   subtask                | coverage | status
+2026-02-23 06:13:32 [INFO]   -----------------------+----------+-------
+2026-02-23 06:13:32 [INFO]   subject_consistency    |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   background_consistency |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   temporal_flickering    |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   motion_smoothness      |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   temporal_style         |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   appearance_style       |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   scene                  |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   human_action           |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   overall_consistency    |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   dynamic_degree         |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   imaging_quality        |  896/896  | [32mOK[0m
+2026-02-23 06:13:32 [INFO]   aesthetic_quality      |  896/896  | [32mOK[0m

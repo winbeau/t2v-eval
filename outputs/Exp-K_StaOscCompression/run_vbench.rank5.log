@@ -1,0 +1,11 @@
+2026-02-23 02:04:25 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-23 02:04:25 [INFO] Loaded prompts from: /data/chenjiayu/wenbiao_zhao/t2v-eval/hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv (128 rows)
+2026-02-23 02:04:25 [WARNING] Detected duplicate video_id values across groups (128 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-23 02:04:25 [WARNING] Remapped 896 records to unique video_id.
+2026-02-23 02:04:25 [INFO] Group alias mapping for duplicate IDs: {'k1_selfforcing_absolute21_baseline': 'g1', 'k2_selfforcing_dynamic21_baseline': 'g2', 'k3_sta_posneg_osc_phase6_tail4': 'g3', 'k4_dynamic_sink1_af_quality': 'g4', 'k5_sta_posneg_osc_phase6_tail4_nodynrope': 'g5', 'k6_deep_forcing': 'g6', 'k7_native_self_forcing_static21_sink1': 'g7'}
+2026-02-23 02:04:41 [INFO] [appearance_style] auxiliary_info ready for 896 videos (heuristic=896)
+2026-02-23 05:08:19 [INFO] [rank 5] Subtask summary: [32m2 passed[0m, [31m0 failed[0m
+2026-02-23 05:08:19 [INFO]   [32mPASS[0m  appearance_style
+2026-02-23 05:08:19 [INFO]   [32mPASS[0m  aesthetic_quality
+2026-02-23 05:08:19 [INFO] Rank 5 wrote partial results: outputs/Exp-K_StaOscCompression/vbench_partials/rank_5.csv
+2026-02-23 05:08:19 [INFO] Rank 5 finished distributed VBench worker.

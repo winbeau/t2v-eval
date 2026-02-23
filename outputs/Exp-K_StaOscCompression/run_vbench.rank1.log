@@ -1,0 +1,12 @@
+2026-02-23 02:04:25 [INFO] Metadata not found, building video list from local dataset paths...
+2026-02-23 02:04:25 [INFO] Loaded prompts from: /data/chenjiayu/wenbiao_zhao/t2v-eval/hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv (128 rows)
+2026-02-23 02:04:25 [WARNING] Detected duplicate video_id values across groups (128 duplicated ids). Applying group-prefixed remap for VBench run.
+2026-02-23 02:04:25 [WARNING] Remapped 896 records to unique video_id.
+2026-02-23 02:04:25 [INFO] Group alias mapping for duplicate IDs: {'k1_selfforcing_absolute21_baseline': 'g1', 'k2_selfforcing_dynamic21_baseline': 'g2', 'k3_sta_posneg_osc_phase6_tail4': 'g3', 'k4_dynamic_sink1_af_quality': 'g4', 'k5_sta_posneg_osc_phase6_tail4_nodynrope': 'g5', 'k6_deep_forcing': 'g6', 'k7_native_self_forcing_static21_sink1': 'g7'}
+2026-02-23 03:23:15 [INFO] [background_consistency] prefix fallback expanded 13436 unresolved entries to 896 video assignments
+2026-02-23 03:23:15 [INFO] [background_consistency] skipped 13436 unresolved video ids from raw VBench output
+2026-02-23 04:13:26 [INFO] [rank 1] Subtask summary: [32m2 passed[0m, [31m0 failed[0m
+2026-02-23 04:13:26 [INFO]   [32mPASS[0m  background_consistency
+2026-02-23 04:13:26 [INFO]   [32mPASS[0m  human_action
+2026-02-23 04:13:26 [INFO] Rank 1 wrote partial results: outputs/Exp-K_StaOscCompression/vbench_partials/rank_1.csv
+2026-02-23 04:13:26 [INFO] Rank 1 finished distributed VBench worker.
