@@ -59,7 +59,7 @@ apt install -y python3.10-dev build-essential
   - 确认 repo_id，例如：`kv-compression/AdaHead`
   - 登录：`huggingface-cli login` 或传 `--token`
 - 本地数据路径变更：
-  - 同步更新 `configs/*.yaml` 中的 `local_video_dir` / `prompt_file`
+  - 同步更新 `configs/*.yaml` 中的 `local_video_dir` / `prompt_file` / `prompt_files_by_group`
 
 ## 前置准备（推荐本地下载 HF 数据集）
 1. 注册子模块（首次克隆后执行）
@@ -91,6 +91,10 @@ python scripts/download_hf_subdir.py \
 dataset:
   use_local_videos: true
   local_video_dir: "hf/AdaHead/Exp_OscStable_Head_Window"
+  prompt_files_by_group:
+    group_a: "hf/AdaHead/Exp_OscStable_Head_Window/group_a/prompts.csv"
+    group_b: "hf/AdaHead/Exp_OscStable_Head_Window/group_b/prompts.csv"
+  # 可选：全局回退（当某组未配置或组内未命中时使用）
   prompt_file: "hf/AdaHead/Exp_OscStable_Head_Window/prompts.csv"
 ```
 2. 运行核心评测流程（含导出/预处理/CLIP(or VQA)/Flicker/NIQE）并开启并行预处理：
@@ -210,6 +214,9 @@ python scripts/diagnose_vbench_alignment.py \
 3) `overall_consistency` 与 `temporal_style` 的逐样本一致度；
 4) `*_full_info.json` 输入（`prompt_en`/`video_list`）是否一致；
 5) `third_party/VBench/vbench` 中两个维度实现的源码相似度。
+
+若出现 `overall_consistency` 显著偏低，同时日志显示大量 `fallback_video_id`，
+优先检查 `dataset.prompt_files_by_group` 是否覆盖所有组并指向各组 `prompts.csv`。
 
 ### CLI 参数说明
 

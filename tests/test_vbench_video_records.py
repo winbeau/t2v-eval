@@ -12,10 +12,10 @@ Covers:
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 from scripts.vbench_runner.video_records import (
     are_split_clips_ready,
+    build_video_list_from_local_dataset,
     ensure_unique_video_ids,
     get_input_video_files,
     infer_group_from_path,
@@ -161,6 +161,107 @@ class TestLoadPromptMap:
 
         _, _, ordered = load_prompt_map(csv)
         assert len(ordered) == 2
+
+
+# ---------------------------------------------------------------------------
+# build_video_list_from_local_dataset
+# ---------------------------------------------------------------------------
+class TestBuildVideoListFromLocalDataset:
+    def test_group_prompt_files_take_precedence_over_global(self, tmp_path):
+        local_dir = tmp_path / "videos"
+        (local_dir / "group_a").mkdir(parents=True)
+        (local_dir / "group_b").mkdir(parents=True)
+        (local_dir / "group_a" / "video_000.mp4").write_text("")
+        (local_dir / "group_b" / "video_000.mp4").write_text("")
+
+        global_prompt = tmp_path / "global_prompts.csv"
+        pd.DataFrame({"video_id": ["video_000"], "prompt": ["global prompt"]}).to_csv(
+            global_prompt, index=False
+        )
+        group_a_prompt = tmp_path / "group_a_prompts.csv"
+        pd.DataFrame({"video_id": ["video_000"], "prompt": ["group a prompt"]}).to_csv(
+            group_a_prompt, index=False
+        )
+        group_b_prompt = tmp_path / "group_b_prompts.csv"
+        pd.DataFrame({"video_id": ["video_000"], "prompt": ["group b prompt"]}).to_csv(
+            group_b_prompt, index=False
+        )
+
+        config = {
+            "dataset": {
+                "local_video_dir": str(local_dir),
+                "prompt_file": str(global_prompt),
+                "prompt_files_by_group": {
+                    "group_a": str(group_a_prompt),
+                    "group_b": str(group_b_prompt),
+                },
+            },
+            "groups": [{"name": "group_a"}, {"name": "group_b"}],
+        }
+        records = build_video_list_from_local_dataset(config)
+
+        by_group = {r["group"]: r["prompt"] for r in records}
+        assert by_group["group_a"] == "group a prompt"
+        assert by_group["group_b"] == "group b prompt"
+
+    def test_group_positional_fallback_uses_group_local_index(self, tmp_path):
+        local_dir = tmp_path / "videos"
+        for group in ["group_a", "group_b"]:
+            group_dir = local_dir / group
+            group_dir.mkdir(parents=True)
+            (group_dir / "video_000.mp4").write_text("")
+            (group_dir / "video_001.mp4").write_text("")
+
+        group_a_prompt = tmp_path / "group_a_prompts.csv"
+        group_b_prompt = tmp_path / "group_b_prompts.csv"
+        pd.DataFrame({"prompt": ["group_a_0", "group_a_1"]}).to_csv(group_a_prompt, index=False)
+        pd.DataFrame({"prompt": ["group_b_0", "group_b_1"]}).to_csv(group_b_prompt, index=False)
+
+        config = {
+            "dataset": {
+                "local_video_dir": str(local_dir),
+                "prompt_files_by_group": {
+                    "group_a": str(group_a_prompt),
+                    "group_b": str(group_b_prompt),
+                },
+            },
+            "groups": [{"name": "group_a"}, {"name": "group_b"}],
+        }
+        records = build_video_list_from_local_dataset(config)
+        prompt_map = {(r["group"], r["video_id"]): r["prompt"] for r in records}
+
+        assert prompt_map[("group_a", "video_000")] == "group_a_0"
+        assert prompt_map[("group_a", "video_001")] == "group_a_1"
+        assert prompt_map[("group_b", "video_000")] == "group_b_0"
+        assert prompt_map[("group_b", "video_001")] == "group_b_1"
+
+    def test_fallback_chain_group_to_global_to_video_id(self, tmp_path):
+        local_dir = tmp_path / "videos"
+        (local_dir / "group_a").mkdir(parents=True)
+        (local_dir / "group_b").mkdir(parents=True)
+        (local_dir / "group_a" / "video_000.mp4").write_text("")
+        (local_dir / "group_b" / "video_001.mp4").write_text("")
+
+        global_prompt = tmp_path / "global_prompts.csv"
+        pd.DataFrame({"video_id": ["video_000"], "prompt": ["global prompt"]}).to_csv(
+            global_prompt, index=False
+        )
+
+        config = {
+            "dataset": {
+                "local_video_dir": str(local_dir),
+                "prompt_file": str(global_prompt),
+                "prompt_files_by_group": {
+                    "group_b": str(tmp_path / "missing_group_b_prompts.csv"),
+                },
+            },
+            "groups": [{"name": "group_a"}, {"name": "group_b"}],
+        }
+        records = build_video_list_from_local_dataset(config)
+        prompt_map = {(r["group"], r["video_id"]): r["prompt"] for r in records}
+
+        assert prompt_map[("group_a", "video_000")] == "global prompt"
+        assert prompt_map[("group_b", "video_001")] == "video_001"
 
 
 # ---------------------------------------------------------------------------

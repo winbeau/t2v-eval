@@ -14,6 +14,7 @@ import argparse
 import logging
 import os
 import sys
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import pandas as pd
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def load_config(config_path: str) -> dict:
     """Load YAML configuration file."""
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return yaml.safe_load(f)
 
 
@@ -255,6 +256,7 @@ def main():
     repo_id = dataset_config["repo_id"]
     split = dataset_config.get("split", "test")
     prompt_file = dataset_config.get("prompt_file")
+    prompt_files_by_group = dataset_config.get("prompt_files_by_group") or {}
     default_group = dataset_config.get("default_group")
     use_local_videos = dataset_config.get("use_local_videos", False)
     local_video_dir = dataset_config.get("local_video_dir") or dataset_config.get("video_dir")
@@ -274,6 +276,7 @@ def main():
     prompt_index_by_stem: dict[str, int] = {}
     prompt_index_by_index: dict[int, int] = {}
     prompt_index_by_pos: dict[int, int] | None = None
+    group_prompt_sources: dict[str, dict[str, object]] = {}
 
     if prompt_file:
         prompt_path = resolve_path(prompt_file, project_root)
@@ -284,6 +287,44 @@ def main():
             logger.error(f"Failed to load prompt file: {e}")
             sys.exit(1)
         prompt_index_by_id, prompt_index_by_stem, prompt_index_by_index = build_prompt_indices(prompt_df)
+
+    if prompt_files_by_group and not isinstance(prompt_files_by_group, dict):
+        logger.error("dataset.prompt_files_by_group must be a mapping of group name to prompt file.")
+        sys.exit(1)
+    for group_name, prompt_path_str in prompt_files_by_group.items():
+        if not isinstance(group_name, str) or not group_name.strip():
+            logger.warning("Skip invalid key in prompt_files_by_group: %r", group_name)
+            continue
+        if not prompt_path_str:
+            logger.warning("Skip empty prompt file for group '%s'", group_name)
+            continue
+        group_prompt_path = resolve_path(str(prompt_path_str), project_root)
+        if group_prompt_path is None or not group_prompt_path.exists():
+            logger.warning(
+                "Group prompt file not found for '%s': %s",
+                group_name,
+                prompt_path_str,
+            )
+            continue
+        try:
+            group_prompt_df = load_prompt_file(group_prompt_path)
+        except Exception as e:
+            logger.error("Failed to load group prompt file for '%s': %s", group_name, e)
+            sys.exit(1)
+        by_id, by_stem, by_index = build_prompt_indices(group_prompt_df)
+        group_prompt_sources[group_name] = {
+            "prompt_df": group_prompt_df,
+            "prompt_index_by_id": by_id,
+            "prompt_index_by_stem": by_stem,
+            "prompt_index_by_index": by_index,
+            "prompt_index_by_pos": {idx: idx for idx in range(len(group_prompt_df))},
+        }
+        logger.info(
+            "Loaded group prompt file for '%s': %s (%d rows)",
+            group_name,
+            group_prompt_path,
+            len(group_prompt_df),
+        )
 
     if use_local_videos:
         local_dir = resolve_path(local_video_dir, project_root)
@@ -300,6 +341,9 @@ def main():
 
         metadata_records = []
         skipped_groups = set()
+        prompt_source_total: Counter[str] = Counter()
+        prompt_source_by_group: dict[str, Counter[str]] = defaultdict(Counter)
+        group_seen_index: Counter[str] = Counter()
         for idx, video_path in enumerate(tqdm(video_files, desc="Indexing local videos")):
             video_path_hint = str(video_path)
             relative = video_path.relative_to(local_dir)
@@ -315,20 +359,51 @@ def main():
                 continue
 
             candidate_id = video_path.stem
-            prompt_row = find_prompt_row(
-                prompt_df,
-                prompt_index_by_id,
-                prompt_index_by_stem,
-                prompt_index_by_index,
-                candidate_id,
-                video_path_hint,
-                idx,
-                prompt_index_by_pos,
-            )
+            group_index = group_seen_index[group]
+            group_seen_index[group] += 1
+
+            prompt_row = None
+            prompt_source = "none"
+            if group in group_prompt_sources:
+                group_source = group_prompt_sources[group]
+                group_prompt_df = group_source["prompt_df"]
+                group_prompt_index_by_id = group_source["prompt_index_by_id"]
+                group_prompt_index_by_stem = group_source["prompt_index_by_stem"]
+                group_prompt_index_by_index = group_source["prompt_index_by_index"]
+                group_prompt_index_by_pos = group_source["prompt_index_by_pos"]
+                prompt_row = find_prompt_row(
+                    group_prompt_df,
+                    group_prompt_index_by_id,
+                    group_prompt_index_by_stem,
+                    group_prompt_index_by_index,
+                    candidate_id,
+                    video_path_hint,
+                    group_index,
+                    group_prompt_index_by_pos,
+                )
+                if prompt_row is not None:
+                    prompt_source = "group"
+
+            if prompt_row is None:
+                prompt_row = find_prompt_row(
+                    prompt_df,
+                    prompt_index_by_id,
+                    prompt_index_by_stem,
+                    prompt_index_by_index,
+                    candidate_id,
+                    video_path_hint,
+                    idx,
+                    prompt_index_by_pos,
+                )
+                if prompt_row is not None:
+                    prompt_source = "global"
+
             prompt = series_value(prompt_row, "prompt") if prompt_row is not None else None
             if prompt is None:
                 logger.error(f"Missing prompt for video: {video_path}")
                 sys.exit(1)
+            prompt_source_total[prompt_source] += 1
+            prompt_source_by_group[group][prompt_source] += 1
 
             metadata_records.append(
                 {
@@ -345,6 +420,9 @@ def main():
         logger.info(f"Total videos indexed: {len(df)}")
         if skipped_groups:
             logger.info(f"Skipped groups (not in config): {sorted(skipped_groups)}")
+        logger.info("Prompt source summary: %s", dict(prompt_source_total))
+        for group_name, counter in sorted(prompt_source_by_group.items()):
+            logger.info("Prompt source by group [%s]: %s", group_name, dict(counter))
         logger.info("Group distribution:")
         for group, count in df["group"].value_counts().items():
             logger.info(f"  {group}: {count}")

@@ -949,7 +949,7 @@ def main():
         logger.error(f"Failed to prepare video records: {e}")
         logger.error(
             "Need one of: processed_metadata.csv / metadata.csv / "
-            "dataset.local_video_dir(with optional prompt_file)"
+            "dataset.local_video_dir(with optional prompt_file/prompt_files_by_group)"
         )
         if args.skip_on_error:
             sys.exit(0)

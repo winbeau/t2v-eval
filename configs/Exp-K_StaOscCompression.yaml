@@ -8,9 +8,16 @@ dataset:
   split: "train"
   use_local_videos: true
   local_video_dir: "hf/AdaHead/Exp-K_StaOscCompression"
-  # This pipeline currently accepts a single prompt_file.
-  # Assume all groups share the same prompt set keyed by video_id.
-  # If prompts differ by group, merge prompts first and then update prompt_file.
+  # Group-level prompt files are preferred when available.
+  prompt_files_by_group:
+    k1_selfforcing_absolute21_baseline: "hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv"
+    k2_selfforcing_dynamic21_baseline: "hf/AdaHead/Exp-K_StaOscCompression/k2_selfforcing_dynamic21_baseline/prompts.csv"
+    k3_sta_posneg_osc_phase6_tail4: "hf/AdaHead/Exp-K_StaOscCompression/k3_sta_posneg_osc_phase6_tail4/prompts.csv"
+    k4_dynamic_sink1_af_quality: "hf/AdaHead/Exp-K_StaOscCompression/k4_dynamic_sink1_af_quality/prompts.csv"
+    k5_sta_posneg_osc_phase6_tail4_nodynrope: "hf/AdaHead/Exp-K_StaOscCompression/k5_sta_posneg_osc_phase6_tail4_nodynrope/prompts.csv"
+    k6_deep_forcing: "hf/AdaHead/Exp-K_StaOscCompression/k6_deep_forcing/prompts.csv"
+    k7_native_self_forcing_static21_sink1: "hf/AdaHead/Exp-K_StaOscCompression/k7_native_self_forcing_static21_sink1/prompts.csv"
+  # Optional global fallback prompt file.
   prompt_file: "hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv"
   video_dir: "videos/Exp-K_StaOscCompression"
 

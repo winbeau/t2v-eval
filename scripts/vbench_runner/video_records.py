@@ -4,7 +4,7 @@ Video record loading, metadata management, and frontend output.
 
 import json
 import shutil
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import pandas as pd
@@ -39,7 +39,14 @@ def infer_group_from_path(video_path: Path, group_names: list[str]) -> str | Non
 
 def load_prompt_map(prompt_path: Path) -> tuple[dict[str, str], dict[str, str], list[str]]:
     """Load prompt mapping by video_id/stem and ordered fallback list."""
-    prompt_df = pd.read_csv(prompt_path, sep=None, engine="python")
+    suffix = prompt_path.suffix.lower()
+    try:
+        if suffix == ".tsv":
+            prompt_df = pd.read_csv(prompt_path, sep="\t")
+        else:
+            prompt_df = pd.read_csv(prompt_path)
+    except Exception:
+        prompt_df = pd.read_csv(prompt_path, sep=None, engine="python")
     prompt_df.columns = [str(c).strip().lower() for c in prompt_df.columns]
 
     rename = {}
@@ -83,6 +90,82 @@ def load_prompt_map(prompt_path: Path) -> tuple[dict[str, str], dict[str, str], 
     return prompt_by_id, prompt_by_stem, ordered_prompts
 
 
+def _load_prompt_source(prompt_path_str: str | None, label: str) -> dict[str, object]:
+    """Load one prompt source and return normalized lookup structures."""
+    source = {
+        "by_id": {},
+        "by_stem": {},
+        "ordered": [],
+        "path": None,
+    }
+    if not prompt_path_str:
+        return source
+
+    prompt_path = resolve_path(prompt_path_str)
+    if prompt_path and prompt_path.exists():
+        by_id, by_stem, ordered = load_prompt_map(prompt_path)
+        source = {
+            "by_id": by_id,
+            "by_stem": by_stem,
+            "ordered": ordered,
+            "path": prompt_path,
+        }
+        logger.info("Loaded %s prompts from: %s (%d rows)", label, prompt_path, len(ordered))
+        return source
+
+    logger.warning("%s prompt file not found, skipping: %s", label, prompt_path_str)
+    return source
+
+
+def _pick_prompt(
+    *,
+    candidate_id: str,
+    group_name: str,
+    global_index: int,
+    group_index: int,
+    group_prompt_sources: dict[str, dict[str, object]],
+    global_prompt_source: dict[str, object],
+) -> tuple[str, str]:
+    """Resolve prompt and return (prompt, source_tag)."""
+    group_source = group_prompt_sources.get(group_name)
+    if group_source:
+        by_id = group_source.get("by_id", {})
+        by_stem = group_source.get("by_stem", {})
+        ordered = group_source.get("ordered", [])
+
+        prompt = by_id.get(candidate_id)
+        if prompt:
+            return str(prompt), "group_id"
+
+        prompt = by_stem.get(candidate_id)
+        if prompt:
+            return str(prompt), "group_stem"
+
+        if group_index < len(ordered):
+            prompt = str(ordered[group_index]).strip()
+            if prompt:
+                return prompt, "group_positional"
+
+    by_id = global_prompt_source.get("by_id", {})
+    by_stem = global_prompt_source.get("by_stem", {})
+    ordered = global_prompt_source.get("ordered", [])
+
+    prompt = by_id.get(candidate_id)
+    if prompt:
+        return str(prompt), "global_id"
+
+    prompt = by_stem.get(candidate_id)
+    if prompt:
+        return str(prompt), "global_stem"
+
+    if global_index < len(ordered):
+        prompt = str(ordered[global_index]).strip()
+        if prompt:
+            return prompt, "global_positional"
+
+    return candidate_id, "fallback_video_id"
+
+
 def build_video_list_from_local_dataset(config: dict) -> list:
     """Build video records from local dataset folders (no preprocess required)."""
     dataset_config = config.get("dataset", {})
@@ -95,23 +178,33 @@ def build_video_list_from_local_dataset(config: dict) -> list:
     group_names = [g["name"] for g in groups if isinstance(g, dict) and "name" in g]
     default_group = dataset_config.get("default_group")
 
-    prompt_by_id = {}
-    prompt_by_stem = {}
-    ordered_prompts = []
-    prompt_file = dataset_config.get("prompt_file")
-    if prompt_file:
-        prompt_path = resolve_path(prompt_file)
-        if prompt_path and prompt_path.exists():
-            prompt_by_id, prompt_by_stem, ordered_prompts = load_prompt_map(prompt_path)
-            logger.info(f"Loaded prompts from: {prompt_path} ({len(ordered_prompts)} rows)")
-        else:
-            logger.warning(f"Prompt file not found, fallback to filename prompt: {prompt_file}")
+    global_prompt_source = _load_prompt_source(
+        dataset_config.get("prompt_file"),
+        label="global",
+    )
+
+    group_prompt_sources: dict[str, dict[str, object]] = {}
+    prompt_files_by_group = dataset_config.get("prompt_files_by_group") or {}
+    if prompt_files_by_group and not isinstance(prompt_files_by_group, dict):
+        logger.warning("Ignoring dataset.prompt_files_by_group because it is not a mapping.")
+        prompt_files_by_group = {}
+    for group_name, prompt_path_str in prompt_files_by_group.items():
+        if not isinstance(group_name, str) or not group_name.strip():
+            logger.warning("Skipping invalid group key in dataset.prompt_files_by_group: %r", group_name)
+            continue
+        group_prompt_sources[group_name] = _load_prompt_source(
+            prompt_path_str,
+            label=f"group[{group_name}]",
+        )
 
     video_files = sorted(local_dir.rglob("*.mp4"))
     if not video_files:
         raise FileNotFoundError(f"No mp4 videos found under: {local_dir}")
 
     records = []
+    group_indices: Counter[str] = Counter()
+    prompt_sources_total: Counter[str] = Counter()
+    prompt_sources_by_group: dict[str, Counter[str]] = defaultdict(Counter)
     for idx, video_path in enumerate(video_files):
         candidate_id = video_path.stem
 
@@ -124,12 +217,18 @@ def build_video_list_from_local_dataset(config: dict) -> list:
         if group is None:
             group = default_group or "default"
 
-        prompt = (
-            prompt_by_id.get(candidate_id)
-            or prompt_by_stem.get(candidate_id)
-            or (ordered_prompts[idx] if idx < len(ordered_prompts) else None)
-            or candidate_id
+        group_idx = group_indices[group]
+        group_indices[group] += 1
+        prompt, source_tag = _pick_prompt(
+            candidate_id=candidate_id,
+            group_name=group,
+            global_index=idx,
+            group_index=group_idx,
+            group_prompt_sources=group_prompt_sources,
+            global_prompt_source=global_prompt_source,
         )
+        prompt_sources_total[source_tag] += 1
+        prompt_sources_by_group[group][source_tag] += 1
 
         records.append(
             {
@@ -144,6 +243,22 @@ def build_video_list_from_local_dataset(config: dict) -> list:
         raise RuntimeError(
             "No usable videos matched configured groups under local dataset directory."
         )
+    logger.info("Prompt source summary: %s", dict(prompt_sources_total))
+    if prompt_sources_total.get("fallback_video_id", 0) > 0:
+        logger.warning(
+            "Prompt fallback to video_id occurred for %d videos.",
+            prompt_sources_total["fallback_video_id"],
+        )
+    ordered_group_names = group_names + sorted(
+        name for name in prompt_sources_by_group.keys() if name not in set(group_names)
+    )
+    for group_name in ordered_group_names:
+        if group_name in prompt_sources_by_group:
+            logger.info(
+                "Prompt source by group [%s]: %s",
+                group_name,
+                dict(prompt_sources_by_group[group_name]),
+            )
     return records
 
 
