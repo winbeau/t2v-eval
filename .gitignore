@@ -137,3 +137,20 @@ htmlcov/
 coverage.xml
 *.cover
 .hypothesis/
+
+# -----------------------------------------------------------------------------
+# Local exception: track all files under this experiment output directory.
+# Place at EOF so it overrides all global ignore patterns above.
+# -----------------------------------------------------------------------------
+!outputs/Exp-K_StaOscCompression/
+!outputs/Exp-K_StaOscCompression/**
+outputs/Exp-K_StaOscCompression/**/*.mp4
+outputs/Exp-K_StaOscCompression/**/*.avi
+outputs/Exp-K_StaOscCompression/**/*.mov
+outputs/Exp-K_StaOscCompression/**/*.webm
+outputs/Exp-K_StaOscCompression/**/*.pt
+outputs/Exp-K_StaOscCompression/**/*.pth
+outputs/Exp-K_StaOscCompression/**/*.ckpt
+outputs/Exp-K_StaOscCompression/**/*.bin
+outputs/Exp-K_StaOscCompression/**/*.h5
+outputs/Exp-K_StaOscCompression/**/*.onnx
