@@ -17,6 +17,7 @@ from scripts.summarize import (
     PROFILE_METRICS,
     apply_percent_scaling,
     compute_group_summary,
+    load_base_metadata_for_summary,
     load_metric_csv,
     merge_metrics,
     resolve_comparison_profile,
@@ -175,6 +176,83 @@ class TestProfileAndScalingHelpers:
         )
         assert cols[0] == "fps"
         assert cols[1:] == PROFILE_METRICS["deep_forcing_8d"]
+
+
+# ---------------------------------------------------------------------------
+# base metadata loading
+# ---------------------------------------------------------------------------
+class TestLoadBaseMetadataForSummary:
+    def test_prefers_processed_metadata(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        processed = output_dir / "processed_metadata.csv"
+        pd.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "group": ["g1", "g2"],
+                "prompt": ["p1", "p2"],
+            }
+        ).to_csv(processed, index=False)
+        pd.DataFrame(
+            {
+                "video_id": ["x1"],
+                "group": ["xg"],
+            }
+        ).to_csv(output_dir / "vbench_per_video.csv", index=False)
+
+        result = load_base_metadata_for_summary(
+            output_dir=output_dir,
+            paths_config={"processed_metadata": "processed_metadata.csv"},
+        )
+        assert result is not None
+        assert list(result["video_id"]) == ["v1", "v2"]
+
+    def test_fallback_to_vbench_per_video(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "group": ["g1", "g2"],
+                "dynamic_degree": [0.5, 0.6],
+            }
+        ).to_csv(output_dir / "vbench_per_video.csv", index=False)
+
+        result = load_base_metadata_for_summary(
+            output_dir=output_dir,
+            paths_config={"processed_metadata": "processed_metadata.csv"},
+        )
+        assert result is not None
+        assert {"video_id", "group"}.issubset(result.columns)
+        assert len(result) == 2
+
+    def test_fallback_to_vbench_named_csv(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(
+            {
+                "video_id": ["v1"],
+                "group": ["g1"],
+            }
+        ).to_csv(output_dir / "vbench_Exp-K_StaOscCompression.csv", index=False)
+
+        result = load_base_metadata_for_summary(
+            output_dir=output_dir,
+            paths_config={"processed_metadata": "processed_metadata.csv"},
+        )
+        assert result is not None
+        assert list(result["video_id"]) == ["v1"]
+
+    def test_no_usable_base_returns_none(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame({"a": [1]}).to_csv(output_dir / "vbench_per_video.csv", index=False)
+
+        result = load_base_metadata_for_summary(
+            output_dir=output_dir,
+            paths_config={"processed_metadata": "processed_metadata.csv"},
+        )
+        assert result is None
 
 
 # ---------------------------------------------------------------------------

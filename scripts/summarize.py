@@ -199,6 +199,67 @@ def cleanup_summary_column_names(summary_df: pd.DataFrame) -> pd.DataFrame:
     return summary_df
 
 
+def load_base_metadata_for_summary(output_dir: Path, paths_config: dict) -> pd.DataFrame | None:
+    """
+    Load base metadata for summary merge.
+
+    Priority:
+      1) processed_metadata.csv (full pipeline output)
+      2) vbench_per_video.csv
+      3) first vbench_*.csv with video_id/group columns
+    """
+    processed_metadata = output_dir / paths_config["processed_metadata"]
+    if processed_metadata.exists():
+        df = pd.read_csv(processed_metadata)
+        logger.info(f"Loaded base metadata: {len(df)} videos from {processed_metadata}")
+        return df
+
+    logger.warning(
+        "Processed metadata not found: %s. Trying VBench CSV fallback...",
+        processed_metadata,
+    )
+
+    fallback_candidates: list[Path] = []
+    vbench_per_video = output_dir / "vbench_per_video.csv"
+    if vbench_per_video.exists():
+        fallback_candidates.append(vbench_per_video)
+    fallback_candidates.extend(sorted(output_dir.glob("vbench_*.csv")))
+
+    seen: set[Path] = set()
+    deduped_candidates: list[Path] = []
+    for path in fallback_candidates:
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        deduped_candidates.append(path)
+
+    for candidate in deduped_candidates:
+        try:
+            df = pd.read_csv(candidate)
+        except Exception as exc:
+            logger.warning("Failed to read fallback base from %s: %s", candidate, exc)
+            continue
+
+        required = {"video_id", "group"}
+        if not required.issubset(df.columns):
+            logger.warning(
+                "Skip fallback base %s because missing required columns: %s",
+                candidate,
+                sorted(required - set(df.columns)),
+            )
+            continue
+
+        logger.info("Using fallback base metadata from %s", candidate)
+        return df
+
+    logger.error(
+        "No usable base metadata found. Need either %s or VBench CSV with video_id/group.",
+        processed_metadata,
+    )
+    return None
+
+
 def compute_group_summary(
     df: pd.DataFrame,
     metric_cols: list[str],
@@ -276,19 +337,15 @@ def main():
     elif (per_video_output.exists() or group_summary_output.exists()) and args.force:
         logger.info("Force regenerating summary files")
 
-    # Load base metadata
-    processed_metadata = output_dir / paths_config["processed_metadata"]
-    if not processed_metadata.exists():
-        logger.error(f"Processed metadata not found: {processed_metadata}")
+    # Load base metadata (supports both full-pipeline and vbench-only outputs)
+    base_df = load_base_metadata_for_summary(output_dir, paths_config)
+    if base_df is None:
         return
-
-    base_df = pd.read_csv(processed_metadata)
-    logger.info(f"Loaded base metadata: {len(base_df)} videos")
 
     # Keep relevant columns from base
     base_cols = ["video_id", "group", "prompt", "num_frames", "duration_sec"]
     base_cols = [c for c in base_cols if c in base_df.columns]
-    base_df = base_df[base_cols]
+    base_df = base_df[base_cols].drop_duplicates(subset=["video_id"])
 
     # Load all metric CSVs
     metric_dfs = {
