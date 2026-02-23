@@ -70,6 +70,15 @@ metrics:
     backend: "vbench_long"
     use_long: true
     preprocess_workers: 48
+    comparison_profile: "deep_forcing_8d"
+    scale_to_percent:
+      - "dynamic_degree"
+      - "motion_smoothness"
+      - "overall_consistency"
+      - "aesthetic_quality"
+      - "subject_consistency"
+      - "background_consistency"
+    profile_output: "group_summary_deep_forcing_8d.csv"
     dimension_profile: "long_16"
     mode: "long_custom_input"
     use_semantic_splitting: false

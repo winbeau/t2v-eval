@@ -17,7 +17,6 @@ Usage:
 import argparse
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import pandas as pd
 import yaml
@@ -29,14 +28,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Deep-Forcing paper-aligned 8 dimensions (+ optional throughput/fps).
+PROFILE_METRICS: dict[str, list[str]] = {
+    "deep_forcing_8d": [
+        "dynamic_degree",
+        "motion_smoothness",
+        "overall_consistency",
+        "imaging_quality",
+        "aesthetic_quality",
+        "subject_consistency",
+        "background_consistency",
+    ]
+}
+
+# For deep-forcing alignment, these 0-1 dimensions should be scaled to 0-100.
+DEEP_FORCING_PERCENT_METRICS = [
+    "dynamic_degree",
+    "motion_smoothness",
+    "overall_consistency",
+    "aesthetic_quality",
+    "subject_consistency",
+    "background_consistency",
+]
+
 
 def load_config(config_path: str) -> dict:
     """Load YAML configuration file."""
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return yaml.safe_load(f)
 
 
-def load_metric_csv(path: Path, metric_name: str) -> Optional[pd.DataFrame]:
+def load_metric_csv(path: Path, metric_name: str) -> pd.DataFrame | None:
     """Load a metric CSV file if it exists."""
     if path.exists():
         try:
@@ -56,7 +78,7 @@ def load_metric_csv(path: Path, metric_name: str) -> Optional[pd.DataFrame]:
 
 def merge_metrics(
     base_df: pd.DataFrame,
-    metric_dfs: Dict[str, pd.DataFrame],
+    metric_dfs: dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
     """
     Merge all metric DataFrames on video_id.
@@ -88,9 +110,98 @@ def merge_metrics(
     return result
 
 
+def resolve_comparison_profile(vbench_config: dict) -> str | None:
+    """Normalize configured comparison profile name."""
+    raw = vbench_config.get("comparison_profile")
+    if raw is None:
+        return None
+    profile = str(raw).strip().lower()
+    if not profile:
+        return None
+    if profile not in PROFILE_METRICS:
+        logger.warning(
+            "Unknown metrics.vbench.comparison_profile=%r; supported=%s",
+            raw,
+            sorted(PROFILE_METRICS.keys()),
+        )
+        return None
+    return profile
+
+
+def _normalize_metric_name_list(raw) -> list[str]:
+    if raw is None:
+        return []
+    values = raw if isinstance(raw, list) else [raw]
+    normalized: list[str] = []
+    for item in values:
+        value = str(item).strip()
+        if value:
+            normalized.append(value)
+    return list(dict.fromkeys(normalized))
+
+
+def resolve_scale_to_percent(vbench_config: dict, comparison_profile: str | None) -> list[str]:
+    """
+    Resolve which columns should be scaled from [0,1] -> [0,100].
+
+    Priority:
+      1) explicit metrics.vbench.scale_to_percent
+      2) default by comparison profile (currently deep_forcing_8d)
+      3) empty
+    """
+    explicit = _normalize_metric_name_list(vbench_config.get("scale_to_percent"))
+    if explicit:
+        return explicit
+    if comparison_profile == "deep_forcing_8d":
+        return list(DEEP_FORCING_PERCENT_METRICS)
+    return []
+
+
+def apply_percent_scaling(df: pd.DataFrame, columns: list[str]) -> list[str]:
+    """Scale numeric columns by 100 in-place. Returns actually scaled columns."""
+    scaled: list[str] = []
+    for col in columns:
+        if col not in df.columns:
+            continue
+        series = pd.to_numeric(df[col], errors="coerce")
+        if series.notna().sum() == 0:
+            continue
+        df[col] = series * 100.0
+        scaled.append(col)
+    return scaled
+
+
+def resolve_profile_metric_cols(profile: str, df_columns: list[str]) -> list[str]:
+    """
+    Resolve metric columns for a named comparison profile.
+
+    For deep_forcing_8d, include fps when available for throughput comparison.
+    """
+    if profile not in PROFILE_METRICS:
+        return []
+    cols = [col for col in PROFILE_METRICS[profile] if col in df_columns]
+    if profile == "deep_forcing_8d" and "fps" in df_columns:
+        cols = ["fps"] + cols
+    return cols
+
+
+def cleanup_summary_column_names(summary_df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize duplicated suffix artifacts (e.g., flicker_mean_mean -> flicker_mean)."""
+    rename_map = {}
+    for col in summary_df.columns:
+        if col.endswith("_mean_mean"):
+            rename_map[col] = col.replace("_mean_mean", "_mean")
+        elif col.endswith("_mean_std"):
+            rename_map[col] = col.replace("_mean_std", "_std")
+    if rename_map:
+        summary_df = summary_df.rename(columns=rename_map)
+        logger.info(f"Renamed columns: {rename_map}")
+    return summary_df
+
+
 def compute_group_summary(
     df: pd.DataFrame,
-    metric_cols: List[str],
+    metric_cols: list[str],
 ) -> pd.DataFrame:
     """
     Compute group-level statistics (mean and std) for each metric.
@@ -213,6 +324,22 @@ def main():
         merged_df = merged_df.rename(columns={"clip_or_vqa_score": explicit_score_name})
         logger.info(f"Score column renamed: clip_or_vqa_score -> {explicit_score_name}")
 
+    # Optional VBench comparison profile + scale alignment
+    vbench_config = config.get("metrics", {}).get("vbench", {})
+    comparison_profile = resolve_comparison_profile(vbench_config)
+    scale_to_percent = resolve_scale_to_percent(vbench_config, comparison_profile)
+    if scale_to_percent:
+        scaled_cols = apply_percent_scaling(merged_df, scale_to_percent)
+        if scaled_cols:
+            logger.info(
+                "Applied percent scaling (x100) for columns: %s",
+                scaled_cols,
+            )
+        else:
+            logger.warning(
+                "metrics.vbench.scale_to_percent configured but no matching numeric columns found."
+            )
+
     # Identify metric columns for summary
     metric_cols = [
         f"{score_type}_score",  # clip_score or vqa_score
@@ -247,18 +374,7 @@ def main():
 
     # Compute group summary
     summary_df = compute_group_summary(merged_df, metric_cols)
-
-    # Clean up redundant column names (e.g., flicker_mean_mean -> flicker_mean)
-    rename_map = {}
-    for col in summary_df.columns:
-        # Fix double suffixes like "flicker_mean_mean" -> "flicker_mean"
-        if col.endswith("_mean_mean"):
-            rename_map[col] = col.replace("_mean_mean", "_mean")
-        elif col.endswith("_mean_std"):
-            rename_map[col] = col.replace("_mean_std", "_std")
-    if rename_map:
-        summary_df = summary_df.rename(columns=rename_map)
-        logger.info(f"Renamed columns: {rename_map}")
+    summary_df = cleanup_summary_column_names(summary_df)
 
     # Sort by group name
     summary_df = summary_df.sort_values("group").reset_index(drop=True)
@@ -271,6 +387,33 @@ def main():
     if experiment_output_path:
         summary_df.to_csv(experiment_output_path, index=False)
         logger.info(f"Experiment output saved to: {experiment_output_path}")
+
+    # Optional profile-specific summary export (e.g., deep_forcing_8d).
+    if comparison_profile is not None:
+        profile_metric_cols = resolve_profile_metric_cols(
+            profile=comparison_profile,
+            df_columns=list(merged_df.columns),
+        )
+        if profile_metric_cols:
+            profile_summary_df = compute_group_summary(merged_df, profile_metric_cols)
+            profile_summary_df = cleanup_summary_column_names(profile_summary_df)
+            profile_summary_df = profile_summary_df.sort_values("group").reset_index(drop=True)
+            profile_output_name = str(
+                vbench_config.get("profile_output", f"group_summary_{comparison_profile}.csv")
+            )
+            profile_output_path = output_dir / profile_output_name
+            profile_summary_df.to_csv(profile_output_path, index=False)
+            logger.info(
+                "Profile summary (%s) saved to: %s (metrics=%s)",
+                comparison_profile,
+                profile_output_path,
+                profile_metric_cols,
+            )
+        else:
+            logger.warning(
+                "Comparison profile %s enabled but no matching columns found in merged data.",
+                comparison_profile,
+            )
 
     # Print summary table
     logger.info("\n" + "=" * 80)

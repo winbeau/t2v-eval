@@ -169,6 +169,18 @@ metrics:
     # 可选：多卡聚合时等待各 rank partial 的超时与轮询间隔
     partial_collect_timeout_sec: 43200
     partial_collect_poll_sec: 2.0
+    # 可选：论文对齐口径（Deep-Forcing 8维）
+    comparison_profile: "deep_forcing_8d"
+    # 0-1 指标转百分制（x100）；imaging_quality 保持原量纲
+    scale_to_percent:
+      - "dynamic_degree"
+      - "motion_smoothness"
+      - "overall_consistency"
+      - "aesthetic_quality"
+      - "subject_consistency"
+      - "background_consistency"
+    # 额外导出 profile 摘要（不影响主 group_summary.csv）
+    profile_output: "group_summary_deep_forcing_8d.csv"
 ```
 也可用 CLI 临时关闭：
 `--no-prefetch-assets` / `--no-verify-asset-sha256` / `--no-repair-corrupted-assets`
@@ -183,6 +195,16 @@ python scripts/run_vbench.py \
 
 运行结束后会自动把结果同步到 `frontend/public/data/`（并更新 `manifest.json`）。
 脚本会在开始时只做一次切片预处理，后续维度复用 `split_clip`，不再重复预处理。
+
+诊断“实现问题 vs 口径问题”（只读）：
+```bash
+python scripts/diagnose_vbench_alignment.py \
+    --output-dir outputs/Exp-K_StaOscCompression
+```
+该脚本会同时检查：
+1) `vbench_*.csv` 聚合后的统计；
+2) `vbench_results/*_eval_results.json` 原始子任务输出；
+3) `overall_consistency` 与 `temporal_style` 的逐样本一致度。
 
 ### CLI 参数说明
 

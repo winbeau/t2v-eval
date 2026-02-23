@@ -7,13 +7,22 @@ Covers:
   - compute_group_summary()
 """
 
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.summarize import compute_group_summary, load_metric_csv, merge_metrics
+from scripts.summarize import (
+    DEEP_FORCING_PERCENT_METRICS,
+    PROFILE_METRICS,
+    apply_percent_scaling,
+    compute_group_summary,
+    load_metric_csv,
+    merge_metrics,
+    resolve_comparison_profile,
+    resolve_profile_metric_cols,
+    resolve_scale_to_percent,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +122,59 @@ class TestMergeMetrics:
         result = merge_metrics(base, {"dup": duplicated})
         # drop_duplicates keeps first occurrence
         assert len(result) == 4
+
+
+# ---------------------------------------------------------------------------
+# profile/scaling helpers
+# ---------------------------------------------------------------------------
+class TestProfileAndScalingHelpers:
+    def test_resolve_comparison_profile(self):
+        assert resolve_comparison_profile({"comparison_profile": "deep_forcing_8d"}) == "deep_forcing_8d"
+        assert resolve_comparison_profile({"comparison_profile": " Deep_Forcing_8D "}) == "deep_forcing_8d"
+        assert resolve_comparison_profile({"comparison_profile": "unknown_profile"}) is None
+        assert resolve_comparison_profile({}) is None
+
+    def test_resolve_scale_to_percent_explicit(self):
+        cfg = {"scale_to_percent": ["dynamic_degree", "motion_smoothness"]}
+        cols = resolve_scale_to_percent(cfg, comparison_profile="deep_forcing_8d")
+        assert cols == ["dynamic_degree", "motion_smoothness"]
+
+    def test_resolve_scale_to_percent_profile_default(self):
+        cols = resolve_scale_to_percent({}, comparison_profile="deep_forcing_8d")
+        assert cols == DEEP_FORCING_PERCENT_METRICS
+        assert "deep_forcing_8d" in PROFILE_METRICS
+
+    def test_apply_percent_scaling(self):
+        df = pd.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "dynamic_degree": [0.5756, 0.5719],
+                "imaging_quality": [69.31, 69.27],
+            }
+        )
+        scaled = apply_percent_scaling(df, ["dynamic_degree", "missing_col"])
+        assert scaled == ["dynamic_degree"]
+        assert df.loc[0, "dynamic_degree"] == pytest.approx(57.56, abs=1e-6)
+        assert df.loc[1, "dynamic_degree"] == pytest.approx(57.19, abs=1e-6)
+        # Not selected -> unchanged
+        assert df.loc[0, "imaging_quality"] == pytest.approx(69.31, abs=1e-6)
+
+    def test_resolve_profile_metric_cols(self):
+        cols = resolve_profile_metric_cols(
+            profile="deep_forcing_8d",
+            df_columns=[
+                "fps",
+                "dynamic_degree",
+                "motion_smoothness",
+                "overall_consistency",
+                "imaging_quality",
+                "aesthetic_quality",
+                "subject_consistency",
+                "background_consistency",
+            ],
+        )
+        assert cols[0] == "fps"
+        assert cols[1:] == PROFILE_METRICS["deep_forcing_8d"]
 
 
 # ---------------------------------------------------------------------------
