@@ -200,6 +200,33 @@ def _resolve_float_option(vbench_config: dict, key: str, default: float) -> floa
     return value
 
 
+def _wait_for_rank_partial_files(
+    partial_dir: Path,
+    world_size: int,
+    timeout_sec: float,
+    poll_sec: float,
+) -> list[int]:
+    """
+    Wait for rank_{i}.csv files to appear.
+
+    Returns a sorted list of missing ranks after timeout (empty means complete).
+    """
+    deadline = time.time() + timeout_sec
+
+    def _missing_ranks() -> list[int]:
+        return [
+            worker_rank
+            for worker_rank in range(world_size)
+            if not (partial_dir / f"rank_{worker_rank}.csv").exists()
+        ]
+
+    missing = _missing_ranks()
+    while missing and time.time() < deadline:
+        time.sleep(max(poll_sec, 0.1))
+        missing = _missing_ranks()
+    return missing
+
+
 # =============================================================================
 # VBench evaluation (Python API)
 # =============================================================================
@@ -1137,10 +1164,34 @@ def main():
             partial_file = partial_dir / f"rank_{rank}.csv"
             df_results.to_csv(partial_file, index=False)
             logger.info("Rank %d wrote partial results: %s", rank, partial_file)
-            barrier_fn()
             if rank != 0:
                 logger.info(f"Rank {rank} finished distributed VBench worker.")
                 return
+
+            partial_collect_timeout_sec = _resolve_float_option(
+                vbench_config=vbench_config,
+                key="partial_collect_timeout_sec",
+                default=43200.0,
+            )
+            partial_collect_poll_sec = _resolve_float_option(
+                vbench_config=vbench_config,
+                key="partial_collect_poll_sec",
+                default=2.0,
+            )
+            missing_ranks = _wait_for_rank_partial_files(
+                partial_dir=partial_dir,
+                world_size=world_size,
+                timeout_sec=partial_collect_timeout_sec,
+                poll_sec=partial_collect_poll_sec,
+            )
+            if missing_ranks:
+                logger.warning(
+                    "Timed out waiting for partial results from ranks=%s "
+                    "(timeout=%.1fs, poll=%.1fs). Will merge available partials.",
+                    missing_ranks,
+                    partial_collect_timeout_sec,
+                    partial_collect_poll_sec,
+                )
 
             partial_frames: list[pd.DataFrame] = []
             for worker_rank in range(world_size):

@@ -116,7 +116,7 @@ def make_file_barrier(sync_dir: Path, rank: int, world_size: int) -> Callable[[]
     counter_lock = threading.Lock()
     stage_counter = {"value": 0}
 
-    def _barrier(timeout_sec: float = 7200.0, poll_sec: float = 0.2) -> None:
+    def _barrier(timeout_sec: float = 43200.0, poll_sec: float = 0.2) -> None:
         if world_size <= 1:
             return
         with counter_lock:

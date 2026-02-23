@@ -166,6 +166,9 @@ metrics:
     prefetch_assets: true
     verify_asset_sha256: true
     repair_corrupted_assets: true
+    # 可选：多卡聚合时等待各 rank partial 的超时与轮询间隔
+    partial_collect_timeout_sec: 43200
+    partial_collect_poll_sec: 2.0
 ```
 也可用 CLI 临时关闭：
 `--no-prefetch-assets` / `--no-verify-asset-sha256` / `--no-repair-corrupted-assets`
