@@ -24,6 +24,11 @@ import torch
 import yaml
 from tqdm import tqdm
 
+try:
+    from .vbench_runner.group_labels import build_group_alias_map, remap_group_column
+except ImportError:
+    from vbench_runner.group_labels import build_group_alias_map, remap_group_column
+
 # =============================================================================
 # Setup paths to use official t2v_metrics from submodule
 # =============================================================================
@@ -366,6 +371,7 @@ def main():
     paths_config = config["paths"]
     runtime_config = config.get("runtime", {})
     clip_config = config.get("metrics", {}).get("clip_or_vqa", {})
+    group_alias_map = build_group_alias_map(config)
 
     # Determine mode
     mode = args.mode or clip_config.get("mode", "clip")
@@ -394,6 +400,7 @@ def main():
         sys.exit(1)
 
     df_meta = pd.read_csv(processed_metadata)
+    df_meta = remap_group_column(df_meta, group_alias_map)
     video_records = df_meta.to_dict("records")
     logger.info(f"Loaded {len(video_records)} videos for evaluation")
 

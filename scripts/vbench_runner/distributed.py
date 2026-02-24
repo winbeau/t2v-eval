@@ -15,10 +15,14 @@ import pandas as pd
 
 try:
     from .env import PROJECT_ROOT, get_vbench_subtasks, logger
+    from .group_labels import build_group_alias_map, remap_group_column
     from .scaling import apply_output_percent_scaling
+    from .video_records import ensure_unique_video_ids, load_video_records_for_vbench
 except ImportError:
     from vbench_runner.env import PROJECT_ROOT, get_vbench_subtasks, logger
+    from vbench_runner.group_labels import build_group_alias_map, remap_group_column
     from vbench_runner.scaling import apply_output_percent_scaling
+    from vbench_runner.video_records import ensure_unique_video_ids, load_video_records_for_vbench
 
 
 def init_distributed_if_needed() -> tuple[int, int, Callable[[], None]]:
@@ -105,6 +109,31 @@ def merge_rank_partial_results(partial_frames: list[pd.DataFrame]) -> pd.DataFra
     if metric_cols:
         df_wide["vbench_temporal_score"] = df_wide[metric_cols].mean(axis=1)
     return df_wide
+
+
+def _build_group_lookup_for_salvage(config: dict, output_dir: Path) -> dict[str, object]:
+    """Best-effort video_id -> group mapping for salvage output enrichment."""
+    paths_config = config.get("paths", {})
+    if not isinstance(paths_config, dict):
+        return {}
+    try:
+        video_records = load_video_records_for_vbench(
+            config=config,
+            output_dir=output_dir,
+            paths_config=paths_config,
+        )
+        video_records = ensure_unique_video_ids(video_records, config)
+        if not video_records:
+            return {}
+        df_meta = pd.DataFrame(video_records)[["video_id", "group"]].drop_duplicates(
+            subset=["video_id"]
+        )
+        group_alias_map = build_group_alias_map(config)
+        df_meta = remap_group_column(df_meta, group_alias_map)
+        return dict(zip(df_meta["video_id"], df_meta["group"], strict=False))
+    except Exception as exc:
+        logger.warning("Failed to reconstruct group mapping for salvage output: %s", exc)
+        return {}
 
 
 def make_file_barrier(sync_dir: Path, rank: int, world_size: int) -> Callable[[], None]:
@@ -309,6 +338,9 @@ def maybe_auto_launch_multi_gpu(
                         pass
             if partial_frames:
                 merged = merge_rank_partial_results(partial_frames)
+                group_lookup = _build_group_lookup_for_salvage(config, output_dir)
+                if group_lookup and "video_id" in merged.columns:
+                    merged["group"] = merged["video_id"].map(group_lookup)
                 vbench_config = config.get("metrics", {}).get("vbench", {})
                 scaled_columns, temporal_cols = apply_output_percent_scaling(
                     df=merged,

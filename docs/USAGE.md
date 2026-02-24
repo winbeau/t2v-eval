@@ -96,7 +96,14 @@ dataset:
     group_b: "hf/AdaHead/Exp_OscStable_Head_Window/group_b/prompts.csv"
   # 可选：全局回退（当某组未配置或组内未命中时使用）
   prompt_file: "hf/AdaHead/Exp_OscStable_Head_Window/prompts.csv"
+
+groups:
+  - name: "k6_deep_forcing"           # 执行主键（通常与文件夹名一致）
+    alias: "K6 Deep Forcing"          # 输出 CSV 里的组名（可选）
+  - name: "k7_native_self_forcing_static21_sink1"
+    alias: "K7 Self Forcing"
 ```
+说明：`groups[].alias` 仅影响输出 CSV 的 `group` 展示名；未配置 alias 时默认使用原组名（本地模式下通常就是文件夹名）。
 2. 运行核心评测流程（含导出/预处理/CLIP(or VQA)/Flicker/NIQE）并开启并行预处理：
 ```bash
 python scripts/run_all.py \

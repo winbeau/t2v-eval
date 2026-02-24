@@ -51,6 +51,7 @@ dataset:
 # 实验组
 groups:
   - name: "group_name"
+    alias: "展示名称（可选）"
     description: "..."
     latent_frames: N
     actual_frames: N
@@ -122,15 +123,20 @@ dataset:
 ```yaml
 groups:
   - name: "frame_baseline_21"
+    alias: "Frame Baseline (21)"
     description: "帧级别基线，21 潜在帧（84 实际帧）"
     latent_frames: 21
     actual_frames: 84
 
   - name: "osc_long_72"
+    alias: "Osc Long (72)"
     description: "振荡注意力（长窗口），72 潜在帧"
     latent_frames: 72
     actual_frames: 288
 ```
+
+`name` 是执行主键（用于目录匹配和内部流程）。  
+`alias` 为可选字段，用于控制输出 CSV 中 `group` 列的展示名称。
 
 **重要概念：潜在帧 vs 实际帧**
 

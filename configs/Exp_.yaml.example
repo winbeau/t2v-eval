@@ -52,22 +52,26 @@ dataset:
 groups:
   # Example: Short video experiments (21 latent frames = 84 actual frames)
   - name: "method_a_21"
+    alias: "Method A (21)"  # Optional display name for output CSV `group` column
     description: "Method A baseline, 21 latent frames (84 actual)"
     latent_frames: 21
     actual_frames: 84
 
   - name: "method_b_21"
+    alias: "Method B (21)"
     description: "Method B variant, 21 latent frames (84 actual)"
     latent_frames: 21
     actual_frames: 84
 
   # Example: Long video experiments (72 latent frames = 288 actual frames)
   - name: "method_a_72"
+    alias: "Method A (72)"
     description: "Method A baseline, 72 latent frames (288 actual)"
     latent_frames: 72
     actual_frames: 288
 
   - name: "method_b_72"
+    alias: "Method B (72)"
     description: "Method B variant, 72 latent frames (288 actual)"
     latent_frames: 72
     actual_frames: 288

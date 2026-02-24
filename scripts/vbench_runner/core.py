@@ -54,6 +54,7 @@ try:
         setup_vbench_path,
         use_vbench_long,
     )
+    from .group_labels import build_group_alias_map, remap_group_column
     from .preprocess_long import parallel_split_long_clips
     from .progress import (
         MultiGpuProgressBoard,
@@ -105,6 +106,7 @@ except ImportError:
         setup_vbench_path,
         use_vbench_long,
     )
+    from vbench_runner.group_labels import build_group_alias_map, remap_group_column
     from vbench_runner.preprocess_long import parallel_split_long_clips
     from vbench_runner.progress import (
         MultiGpuProgressBoard,
@@ -862,6 +864,7 @@ def main():
     # Load configuration
     config = load_config(args.config)
     paths_config = config["paths"]
+    group_alias_map = build_group_alias_map(config)
     runtime_config = config.get("runtime", {})
     rank, world_size, barrier_fn = init_distributed_if_needed()
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
@@ -1216,6 +1219,7 @@ def main():
         )
         if not df_results.empty:
             df_results = df_results.merge(df_meta, on="video_id", how="left")
+            df_results = remap_group_column(df_results, group_alias_map)
         expected_count = len(video_records)
         coverage_rows: list[tuple[str, int, int]] = []
         for subtask in all_subtasks:

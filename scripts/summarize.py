@@ -21,6 +21,11 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+try:
+    from .vbench_runner.group_labels import build_group_alias_map, remap_group_column
+except ImportError:
+    from vbench_runner.group_labels import build_group_alias_map, remap_group_column
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -340,6 +345,7 @@ def main():
     # Load configuration
     config = load_config(args.config)
     paths_config = config["paths"]
+    group_alias_map = build_group_alias_map(config)
 
     output_dir = Path(paths_config["output_dir"])
 
@@ -370,6 +376,7 @@ def main():
     base_cols = ["video_id", "group", "prompt", "num_frames", "duration_sec"]
     base_cols = [c for c in base_cols if c in base_df.columns]
     base_df = base_df[base_cols].drop_duplicates(subset=["video_id"])
+    base_df = remap_group_column(base_df, group_alias_map)
 
     # Load all metric CSVs
     metric_dfs = {

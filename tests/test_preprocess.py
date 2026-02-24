@@ -7,9 +7,10 @@ Covers:
 """
 
 import numpy as np
+import pandas as pd
 import pytest
 
-from scripts.preprocess_videos import compute_frame_indices, load_config
+from scripts.preprocess_videos import compute_frame_indices, load_config, load_input_records
 
 
 # ---------------------------------------------------------------------------
@@ -137,3 +138,28 @@ class TestLoadConfig:
         assert "protocol" in loaded
         assert loaded["protocol"]["fps_eval"] == 8
         assert loaded["protocol"]["num_frames"] == 16
+
+
+class TestLoadInputRecords:
+    def test_applies_group_alias_from_yaml(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        metadata_path = output_dir / "metadata.csv"
+        pd.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "group": ["k1", "k2"],
+                "video_path": ["/tmp/v1.mp4", "/tmp/v2.mp4"],
+                "prompt": ["p1", "p2"],
+            }
+        ).to_csv(metadata_path, index=False)
+
+        config = {
+            "groups": [
+                {"name": "k1", "alias": "K1 Baseline"},
+                {"name": "k2"},
+            ]
+        }
+        paths_config = {"metadata_file": "metadata.csv"}
+        df = load_input_records(config=config, output_dir=output_dir, paths_config=paths_config)
+        assert list(df["group"]) == ["K1 Baseline", "k2"]

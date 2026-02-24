@@ -23,6 +23,11 @@ import pandas as pd
 import yaml
 from tqdm import tqdm
 
+try:
+    from .vbench_runner.group_labels import build_group_alias_map, remap_group_column
+except ImportError:
+    from vbench_runner.group_labels import build_group_alias_map, remap_group_column
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -209,6 +214,7 @@ def main():
     config = load_config(args.config)
     paths_config = config["paths"]
     niqe_config = config.get("metrics", {}).get("niqe", {})
+    group_alias_map = build_group_alias_map(config)
     runtime_config = config.get("runtime", {})
 
     num_frames = niqe_config.get("num_frames_for_niqe", 8)
@@ -246,6 +252,7 @@ def main():
         return
 
     df_meta = pd.read_csv(processed_metadata)
+    df_meta = remap_group_column(df_meta, group_alias_map)
     logger.info(f"Loaded {len(df_meta)} videos for NIQE evaluation")
 
     # Compute NIQE scores

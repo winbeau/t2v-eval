@@ -11,13 +11,13 @@ Covers:
 
 import os
 import threading
-from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
 from scripts.vbench_runner.distributed import (
+    _build_group_lookup_for_salvage,
     _parse_visible_devices,
     init_distributed_if_needed,
     make_file_barrier,
@@ -223,6 +223,37 @@ class TestMergeRankPartialResults:
         empty = pd.DataFrame()
         result = merge_rank_partial_results([empty, frame])
         assert len(result) == 1
+
+
+# ---------------------------------------------------------------------------
+# _build_group_lookup_for_salvage
+# ---------------------------------------------------------------------------
+class TestBuildGroupLookupForSalvage:
+    def test_uses_metadata_and_applies_alias(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "group": ["k1", "k2"],
+                "video_path": ["/tmp/k1/v1.mp4", "/tmp/k2/v2.mp4"],
+                "prompt": ["p1", "p2"],
+            }
+        ).to_csv(output_dir / "metadata.csv", index=False)
+
+        config = {
+            "paths": {"metadata_file": "metadata.csv", "processed_metadata": "processed_metadata.csv"},
+            "groups": [{"name": "k1", "alias": "K1 Baseline"}, {"name": "k2"}],
+        }
+        lookup = _build_group_lookup_for_salvage(config=config, output_dir=output_dir)
+        assert lookup["v1"] == "K1 Baseline"
+        assert lookup["v2"] == "k2"
+
+    def test_returns_empty_when_paths_missing(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        lookup = _build_group_lookup_for_salvage(config={}, output_dir=output_dir)
+        assert lookup == {}
 
 
 # ---------------------------------------------------------------------------

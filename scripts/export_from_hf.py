@@ -22,6 +22,11 @@ import yaml
 from datasets import load_dataset
 from tqdm import tqdm
 
+try:
+    from .vbench_runner.group_labels import build_group_alias_map, remap_group_column
+except ImportError:
+    from vbench_runner.group_labels import build_group_alias_map, remap_group_column
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -252,6 +257,7 @@ def main():
     config = load_config(str(config_path))
     dataset_config = config["dataset"]
     paths_config = config["paths"]
+    group_alias_map = build_group_alias_map(config)
 
     repo_id = dataset_config["repo_id"]
     split = dataset_config.get("split", "test")
@@ -415,6 +421,7 @@ def main():
             )
 
         df = pd.DataFrame(metadata_records)
+        df = remap_group_column(df, group_alias_map)
         df.to_csv(metadata_path, index=False)
         logger.info(f"Metadata saved to: {metadata_path}")
         logger.info(f"Total videos indexed: {len(df)}")
@@ -535,6 +542,7 @@ def main():
 
     # Save metadata
     df = pd.DataFrame(metadata_records)
+    df = remap_group_column(df, group_alias_map)
     df.to_csv(metadata_path, index=False)
     logger.info(f"Metadata saved to: {metadata_path}")
     logger.info(f"Total videos exported: {len(df)}")

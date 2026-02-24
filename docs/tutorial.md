@@ -51,6 +51,7 @@ dataset:
 # Experiment groups
 groups:
   - name: "group_name"
+    alias: "Display Name (optional)"
     description: "..."
     latent_frames: N
     actual_frames: N
@@ -122,15 +123,20 @@ dataset:
 ```yaml
 groups:
   - name: "frame_baseline_21"
+    alias: "Frame Baseline (21)"
     description: "Frame-level baseline, 21 latent frames (84 actual)"
     latent_frames: 21
     actual_frames: 84
 
   - name: "osc_long_72"
+    alias: "Osc Long (72)"
     description: "Oscillating attention (long window), 72 latent frames"
     latent_frames: 72
     actual_frames: 288
 ```
+
+`name` is the execution key (used for folder matching and internal bookkeeping).  
+`alias` is optional and controls the `group` name written to output CSV files.
 
 **Important Concept: Latent vs Actual Frames**
 

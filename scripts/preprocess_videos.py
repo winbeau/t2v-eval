@@ -26,8 +26,10 @@ import yaml
 from tqdm import tqdm
 
 try:
+    from vbench_runner.group_labels import build_group_alias_map, remap_group_column
     from vbench_runner.video_records import build_video_list_from_local_dataset
 except ImportError:
+    from scripts.vbench_runner.group_labels import build_group_alias_map, remap_group_column
     from scripts.vbench_runner.video_records import build_video_list_from_local_dataset
 
 try:
@@ -337,6 +339,8 @@ def load_input_records(config: dict, output_dir: Path, paths_config: dict) -> pd
     if "prompt" not in df.columns:
         df["prompt"] = ""
 
+    group_alias_map = build_group_alias_map(config)
+    df = remap_group_column(df, group_alias_map)
     return df
 
 
