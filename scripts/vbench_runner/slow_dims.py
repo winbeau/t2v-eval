@@ -11,6 +11,7 @@ from __future__ import annotations
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
@@ -139,6 +140,7 @@ def run_fused_slow_dimensions(
     device: str,
     local: bool = True,
     read_frame: bool = False,
+    progress_callback: Any = None,
 ) -> tuple[list[dict], dict[str, float | int]]:
     """
     Run slow dimensions with shared decode/inference and return per-video rows.
@@ -298,7 +300,19 @@ def run_fused_slow_dimensions(
                     {"video_path": video_path, "video_results": score}
                 )
 
+    start_ts = time.perf_counter()
+    total_clips = len(clip_paths)
+    processed = 0
+
     if clip_paths:
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "percent": 0,
+                    "status_text": f"fused_clips 0/{total_clips}",
+                    "elapsed_sec": 0,
+                }
+            )
         with ThreadPoolExecutor(max_workers=1) as pool:
             next_idx = 0
             current_path = clip_paths[next_idx]
@@ -309,12 +323,29 @@ def run_fused_slow_dimensions(
                 video_arrays, decode_dt = future.result()
                 decode_sec += decode_dt
                 _process_clip(current_path, video_arrays)
+                processed += 1
+                if progress_callback is not None:
+                    progress_callback(
+                        {
+                            "percent": int(99 * processed / max(total_clips, 1)),
+                            "status_text": f"fused_clips {processed}/{total_clips}",
+                            "elapsed_sec": int(time.perf_counter() - start_ts),
+                        }
+                    )
 
                 if next_idx >= len(clip_paths):
                     break
                 current_path = clip_paths[next_idx]
                 next_idx += 1
                 future = pool.submit(_decode_clip, current_path)
+    elif progress_callback is not None:
+        progress_callback(
+            {
+                "percent": 99,
+                "status_text": "fused_clips 0/0",
+                "elapsed_sec": 0,
+            }
+        )
 
     rows: list[dict] = []
     for dim in active_dims:

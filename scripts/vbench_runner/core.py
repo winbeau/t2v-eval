@@ -418,6 +418,14 @@ def run_vbench_evaluation(
                     "Detected existing split clips for all videos; "
                     "skip preprocessing and reuse cache."
                 )
+            if progress_reporter is not None:
+                progress_reporter.start_task("preprocess_clips", status_text="cache_hit")
+                progress_reporter.update_live(
+                    percent=99,
+                    status_text="cache_hit",
+                    elapsed_sec=0,
+                )
+                progress_reporter.finish_task(success=True, count_completion=False)
         else:
             if rank == 0:
                 if use_parallel_preprocess:
@@ -565,6 +573,9 @@ def run_vbench_evaluation(
                 "Slow-dims fused mode enabled for: %s",
                 active_slow_dims,
             )
+        if progress_reporter is not None:
+            progress_reporter.start_task("slow_dims_fused", status_text="running_bundle")
+            progress_reporter.log_event("Starting slow-dims fused bundle")
         try:
             fused_full_info_path = Path(
                 vbench.build_full_info_json(
@@ -584,7 +595,20 @@ def run_vbench_evaluation(
                 device=str(device),
                 local=True,
                 read_frame=bool(vbench_config.get("read_frame", False)),
+                progress_callback=(
+                    (
+                        lambda payload: progress_reporter.update_live(
+                            percent=payload.get("percent"),
+                            status_text=str(payload.get("status_text", "running")),
+                            elapsed_sec=int(payload.get("elapsed_sec", 0)),
+                        )
+                    )
+                    if progress_reporter is not None
+                    else None
+                ),
             )
+            if progress_reporter is not None:
+                progress_reporter.finish_task(success=True, count_completion=False)
             results.extend(fused_rows)
             for dim in active_slow_dims:
                 subtask_status[dim] = (True, "OK[fused]")
@@ -600,6 +624,12 @@ def run_vbench_evaluation(
                 fused_stats["clips_total"],
             )
         except Exception as exc:
+            if progress_reporter is not None:
+                progress_reporter.finish_task(
+                    success=False,
+                    error=str(exc),
+                    count_completion=False,
+                )
             logger.warning("[rank %d] slow-dims fused failed: %s", rank, exc)
             logger.warning("Slow-dims fused traceback:", exc_info=True)
             if progress_reporter is not None:
