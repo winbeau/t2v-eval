@@ -627,6 +627,28 @@ def run_vbench_evaluation(
         min_value=1,
         max_value=256,
     )
+    slow_dims_perf_window_clips = _resolve_int_option(
+        vbench_config=vbench_config,
+        key="slow_dims_perf_window_clips",
+        default=100,
+        min_value=1,
+        max_value=10000,
+    )
+    slow_dims_decode_backend = str(vbench_config.get("slow_dims_decode_backend", "legacy")).strip()
+    if slow_dims_decode_backend not in {"legacy", "decord", "decord_gpu"}:
+        logger.warning(
+            "Invalid metrics.vbench.slow_dims_decode_backend=%r, fallback to legacy",
+            slow_dims_decode_backend,
+        )
+        slow_dims_decode_backend = "legacy"
+    slow_dims_shard_mode = str(vbench_config.get("slow_dims_shard_mode", "clip")).strip()
+    if slow_dims_shard_mode not in {"clip", "video"}:
+        logger.warning(
+            "Invalid metrics.vbench.slow_dims_shard_mode=%r, fallback to clip",
+            slow_dims_shard_mode,
+        )
+        slow_dims_shard_mode = "clip"
+    slow_dims_stage_profile = bool(vbench_config.get("slow_dims_stage_profile", True))
     active_slow_dims = [dim for dim in subtasks if dim in SLOW_DIM_SET]
     use_fused_slow_dims = bool(long_mode and slow_dims_fused and active_slow_dims)
     if use_fused_slow_dims:
@@ -636,10 +658,12 @@ def run_vbench_evaluation(
                 active_slow_dims,
             )
             logger.info(
-                "Slow-dims decode pipeline: workers=%d prefetch=%d total_workers=%s",
+                "Slow-dims decode pipeline: workers=%d prefetch=%d total_workers=%s backend=%s shard_mode=%s",
                 slow_dims_decode_workers,
                 slow_dims_decode_prefetch,
                 vbench_config.get("slow_dims_decode_total_workers", "unset"),
+                slow_dims_decode_backend,
+                slow_dims_shard_mode,
             )
         if progress_reporter is not None:
             progress_reporter.start_task("slow_dims_fused", status_text="running_bundle")
@@ -665,6 +689,10 @@ def run_vbench_evaluation(
                 read_frame=bool(vbench_config.get("read_frame", False)),
                 decode_workers=slow_dims_decode_workers,
                 decode_prefetch=slow_dims_decode_prefetch,
+                decode_backend=slow_dims_decode_backend,
+                shard_mode=slow_dims_shard_mode,
+                profile_window_clips=slow_dims_perf_window_clips,
+                stage_profile=slow_dims_stage_profile,
                 progress_callback=(
                     (
                         lambda payload: progress_reporter.update_live(
