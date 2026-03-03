@@ -206,6 +206,41 @@ def _resolve_float_option(vbench_config: dict, key: str, default: float) -> floa
     return value
 
 
+def _resolve_int_option(
+    vbench_config: dict,
+    key: str,
+    default: int,
+    min_value: int = 1,
+    max_value: int | None = None,
+) -> int:
+    """Parse int option from metrics.vbench with fallback and bounds."""
+    raw_value = vbench_config.get(key, default)
+    try:
+        value = int(raw_value)
+    except (TypeError, ValueError):
+        logger.warning("Invalid metrics.vbench.%s=%r, fallback to %s", key, raw_value, default)
+        return default
+    if value < min_value:
+        logger.warning(
+            "metrics.vbench.%s=%r must be >= %d, fallback to %s",
+            key,
+            raw_value,
+            min_value,
+            default,
+        )
+        return default
+    if max_value is not None and value > max_value:
+        logger.warning(
+            "metrics.vbench.%s=%r must be <= %d, clamp to %d",
+            key,
+            raw_value,
+            max_value,
+            max_value,
+        )
+        return max_value
+    return value
+
+
 def _wait_for_rank_partial_files(
     partial_dir: Path,
     world_size: int,
@@ -565,6 +600,20 @@ def run_vbench_evaluation(
     legacy_subtasks = list(subtasks)
     slow_dims_fused = bool(vbench_config.get("slow_dims_fused", True))
     slow_dims_fallback_to_legacy = bool(vbench_config.get("slow_dims_fallback_to_legacy", True))
+    slow_dims_decode_workers = _resolve_int_option(
+        vbench_config=vbench_config,
+        key="slow_dims_decode_workers",
+        default=2,
+        min_value=1,
+        max_value=64,
+    )
+    slow_dims_decode_prefetch = _resolve_int_option(
+        vbench_config=vbench_config,
+        key="slow_dims_decode_prefetch",
+        default=max(2, slow_dims_decode_workers),
+        min_value=1,
+        max_value=256,
+    )
     active_slow_dims = [dim for dim in subtasks if dim in SLOW_DIM_SET]
     use_fused_slow_dims = bool(long_mode and slow_dims_fused and active_slow_dims)
     if use_fused_slow_dims:
@@ -572,6 +621,11 @@ def run_vbench_evaluation(
             logger.info(
                 "Slow-dims fused mode enabled for: %s",
                 active_slow_dims,
+            )
+            logger.info(
+                "Slow-dims decode pipeline: workers=%d prefetch=%d",
+                slow_dims_decode_workers,
+                slow_dims_decode_prefetch,
             )
         if progress_reporter is not None:
             progress_reporter.start_task("slow_dims_fused", status_text="running_bundle")
@@ -595,6 +649,8 @@ def run_vbench_evaluation(
                 device=str(device),
                 local=True,
                 read_frame=bool(vbench_config.get("read_frame", False)),
+                decode_workers=slow_dims_decode_workers,
+                decode_prefetch=slow_dims_decode_prefetch,
                 progress_callback=(
                     (
                         lambda payload: progress_reporter.update_live(

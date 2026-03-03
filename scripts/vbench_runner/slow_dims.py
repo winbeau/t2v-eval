@@ -9,6 +9,7 @@ This path keeps scoring helpers unchanged while sharing:
 from __future__ import annotations
 
 import time
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -141,6 +142,8 @@ def run_fused_slow_dimensions(
     local: bool = True,
     read_frame: bool = False,
     progress_callback: Any = None,
+    decode_workers: int = 1,
+    decode_prefetch: int = 2,
 ) -> tuple[list[dict], dict[str, float | int]]:
     """
     Run slow dimensions with shared decode/inference and return per-video rows.
@@ -215,6 +218,8 @@ def run_fused_slow_dimensions(
     resize_sec = 0.0
     det_infer_sec = 0.0
     color_infer_sec = 0.0
+    decode_workers = max(1, int(decode_workers))
+    decode_prefetch = max(1, int(decode_prefetch))
 
     def _decode_clip(path: str) -> tuple[np.ndarray, float]:
         t0 = time.perf_counter()
@@ -313,13 +318,20 @@ def run_fused_slow_dimensions(
                     "elapsed_sec": 0,
                 }
             )
-        with ThreadPoolExecutor(max_workers=1) as pool:
+        with ThreadPoolExecutor(max_workers=decode_workers) as pool:
+            inflight: deque[tuple[str, Any]] = deque()
             next_idx = 0
-            current_path = clip_paths[next_idx]
-            next_idx += 1
-            future = pool.submit(_decode_clip, current_path)
 
-            while True:
+            def _fill_inflight() -> None:
+                nonlocal next_idx
+                while next_idx < len(clip_paths) and len(inflight) < decode_prefetch:
+                    path = clip_paths[next_idx]
+                    next_idx += 1
+                    inflight.append((path, pool.submit(_decode_clip, path)))
+
+            _fill_inflight()
+            while inflight:
+                current_path, future = inflight.popleft()
                 video_arrays, decode_dt = future.result()
                 decode_sec += decode_dt
                 _process_clip(current_path, video_arrays)
@@ -332,12 +344,7 @@ def run_fused_slow_dimensions(
                             "elapsed_sec": int(time.perf_counter() - start_ts),
                         }
                     )
-
-                if next_idx >= len(clip_paths):
-                    break
-                current_path = clip_paths[next_idx]
-                next_idx += 1
-                future = pool.submit(_decode_clip, current_path)
+                _fill_inflight()
     elif progress_callback is not None:
         progress_callback(
             {
@@ -370,7 +377,7 @@ def run_fused_slow_dimensions(
     }
 
     logger.info(
-        "[rank %d] slow-dims fused stats: clips %d/%d decode=%.2fs resize=%.2fs det=%.2fs color=%.2fs",
+        "[rank %d] slow-dims fused stats: clips %d/%d decode=%.2fs resize=%.2fs det=%.2fs color=%.2fs decode_workers=%d prefetch=%d",
         rank,
         stats["clips_shard"],
         stats["clips_total"],
@@ -378,5 +385,7 @@ def run_fused_slow_dimensions(
         stats["resize_sec"],
         stats["det_infer_sec"],
         stats["color_infer_sec"],
+        decode_workers,
+        decode_prefetch,
     )
     return rows, stats
