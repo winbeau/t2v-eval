@@ -157,6 +157,33 @@ class TestSplitSubtasksForRank:
         assert set(all_assigned) == set(LONG_DIMENSION_KEYS)
         assert len(all_assigned) == len(LONG_DIMENSION_KEYS)
 
+    def test_fused_slow_dims_assigns_heavy_to_all_ranks(self):
+        subtasks = [
+            "object_class",
+            "multiple_objects",
+            "spatial_relationship",
+            "color",
+            "motion_smoothness",
+            "dynamic_degree",
+        ]
+        heavy = {"object_class", "multiple_objects", "spatial_relationship", "color"}
+        r0 = split_subtasks_for_rank(subtasks, rank=0, world_size=3, slow_dims_fused=True)
+        r1 = split_subtasks_for_rank(subtasks, rank=1, world_size=3, slow_dims_fused=True)
+        r2 = split_subtasks_for_rank(subtasks, rank=2, world_size=3, slow_dims_fused=True)
+
+        for assigned in (r0, r1, r2):
+            assert heavy.issubset(set(assigned))
+        # Light dimensions remain sharded across ranks.
+        light_assigned = [dim for dim in (r0 + r1 + r2) if dim not in heavy]
+        assert set(light_assigned) == {"motion_smoothness", "dynamic_degree"}
+
+    def test_fused_flag_without_heavy_dims_keeps_round_robin(self):
+        subtasks = ["motion_smoothness", "dynamic_degree", "imaging_quality", "scene"]
+        r0 = split_subtasks_for_rank(subtasks, rank=0, world_size=2, slow_dims_fused=True)
+        r1 = split_subtasks_for_rank(subtasks, rank=1, world_size=2, slow_dims_fused=True)
+        assert set(r0 + r1) == set(subtasks)
+        assert len(set(r0) & set(r1)) == 0
+
 
 # ---------------------------------------------------------------------------
 # merge_rank_partial_results

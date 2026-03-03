@@ -65,6 +65,7 @@ try:
     )
     from .results import extract_subtask_scores
     from .scaling import apply_output_percent_scaling, compute_official_vbench_scores
+    from .slow_dims import SLOW_DIM_SET, run_fused_slow_dimensions
     from .video_records import (
         are_split_clips_ready,
         copy_outputs_to_frontend,
@@ -117,6 +118,7 @@ except ImportError:
     )
     from vbench_runner.results import extract_subtask_scores
     from vbench_runner.scaling import apply_output_percent_scaling, compute_official_vbench_scores
+    from vbench_runner.slow_dims import SLOW_DIM_SET, run_fused_slow_dimensions
     from vbench_runner.video_records import (
         are_split_clips_ready,
         copy_outputs_to_frontend,
@@ -550,8 +552,66 @@ def run_vbench_evaluation(
         logger.info(f"Running {backend_name} evaluation with subtasks: {subtasks}")
 
     subtask_status: dict[str, tuple[bool, str]] = {}  # subtask -> (success, detail)
+    subtask_positions = {name: idx for idx, name in enumerate(subtasks, start=1)}
 
-    for idx, subtask in enumerate(subtasks, start=1):
+    legacy_subtasks = list(subtasks)
+    slow_dims_fused = bool(vbench_config.get("slow_dims_fused", True))
+    slow_dims_fallback_to_legacy = bool(vbench_config.get("slow_dims_fallback_to_legacy", True))
+    active_slow_dims = [dim for dim in subtasks if dim in SLOW_DIM_SET]
+    use_fused_slow_dims = bool(long_mode and slow_dims_fused and active_slow_dims)
+    if use_fused_slow_dims:
+        if rank == 0:
+            logger.info(
+                "Slow-dims fused mode enabled for: %s",
+                active_slow_dims,
+            )
+        try:
+            fused_full_info_path = Path(
+                vbench.build_full_info_json(
+                    videos_path=video_dir_str,
+                    name=f"slow_dims_fused_rank{rank}",
+                    dimension_list=active_slow_dims,
+                    mode=eval_mode,
+                    **long_kwargs,
+                )
+            )
+            fused_rows, fused_stats = run_fused_slow_dimensions(
+                full_info_path=fused_full_info_path,
+                subtasks=subtasks,
+                valid_video_ids=valid_video_ids,
+                rank=rank,
+                world_size=world_size,
+                device=str(device),
+                local=True,
+                read_frame=bool(vbench_config.get("read_frame", False)),
+            )
+            results.extend(fused_rows)
+            for dim in active_slow_dims:
+                subtask_status[dim] = (True, "OK[fused]")
+                if progress_reporter is not None:
+                    progress_reporter.start_task(dim, status_text="fused_bundle")
+                    progress_reporter.finish_task(success=True)
+            legacy_subtasks = [dim for dim in subtasks if dim not in SLOW_DIM_SET]
+            logger.info(
+                "[rank %d] slow-dims fused completed: rows=%d clips=%d/%d",
+                rank,
+                len(fused_rows),
+                fused_stats["clips_shard"],
+                fused_stats["clips_total"],
+            )
+        except Exception as exc:
+            logger.warning("[rank %d] slow-dims fused failed: %s", rank, exc)
+            logger.warning("Slow-dims fused traceback:", exc_info=True)
+            if progress_reporter is not None:
+                progress_reporter.log_event(f"slow-dims fused failed: {exc}", level="WARN")
+            if not slow_dims_fallback_to_legacy:
+                raise
+            if rank == 0:
+                logger.warning("Falling back to legacy per-dimension evaluate for slow dims.")
+            legacy_subtasks = list(subtasks)
+
+    for subtask in legacy_subtasks:
+        idx = subtask_positions.get(subtask, 0)
         if rank == 0:
             logger.info(f"Evaluating subtask: {subtask}")
         try:
@@ -1057,7 +1117,15 @@ def main():
             else:
                 raise prefetch_error
 
-    assigned_subtasks = split_subtasks_for_rank(all_subtasks, rank=rank, world_size=world_size)
+    slow_dims_fused_schedule = bool(vbench_config.get("slow_dims_fused", True)) and use_vbench_long(
+        config
+    )
+    assigned_subtasks = split_subtasks_for_rank(
+        all_subtasks,
+        rank=rank,
+        world_size=world_size,
+        slow_dims_fused=slow_dims_fused_schedule,
+    )
     visible_devices = _parse_visible_devices()
     if rank == 0:
         logger.info(
@@ -1065,10 +1133,15 @@ def main():
             len(all_subtasks),
             world_size,
         )
+        if slow_dims_fused_schedule:
+            logger.info("Subtask scheduler: slow_dims_fused=true (heavy dims sharded by video)")
         if world_size > 1:
             for worker_rank in range(world_size):
                 worker_subtasks = split_subtasks_for_rank(
-                    all_subtasks, rank=worker_rank, world_size=world_size
+                    all_subtasks,
+                    rank=worker_rank,
+                    world_size=world_size,
+                    slow_dims_fused=slow_dims_fused_schedule,
                 )
                 logger.info("  rank %d -> %s", worker_rank, worker_subtasks)
     if not assigned_subtasks:
@@ -1099,7 +1172,10 @@ def main():
         if rank == 0 and not parent_managed:
             assignment_map = {
                 worker_rank: split_subtasks_for_rank(
-                    all_subtasks, rank=worker_rank, world_size=world_size
+                    all_subtasks,
+                    rank=worker_rank,
+                    world_size=world_size,
+                    slow_dims_fused=slow_dims_fused_schedule,
                 )
                 for worker_rank in range(world_size)
             }

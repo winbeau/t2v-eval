@@ -14,12 +14,12 @@ from pathlib import Path
 import pandas as pd
 
 try:
-    from .env import PROJECT_ROOT, get_vbench_subtasks, logger
+    from .env import PROJECT_ROOT, get_vbench_subtasks, logger, use_vbench_long
     from .group_labels import build_group_alias_map, remap_group_column
     from .scaling import apply_output_percent_scaling
     from .video_records import ensure_unique_video_ids, load_video_records_for_vbench
 except ImportError:
-    from vbench_runner.env import PROJECT_ROOT, get_vbench_subtasks, logger
+    from vbench_runner.env import PROJECT_ROOT, get_vbench_subtasks, logger, use_vbench_long
     from vbench_runner.group_labels import build_group_alias_map, remap_group_column
     from vbench_runner.scaling import apply_output_percent_scaling
     from vbench_runner.video_records import ensure_unique_video_ids, load_video_records_for_vbench
@@ -66,13 +66,22 @@ def _parse_visible_devices() -> list[str]:
 _HEAVY_DIMS = {"object_class", "multiple_objects", "spatial_relationship", "color"}
 
 
-def split_subtasks_for_rank(subtasks: list[str], rank: int, world_size: int) -> list[str]:
-    """Cost-aware round-robin: spread heavy (GrIT) dims across ranks first."""
+def split_subtasks_for_rank(
+    subtasks: list[str],
+    rank: int,
+    world_size: int,
+    slow_dims_fused: bool = False,
+) -> list[str]:
+    """Cost-aware split with optional fused slow-dimension execution."""
     if world_size <= 1:
         return list(subtasks)
-    # Place heavy dims first so round-robin distributes them to different ranks
     heavy = [s for s in subtasks if s in _HEAVY_DIMS]
     light = [s for s in subtasks if s not in _HEAVY_DIMS]
+    if slow_dims_fused and heavy:
+        # Each rank handles a video shard for all heavy dims; light dims remain round-robin.
+        assigned_light = [subtask for idx, subtask in enumerate(light) if idx % world_size == rank]
+        return heavy + assigned_light
+    # Place heavy dims first so round-robin distributes them to different ranks.
     reordered = heavy + light
     return [subtask for idx, subtask in enumerate(reordered) if idx % world_size == rank]
 
@@ -212,7 +221,14 @@ def maybe_auto_launch_multi_gpu(
     if len(visible_devices) <= 1:
         return False
 
-    worker_count = min(len(visible_devices), len(subtasks))
+    vbench_config = config.get("metrics", {}).get("vbench", {})
+    slow_dims_fused = bool(vbench_config.get("slow_dims_fused", True)) and use_vbench_long(config)
+    has_heavy_dims = any(dim in _HEAVY_DIMS for dim in subtasks)
+
+    if slow_dims_fused and has_heavy_dims:
+        worker_count = len(visible_devices)
+    else:
+        worker_count = min(len(visible_devices), len(subtasks))
     if worker_count <= 1:
         return False
 
@@ -260,7 +276,13 @@ def maybe_auto_launch_multi_gpu(
 
     # --- Prepare parent-managed progress board ---
     assignment_map = {
-        r: split_subtasks_for_rank(subtasks, r, worker_count) for r in range(worker_count)
+        r: split_subtasks_for_rank(
+            subtasks,
+            r,
+            worker_count,
+            slow_dims_fused=slow_dims_fused,
+        )
+        for r in range(worker_count)
     }
     gpu_map = {
         r: visible_devices[r] if r < len(visible_devices) else str(r) for r in range(worker_count)
