@@ -64,7 +64,7 @@ try:
         summarize_vbench_stdout,
     )
     from .results import extract_subtask_scores
-    from .scaling import apply_output_percent_scaling
+    from .scaling import apply_output_percent_scaling, compute_official_vbench_scores
     from .video_records import (
         are_split_clips_ready,
         copy_outputs_to_frontend,
@@ -116,7 +116,7 @@ except ImportError:
         summarize_vbench_stdout,
     )
     from vbench_runner.results import extract_subtask_scores
-    from vbench_runner.scaling import apply_output_percent_scaling
+    from vbench_runner.scaling import apply_output_percent_scaling, compute_official_vbench_scores
     from vbench_runner.video_records import (
         are_split_clips_ready,
         copy_outputs_to_frontend,
@@ -642,6 +642,11 @@ def run_vbench_evaluation(
         if subtask_cols:
             df_pivot["vbench_temporal_score"] = df_pivot[subtask_cols].mean(axis=1)
 
+        # Compute official VBench quality/semantic/total scores when all 16 dims present
+        official_cols = compute_official_vbench_scores(df_pivot)
+        if official_cols:
+            logger.info(f"[rank {rank}] Computed official VBench scores: {official_cols}")
+
         return df_pivot
     else:
         logger.warning(f"[rank {rank}] No VBench results obtained")
@@ -771,6 +776,9 @@ def run_vbench_cli_fallback(
         subtask_cols = [c for c in df_pivot.columns if c != "video_id"]
         if subtask_cols:
             df_pivot["vbench_temporal_score"] = df_pivot[subtask_cols].mean(axis=1)
+
+        # Compute official VBench quality/semantic/total scores when all 16 dims present
+        compute_official_vbench_scores(df_pivot)
 
         return df_pivot
 

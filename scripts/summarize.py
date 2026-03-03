@@ -103,8 +103,7 @@ def merge_metrics(
 
         # Get columns to merge (excluding video_id and group which are in base)
         merge_cols = ["video_id"] + [
-            c for c in df.columns
-            if c not in ["video_id", "group", "prompt", "video_path"]
+            c for c in df.columns if c not in ["video_id", "group", "prompt", "video_path"]
         ]
 
         if len(merge_cols) > 1:
@@ -329,17 +328,11 @@ def compute_group_summary(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Summarize evaluation metrics"
-    )
+    parser = argparse.ArgumentParser(description="Summarize evaluation metrics")
     parser.add_argument(
-        "--config", type=str, default="configs/eval.yaml",
-        help="Path to config file"
+        "--config", type=str, default="configs/eval.yaml", help="Path to config file"
     )
-    parser.add_argument(
-        "--force", action="store_true",
-        help="Overwrite existing results"
-    )
+    parser.add_argument("--force", action="store_true", help="Overwrite existing results")
     args = parser.parse_args()
 
     # Load configuration
@@ -432,6 +425,9 @@ def main():
     metric_cols = [
         f"{score_type}_score",  # clip_score or vqa_score
         "vbench_temporal_score",
+        "vbench_quality_score",
+        "vbench_semantic_score",
+        "vbench_total_score",
         "flicker_mean",
         "niqe_mean",
         "num_frames",
@@ -446,7 +442,8 @@ def main():
     vbench_df = metric_dfs.get("vbench")
     if vbench_df is not None:
         auto_vbench_cols = [
-            c for c in vbench_df.columns
+            c
+            for c in vbench_df.columns
             if c not in ["video_id", "group", "prompt", "video_path", "vbench_temporal_score"]
         ]
         metric_cols.extend(auto_vbench_cols)
@@ -510,7 +507,15 @@ def main():
 
     # Format for display
     display_cols = ["group", "n_videos"]
-    for col in [f"{score_type}_score", "vbench_temporal_score", "flicker", "niqe"]:
+    for col in [
+        f"{score_type}_score",
+        "vbench_temporal_score",
+        "vbench_quality_score",
+        "vbench_semantic_score",
+        "vbench_total_score",
+        "flicker",
+        "niqe",
+    ]:
         mean_col = f"{col}_mean"
         std_col = f"{col}_std"
         if mean_col in summary_df.columns:
@@ -521,8 +526,13 @@ def main():
     # Print metric directions
     score_type_upper = score_type.upper()
     logger.info("\nMetric Directions:")
-    logger.info(f"  ↑ {score_type}_score: Higher is better ({score_type_upper} text-video alignment)")
+    logger.info(
+        f"  ↑ {score_type}_score: Higher is better ({score_type_upper} text-video alignment)"
+    )
     logger.info("  ↑ vbench_temporal_score: Higher is better (temporal quality)")
+    logger.info("  ↑ vbench_quality_score: Higher is better (official VBench quality)")
+    logger.info("  ↑ vbench_semantic_score: Higher is better (official VBench semantic)")
+    logger.info("  ↑ vbench_total_score: Higher is better (official VBench total)")
     logger.info("  ↓ flicker: Lower is better (temporal stability)")
     logger.info("  ↓ niqe: Lower is better (visual quality)")
 

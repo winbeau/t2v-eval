@@ -8,7 +8,104 @@ from collections.abc import Iterable
 
 import pandas as pd
 
-RESERVED_COLUMNS = {"video_id", "group", "vbench_temporal_score"}
+RESERVED_COLUMNS = {
+    "video_id",
+    "group",
+    "vbench_temporal_score",
+    "vbench_quality_score",
+    "vbench_semantic_score",
+    "vbench_total_score",
+}
+
+# ---------------------------------------------------------------------------
+# VBench official scoring constants (from third_party/VBench/scripts/constant.py)
+# ---------------------------------------------------------------------------
+
+# Mapping from our underscore column names to VBench's space-separated names.
+_COL_TO_VBENCH_DIM: dict[str, str] = {
+    "subject_consistency": "subject consistency",
+    "background_consistency": "background consistency",
+    "temporal_flickering": "temporal flickering",
+    "motion_smoothness": "motion smoothness",
+    "dynamic_degree": "dynamic degree",
+    "aesthetic_quality": "aesthetic quality",
+    "imaging_quality": "imaging quality",
+    "object_class": "object class",
+    "multiple_objects": "multiple objects",
+    "human_action": "human action",
+    "color": "color",
+    "spatial_relationship": "spatial relationship",
+    "scene": "scene",
+    "appearance_style": "appearance style",
+    "temporal_style": "temporal style",
+    "overall_consistency": "overall consistency",
+}
+
+_NORMALIZE_DIC: dict[str, dict[str, float]] = {
+    "subject consistency": {"Min": 0.1462, "Max": 1.0},
+    "background consistency": {"Min": 0.2615, "Max": 1.0},
+    "temporal flickering": {"Min": 0.6293, "Max": 1.0},
+    "motion smoothness": {"Min": 0.706, "Max": 0.9975},
+    "dynamic degree": {"Min": 0.0, "Max": 1.0},
+    "aesthetic quality": {"Min": 0.0, "Max": 1.0},
+    "imaging quality": {"Min": 0.0, "Max": 1.0},
+    "object class": {"Min": 0.0, "Max": 1.0},
+    "multiple objects": {"Min": 0.0, "Max": 1.0},
+    "human action": {"Min": 0.0, "Max": 1.0},
+    "color": {"Min": 0.0, "Max": 1.0},
+    "spatial relationship": {"Min": 0.0, "Max": 1.0},
+    "scene": {"Min": 0.0, "Max": 0.8222},
+    "appearance style": {"Min": 0.0009, "Max": 0.2855},
+    "temporal style": {"Min": 0.0, "Max": 0.364},
+    "overall consistency": {"Min": 0.0, "Max": 0.364},
+}
+
+_DIM_WEIGHT: dict[str, float] = {
+    "subject consistency": 1,
+    "background consistency": 1,
+    "temporal flickering": 1,
+    "motion smoothness": 1,
+    "aesthetic quality": 1,
+    "imaging quality": 1,
+    "dynamic degree": 0.5,
+    "object class": 1,
+    "multiple objects": 1,
+    "human action": 1,
+    "color": 1,
+    "spatial relationship": 1,
+    "scene": 1,
+    "appearance style": 1,
+    "temporal style": 1,
+    "overall consistency": 1,
+}
+
+_QUALITY_LIST: set[str] = {
+    "subject consistency",
+    "background consistency",
+    "temporal flickering",
+    "motion smoothness",
+    "aesthetic quality",
+    "imaging quality",
+    "dynamic degree",
+}
+
+_SEMANTIC_LIST: set[str] = {
+    "object class",
+    "multiple objects",
+    "human action",
+    "color",
+    "spatial relationship",
+    "scene",
+    "appearance style",
+    "temporal style",
+    "overall consistency",
+}
+
+_QUALITY_WEIGHT = 4
+_SEMANTIC_WEIGHT = 1
+
+# All 16 column names required for official scoring.
+ALL_16_COLUMNS: frozenset[str] = frozenset(_COL_TO_VBENCH_DIM.keys())
 
 
 def _normalize_name_list(raw: object) -> list[str]:
@@ -87,6 +184,64 @@ def resolve_output_percent_columns(
         if _looks_like_zero_one_scale(numeric):
             selected.append(name)
     return selected
+
+
+def compute_official_vbench_scores(df: pd.DataFrame) -> list[str]:
+    """
+    Compute official VBench quality/semantic/total scores.
+
+    Follows the official VBench scoring from ``third_party/VBench/scripts/cal_final_score.py``:
+      1. Min-max normalize each of the 16 dimensions (fixed ranges from NORMALIZE_DIC).
+      2. Apply per-dimension weights (all 1.0 except dynamic_degree = 0.5).
+      3. Quality Score = sum(weighted_normalized) / sum(quality_weights) for 7 quality dims.
+      4. Semantic Score = sum(weighted_normalized) / sum(semantic_weights) for 9 semantic dims.
+      5. Total Score = (Quality × 4 + Semantic × 1) / 5.
+
+    Scores are written on a [0, 100] scale.
+
+    The function requires all 16 dimension columns to be present.  If any are
+    missing, it returns an empty list and does nothing.
+
+    Returns the list of new columns added (empty if skipped).
+    """
+    present_cols = {col for col in _COL_TO_VBENCH_DIM if col in df.columns}
+    if not ALL_16_COLUMNS.issubset(present_cols):
+        return []
+
+    quality_weighted_sum = pd.Series(0.0, index=df.index)
+    quality_weight_sum = 0.0
+    semantic_weighted_sum = pd.Series(0.0, index=df.index)
+    semantic_weight_sum = 0.0
+
+    for col, dim_name in _COL_TO_VBENCH_DIM.items():
+        raw = pd.to_numeric(df[col], errors="coerce")
+        norm_range = _NORMALIZE_DIC[dim_name]
+        lo, hi = norm_range["Min"], norm_range["Max"]
+        if hi == lo:
+            normalized = pd.Series(0.0, index=df.index)
+        else:
+            normalized = ((raw - lo) / (hi - lo)).clip(0.0, 1.0)
+        weight = _DIM_WEIGHT[dim_name]
+        weighted = normalized * weight
+
+        if dim_name in _QUALITY_LIST:
+            quality_weighted_sum += weighted
+            quality_weight_sum += weight
+        else:
+            semantic_weighted_sum += weighted
+            semantic_weight_sum += weight
+
+    quality_score = (quality_weighted_sum / quality_weight_sum) * 100.0
+    semantic_score = (semantic_weighted_sum / semantic_weight_sum) * 100.0
+    total_score = (quality_score * _QUALITY_WEIGHT + semantic_score * _SEMANTIC_WEIGHT) / (
+        _QUALITY_WEIGHT + _SEMANTIC_WEIGHT
+    )
+
+    new_cols = ["vbench_quality_score", "vbench_semantic_score", "vbench_total_score"]
+    df["vbench_quality_score"] = quality_score
+    df["vbench_semantic_score"] = semantic_score
+    df["vbench_total_score"] = total_score
+    return new_cols
 
 
 def recompute_vbench_temporal_score(

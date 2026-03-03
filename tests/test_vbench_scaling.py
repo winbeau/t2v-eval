@@ -6,7 +6,9 @@ import pandas as pd
 import pytest
 
 from scripts.vbench_runner.scaling import (
+    ALL_16_COLUMNS,
     apply_output_percent_scaling,
+    compute_official_vbench_scores,
     resolve_output_percent_columns,
 )
 
@@ -103,3 +105,91 @@ class TestApplyOutputPercentScaling:
         )
         assert scaled_cols == []
         assert df.loc[0, "subject_consistency"] == pytest.approx(97.34, abs=1e-6)
+
+
+class TestComputeOfficialVBenchScores:
+    """Tests for compute_official_vbench_scores (official VBench aggregation)."""
+
+    @staticmethod
+    def _make_full_16d_df(**overrides):
+        """Build a single-row DataFrame with all 16 VBench dimensions at given values."""
+        defaults = {col: 0.5 for col in ALL_16_COLUMNS}
+        defaults["video_id"] = "v1"
+        defaults.update(overrides)
+        return pd.DataFrame([defaults])
+
+    def test_skips_when_missing_dimensions(self):
+        df = pd.DataFrame(
+            {
+                "video_id": ["v1"],
+                "subject_consistency": [0.9],
+                "background_consistency": [0.8],
+            }
+        )
+        result = compute_official_vbench_scores(df)
+        assert result == []
+        assert "vbench_total_score" not in df.columns
+
+    def test_adds_three_score_columns(self):
+        df = self._make_full_16d_df()
+        result = compute_official_vbench_scores(df)
+        assert set(result) == {
+            "vbench_quality_score",
+            "vbench_semantic_score",
+            "vbench_total_score",
+        }
+        assert "vbench_quality_score" in df.columns
+        assert "vbench_semantic_score" in df.columns
+        assert "vbench_total_score" in df.columns
+
+    def test_total_is_weighted_average_of_quality_and_semantic(self):
+        df = self._make_full_16d_df()
+        compute_official_vbench_scores(df)
+        q = df.loc[0, "vbench_quality_score"]
+        s = df.loc[0, "vbench_semantic_score"]
+        expected_total = (q * 4 + s * 1) / 5
+        assert df.loc[0, "vbench_total_score"] == pytest.approx(expected_total, abs=1e-6)
+
+    def test_all_max_scores_give_100(self):
+        """When every dimension is at its NORMALIZE_DIC Max, scores should be 100."""
+        from scripts.vbench_runner.scaling import _COL_TO_VBENCH_DIM, _NORMALIZE_DIC
+
+        max_vals = {}
+        for col, dim_name in _COL_TO_VBENCH_DIM.items():
+            max_vals[col] = _NORMALIZE_DIC[dim_name]["Max"]
+        df = pd.DataFrame([{"video_id": "v1", **max_vals}])
+        compute_official_vbench_scores(df)
+        assert df.loc[0, "vbench_quality_score"] == pytest.approx(100.0, abs=1e-6)
+        assert df.loc[0, "vbench_semantic_score"] == pytest.approx(100.0, abs=1e-6)
+        assert df.loc[0, "vbench_total_score"] == pytest.approx(100.0, abs=1e-6)
+
+    def test_all_min_scores_give_0(self):
+        """When every dimension is at its NORMALIZE_DIC Min, scores should be 0."""
+        from scripts.vbench_runner.scaling import _COL_TO_VBENCH_DIM, _NORMALIZE_DIC
+
+        min_vals = {}
+        for col, dim_name in _COL_TO_VBENCH_DIM.items():
+            min_vals[col] = _NORMALIZE_DIC[dim_name]["Min"]
+        df = pd.DataFrame([{"video_id": "v1", **min_vals}])
+        compute_official_vbench_scores(df)
+        assert df.loc[0, "vbench_quality_score"] == pytest.approx(0.0, abs=1e-6)
+        assert df.loc[0, "vbench_semantic_score"] == pytest.approx(0.0, abs=1e-6)
+        assert df.loc[0, "vbench_total_score"] == pytest.approx(0.0, abs=1e-6)
+
+    def test_dynamic_degree_half_weight(self):
+        """dynamic_degree has weight 0.5 — verify it's handled correctly."""
+        from scripts.vbench_runner.scaling import _COL_TO_VBENCH_DIM, _NORMALIZE_DIC
+
+        # Set all quality dims to their Max (normalized=1) except dynamic_degree at Min (normalized=0).
+        vals = {}
+        for col, dim_name in _COL_TO_VBENCH_DIM.items():
+            vals[col] = _NORMALIZE_DIC[dim_name]["Max"]
+        vals["dynamic_degree"] = 0.0  # Min for dynamic_degree is 0.0, so normalized=0
+        df = pd.DataFrame([{"video_id": "v1", **vals}])
+        compute_official_vbench_scores(df)
+        # Quality: 6 dims at weight 1.0 * 1.0 + 1 dim (dynamic_degree) at weight 0.5 * 0.0
+        # = 6.0 / 6.5 * 100
+        expected_quality = (6.0 / 6.5) * 100.0
+        assert df.loc[0, "vbench_quality_score"] == pytest.approx(expected_quality, abs=1e-6)
+        # Semantic: all at max, so still 100
+        assert df.loc[0, "vbench_semantic_score"] == pytest.approx(100.0, abs=1e-6)
