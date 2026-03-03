@@ -313,19 +313,20 @@ def main() -> None:
     video_path = _choose_video(args.video, args.video_dir)
     if args.device.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError("CUDA device requested but torch.cuda.is_available() is False.")
+    device = torch.device(args.device)
 
     dims = ["object_class", "multiple_objects", "color", "spatial_relationship"]
     submods = init_submodules(dims, local=True, read_frame=False)
     model_weight = submods["object_class"]["model_weight"]
 
-    det_model = DenseCaptioning(args.device)
+    det_model = DenseCaptioning(device)
     _, init_det = _time_block(
-        args.device, lambda: det_model.initialize_model_det(model_weight=model_weight)
+        device, lambda: det_model.initialize_model_det(model_weight=model_weight)
     )
 
-    cap_model = DenseCaptioning(args.device)
+    cap_model = DenseCaptioning(device)
     _, init_cap = _time_block(
-        args.device, lambda: cap_model.initialize_model(model_weight=model_weight)
+        device, lambda: cap_model.initialize_model(model_weight=model_weight)
     )
 
     spatial_key = {
@@ -337,16 +338,16 @@ def main() -> None:
     def _run_once() -> dict[str, dict[str, float]]:
         return {
             "object_class": _profile_object_class(
-                str(video_path), args.device, det_model, args.object_key
+                str(video_path), device, det_model, args.object_key
             ),
             "multiple_objects": _profile_multiple_objects(
-                str(video_path), args.device, det_model, args.multi_key
+                str(video_path), device, det_model, args.multi_key
             ),
             "color": _profile_color(
-                str(video_path), args.device, cap_model, args.color_key, args.color_object_key
+                str(video_path), device, cap_model, args.color_key, args.color_object_key
             ),
             "spatial_relationship": _profile_spatial_relationship(
-                str(video_path), args.device, det_model, spatial_key
+                str(video_path), device, det_model, spatial_key
             ),
         }
 
