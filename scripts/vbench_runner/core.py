@@ -607,6 +607,19 @@ def run_vbench_evaluation(
         min_value=1,
         max_value=64,
     )
+    slow_dims_decode_total_workers = vbench_config.get("slow_dims_decode_total_workers")
+    if slow_dims_decode_total_workers is not None:
+        try:
+            total_workers = int(slow_dims_decode_total_workers)
+        except (TypeError, ValueError):
+            logger.warning(
+                "Invalid metrics.vbench.slow_dims_decode_total_workers=%r, ignore.",
+                slow_dims_decode_total_workers,
+            )
+            total_workers = 0
+        if total_workers > 0:
+            # Interpret as node-level CPU budget and shard across ranks.
+            slow_dims_decode_workers = max(1, (total_workers + world_size - 1) // world_size)
     slow_dims_decode_prefetch = _resolve_int_option(
         vbench_config=vbench_config,
         key="slow_dims_decode_prefetch",
@@ -623,9 +636,10 @@ def run_vbench_evaluation(
                 active_slow_dims,
             )
             logger.info(
-                "Slow-dims decode pipeline: workers=%d prefetch=%d",
+                "Slow-dims decode pipeline: workers=%d prefetch=%d total_workers=%s",
                 slow_dims_decode_workers,
                 slow_dims_decode_prefetch,
+                vbench_config.get("slow_dims_decode_total_workers", "unset"),
             )
         if progress_reporter is not None:
             progress_reporter.start_task("slow_dims_fused", status_text="running_bundle")
