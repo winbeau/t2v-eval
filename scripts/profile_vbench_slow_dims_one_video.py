@@ -71,6 +71,34 @@ def _ensure_vbench_imports() -> None:
     spatial_mod = _spatial_mod
 
 
+def _patch_grit_batch_inference_compat() -> None:
+    """
+    Keep profiler runnable on environments where upstream GRiT batch inference
+    hits ROIHeads single-image assertion (len(boxes) == 1).
+
+    This mirrors the main pipeline compatibility behavior by forcing
+    run_on_batch to execute per-image predictor calls.
+    """
+    import torch
+    from vbench.third_party.grit_src.grit.predictor import VisualizationDemo
+
+    if getattr(VisualizationDemo, "_profile_patched_batch_compat", False):
+        return
+
+    def _run_on_batch_safe(self, image_arrays):
+        predictions = []
+        for image in image_arrays:
+            if torch.cuda.is_available():
+                with torch.amp.autocast("cuda"):
+                    predictions.append(self.predictor(image))
+            else:
+                predictions.append(self.predictor(image))
+        return predictions
+
+    VisualizationDemo.run_on_batch = _run_on_batch_safe
+    VisualizationDemo._profile_patched_batch_compat = True  # type: ignore[attr-defined]
+
+
 def _sync_if_cuda(device: str) -> None:
     if str(device).startswith("cuda") and torch.cuda.is_available():
         torch.cuda.synchronize()
@@ -309,6 +337,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     _ensure_vbench_imports()
+    _patch_grit_batch_inference_compat()
 
     video_path = _choose_video(args.video, args.video_dir)
     if args.device.startswith("cuda") and not torch.cuda.is_available():
