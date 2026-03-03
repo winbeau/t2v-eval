@@ -22,6 +22,7 @@ import json
 import statistics
 import sys
 import time
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -97,6 +98,27 @@ def _patch_grit_batch_inference_compat() -> None:
 
     VisualizationDemo.run_on_batch = _run_on_batch_safe
     VisualizationDemo._profile_patched_batch_compat = True  # type: ignore[attr-defined]
+
+
+def _configure_warning_filters() -> None:
+    """Suppress noisy third-party warnings for profiling runs."""
+    warnings.filterwarnings(
+        "ignore",
+        message=r"Importing from timm\.models\.layers is deprecated.*",
+        category=FutureWarning,
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"You are using `torch\.load` with `weights_only=False`.*",
+        category=FutureWarning,
+        module=r"fvcore\.common\.checkpoint",
+    )
+    warnings.filterwarnings(
+        "ignore",
+        message=r"torch\.meshgrid: in an upcoming release, it will be required.*",
+        category=UserWarning,
+        module=r"torch\.functional",
+    )
 
 
 def _sync_if_cuda(device: str) -> None:
@@ -336,6 +358,7 @@ def main() -> None:
         help="Optional path to save raw timing JSON.",
     )
     args = parser.parse_args()
+    _configure_warning_filters()
     _ensure_vbench_imports()
     _patch_grit_batch_inference_compat()
 
