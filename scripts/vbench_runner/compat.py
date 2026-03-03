@@ -12,6 +12,8 @@ Fixes known issues in the VBench submodule without modifying its source:
   8. human_action extracts labels from filenames; custom videos need prompt matching
   9. GrIT inference speedup: skip unused visualization + FP16 autocast
  10. color check_generate uses exact match; custom prompts are multi-word
+ 11. GrIT ROIHeads inference supports single-image inputs only; force safe
+     sequential inference for run_on_batch callers
 """
 
 try:
@@ -373,6 +375,39 @@ def patch_grit_fast_inference() -> None:
     logger.debug("Patched GrIT VisualizationDemo: skip visualization + FP16 autocast.")
 
 
+def patch_grit_batch_inference_compat() -> None:
+    """
+    Patch VisualizationDemo.run_on_batch to avoid unsupported multi-image forward.
+
+    Some GrIT ROIHeads paths assert single-image inference (len(boxes) == 1).
+    Batched model(batch_inputs) triggers AssertionError for color/object_class/
+    multiple_objects/spatial_relationship dimensions. Force sequential single-image
+    predictor calls and return a list of per-image predictions.
+    """
+    try:
+        import torch
+        from vbench.third_party.grit_src.grit.predictor import VisualizationDemo
+    except ImportError:
+        return
+
+    if getattr(VisualizationDemo, "_patched_batch_compat", False):
+        return
+
+    def _run_on_batch_safe(self, image_arrays):
+        predictions = []
+        for image in image_arrays:
+            if torch.cuda.is_available():
+                with torch.amp.autocast("cuda"):
+                    predictions.append(self.predictor(image))
+            else:
+                predictions.append(self.predictor(image))
+        return predictions
+
+    VisualizationDemo.run_on_batch = _run_on_batch_safe
+    VisualizationDemo._patched_batch_compat = True  # type: ignore[attr-defined]
+    logger.debug("Patched GrIT run_on_batch: sequential single-image inference.")
+
+
 def patch_color_object_matching() -> None:
     """
     Patch color dimension for custom video prompts.
@@ -456,6 +491,7 @@ def apply_vbench_compat_patches() -> None:
     patch_grit_device_compat()
     patch_generation_mixin()
     patch_grit_fast_inference()
+    patch_grit_batch_inference_compat()
     patch_color_object_matching()
     patch_human_action_prompt_matching()
 
