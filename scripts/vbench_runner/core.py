@@ -347,20 +347,32 @@ def run_vbench_evaluation(
     video_map = {r["video_id"]: r["video_path"] for r in video_records}
     valid_video_ids = set(video_map.keys())
 
-    # Create a directory with symlinks to all videos for VBench
+    # Create a directory with symlinks to all videos for VBench.
+    # In multi-process mode, only rank0 prepares links/copies to avoid races.
     video_dir = results_dir / "input_videos"
     video_dir.mkdir(parents=True, exist_ok=True)
-    for video_id, vp in video_map.items():
-        src = Path(vp)
-        suffix = src.suffix if src.suffix else ".mp4"
-        dst = video_dir / f"{video_id}{suffix}"
-        if not dst.exists() and src.exists():
+    should_prepare_inputs = (world_size <= 1) or (rank == 0)
+    if should_prepare_inputs:
+        for video_id, vp in video_map.items():
+            src = Path(vp)
+            suffix = src.suffix if src.suffix else ".mp4"
+            dst = video_dir / f"{video_id}{suffix}"
+            if dst.exists() or not src.exists():
+                continue
             try:
                 dst.symlink_to(src.resolve())
+            except FileExistsError:
+                # Another process may win the race on shared filesystems.
+                continue
             except OSError:
-                import shutil
+                try:
+                    if not dst.exists():
+                        shutil.copy2(src, dst)
+                except (FileExistsError, shutil.SameFileError):
+                    continue
 
-                shutil.copy2(src, dst)
+    if world_size > 1:
+        barrier_fn()
     video_dir_str = str(video_dir.resolve())
 
     results = []
