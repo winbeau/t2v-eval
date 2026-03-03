@@ -51,7 +51,7 @@ metrics:
     slow_dims_decode_prefetch: 24
     slow_dims_decode_backend: "decord"
     slow_dims_shard_mode: "clip"
-    slow_dims_perf_window_clips: 100
+    slow_dims_perf_window_clips: 5
     slow_dims_stage_profile: true
     scale_to_percent: []
     profile_output: "group_summary_full16d.csv"
