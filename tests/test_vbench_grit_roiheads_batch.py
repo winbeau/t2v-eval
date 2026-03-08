@@ -30,3 +30,9 @@ def test_roiheads_no_single_image_assertions():
 def test_roiheads_beam_merge_uses_per_image_size():
     source = _load_source()
     assert "Instances(image_sizes[i])" in source
+
+
+def test_roiheads_logits_are_split_per_image():
+    source = _load_source()
+    assert "logits_per_stage = [(h[1][0],) for h in head_outputs]" not in source
+    assert "predictions[0].split(num_inst_per_image, dim=0)" in source
