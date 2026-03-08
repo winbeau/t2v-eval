@@ -17,6 +17,8 @@ Fixes known issues in the VBench submodule without modifying its source:
      - parallel mode: chunked batch inference for acceleration
 """
 
+from contextlib import contextmanager
+
 try:
     from .env import logger
 except ImportError:
@@ -417,6 +419,8 @@ def patch_grit_batch_inference_compat(
     *,
     enable_batch_parallel: bool = False,
     batch_size: int = 1,
+    autocast_enabled: bool = True,
+    deterministic: bool = False,
 ) -> None:
     """
     Patch VisualizationDemo.run_on_batch with a runtime mode switch.
@@ -427,6 +431,9 @@ def patch_grit_batch_inference_compat(
     Parallel mode:
       - uses chunked model(batch_inputs) for acceleration
       - strict mode: any model-side assertion/error bubbles up (no auto-fallback)
+    Low-drift controls:
+      - autocast_enabled=False forces FP32 inference in both safe/parallel paths
+      - deterministic=True temporarily enables deterministic backend flags
     """
     try:
         import torch
@@ -448,52 +455,112 @@ def patch_grit_batch_inference_compat(
         def _run_on_batch_switch(self, image_arrays):
             parallel_enabled = bool(getattr(VisualizationDemo, "_grit_batch_parallel_enable", False))
             configured_bs = int(getattr(VisualizationDemo, "_grit_batch_size", 1))
+            use_autocast = bool(getattr(VisualizationDemo, "_grit_batch_autocast", True))
+            force_deterministic = bool(
+                getattr(VisualizationDemo, "_grit_batch_deterministic", False)
+            )
+
+            @contextmanager
+            def _runtime_flags():
+                if not force_deterministic:
+                    yield
+                    return
+
+                prev_benchmark = torch.backends.cudnn.benchmark
+                prev_deterministic = torch.backends.cudnn.deterministic
+                prev_matmul_tf32 = None
+                prev_cudnn_tf32 = None
+                if hasattr(torch.backends, "cuda") and hasattr(torch.backends.cuda, "matmul"):
+                    prev_matmul_tf32 = torch.backends.cuda.matmul.allow_tf32
+                if hasattr(torch.backends.cudnn, "allow_tf32"):
+                    prev_cudnn_tf32 = torch.backends.cudnn.allow_tf32
+                prev_det_algorithms = None
+                if hasattr(torch, "are_deterministic_algorithms_enabled"):
+                    prev_det_algorithms = torch.are_deterministic_algorithms_enabled()
+
+                try:
+                    torch.backends.cudnn.benchmark = False
+                    torch.backends.cudnn.deterministic = True
+                    if prev_matmul_tf32 is not None:
+                        torch.backends.cuda.matmul.allow_tf32 = False
+                    if prev_cudnn_tf32 is not None:
+                        torch.backends.cudnn.allow_tf32 = False
+                    if hasattr(torch, "use_deterministic_algorithms"):
+                        try:
+                            torch.use_deterministic_algorithms(True, warn_only=True)
+                        except TypeError:
+                            torch.use_deterministic_algorithms(True)
+                    yield
+                finally:
+                    torch.backends.cudnn.benchmark = prev_benchmark
+                    torch.backends.cudnn.deterministic = prev_deterministic
+                    if prev_matmul_tf32 is not None:
+                        torch.backends.cuda.matmul.allow_tf32 = prev_matmul_tf32
+                    if prev_cudnn_tf32 is not None:
+                        torch.backends.cudnn.allow_tf32 = prev_cudnn_tf32
+                    if prev_det_algorithms is not None and hasattr(
+                        torch, "use_deterministic_algorithms"
+                    ):
+                        try:
+                            torch.use_deterministic_algorithms(
+                                bool(prev_det_algorithms),
+                                warn_only=True,
+                            )
+                        except TypeError:
+                            torch.use_deterministic_algorithms(bool(prev_det_algorithms))
+
+            @contextmanager
+            def _maybe_autocast():
+                if torch.cuda.is_available() and use_autocast:
+                    with torch.amp.autocast("cuda"):
+                        yield
+                else:
+                    yield
 
             def _run_chunk_sequential(chunk_images):
                 chunk_preds = []
                 for image in chunk_images:
-                    if torch.cuda.is_available():
-                        with torch.amp.autocast("cuda"):
-                            chunk_preds.append(self.predictor(image))
-                    else:
+                    with _maybe_autocast():
                         chunk_preds.append(self.predictor(image))
                 return chunk_preds
 
-            if not parallel_enabled:
-                assert configured_bs == 1, (
-                    "Safe mode requires grit_batch_size == 1 when "
-                    "grit_batch_parallel_enable is false"
-                )
-                return _run_chunk_sequential(image_arrays)
+            with _runtime_flags():
+                if not parallel_enabled:
+                    assert configured_bs == 1, (
+                        "Safe mode requires grit_batch_size == 1 when "
+                        "grit_batch_parallel_enable is false"
+                    )
+                    return _run_chunk_sequential(image_arrays)
 
-            bs = max(1, configured_bs)
-            predictions = []
-            for start in range(0, len(image_arrays), bs):
-                chunk = image_arrays[start : start + bs]
-                with torch.no_grad():
-                    batch_inputs = []
-                    for image in chunk:
-                        height, width = image.shape[:2]
-                        self.predictor.aug.get_transform(image)
-                        tensor = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
-                        batch_inputs.append({"image": tensor, "height": height, "width": width})
-                    if torch.cuda.is_available():
-                        with torch.amp.autocast("cuda"):
+                bs = max(1, configured_bs)
+                predictions = []
+                for start in range(0, len(image_arrays), bs):
+                    chunk = image_arrays[start : start + bs]
+                    with torch.no_grad():
+                        batch_inputs = []
+                        for image in chunk:
+                            height, width = image.shape[:2]
+                            self.predictor.aug.get_transform(image)
+                            tensor = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+                            batch_inputs.append({"image": tensor, "height": height, "width": width})
+                        with _maybe_autocast():
                             chunk_preds = self.predictor.model(batch_inputs)
-                    else:
-                        chunk_preds = self.predictor.model(batch_inputs)
-                predictions.extend(chunk_preds)
-            return predictions
+                    predictions.extend(chunk_preds)
+                return predictions
 
         VisualizationDemo.run_on_batch = _run_on_batch_switch
         VisualizationDemo._patched_batch_compat = True  # type: ignore[attr-defined]
 
     VisualizationDemo._grit_batch_parallel_enable = bool(enable_batch_parallel)  # type: ignore[attr-defined]
     VisualizationDemo._grit_batch_size = int(effective_batch_size)  # type: ignore[attr-defined]
+    VisualizationDemo._grit_batch_autocast = bool(autocast_enabled)  # type: ignore[attr-defined]
+    VisualizationDemo._grit_batch_deterministic = bool(deterministic)  # type: ignore[attr-defined]
     logger.info(
-        "Configured GrIT run_on_batch mode: parallel=%s batch_size=%d",
+        "Configured GrIT run_on_batch mode: parallel=%s batch_size=%d autocast=%s deterministic=%s",
         bool(enable_batch_parallel),
         int(effective_batch_size),
+        bool(autocast_enabled),
+        bool(deterministic),
     )
 
 
@@ -574,6 +641,8 @@ def apply_vbench_compat_patches(
     *,
     grit_batch_parallel_enable: bool = False,
     grit_batch_size: int = 1,
+    grit_batch_autocast: bool = True,
+    grit_batch_deterministic: bool = False,
 ) -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
@@ -587,6 +656,8 @@ def apply_vbench_compat_patches(
     patch_grit_batch_inference_compat(
         enable_batch_parallel=grit_batch_parallel_enable,
         batch_size=grit_batch_size,
+        autocast_enabled=grit_batch_autocast,
+        deterministic=grit_batch_deterministic,
     )
     patch_color_object_matching()
     patch_human_action_prompt_matching()

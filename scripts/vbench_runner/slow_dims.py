@@ -201,6 +201,7 @@ def run_fused_slow_dimensions(
     shard_mode: str = "clip",
     profile_window_clips: int = 100,
     stage_profile: bool = True,
+    det_single_image_dims: list[str] | None = None,
 ) -> tuple[list[dict], dict[str, float | int]]:
     """
     Run slow dimensions with shared decode/inference and return per-video rows.
@@ -209,6 +210,17 @@ def run_fused_slow_dimensions(
         (rows, stats)
     """
     active_dims = [dim for dim in subtasks if dim in SLOW_DIM_SET]
+    det_single_image_dims_set = set(det_single_image_dims or []) & {
+        "object_class",
+        "multiple_objects",
+        "spatial_relationship",
+    }
+    if det_single_image_dims_set:
+        logger.info(
+            "[rank %d] Slow-dims low-drift single-image det dims: %s",
+            rank,
+            sorted(det_single_image_dims_set),
+        )
     if not active_dims:
         return [], {
             "clips_total": 0,
@@ -349,16 +361,46 @@ def run_fused_slow_dimensions(
             local_times["resize"] += resize_dt
 
             det_inputs = video_tensor.permute(0, 2, 3, 1).numpy()
-            t0 = time.perf_counter()
-            captions_det = det_model.run_caption_tensor_batch(det_inputs)
-            det_dt = time.perf_counter() - t0
-            det_infer_sec += det_dt
-            local_times["det"] += det_dt
+            det_dims_present = [
+                dim
+                for dim in ("object_class", "multiple_objects", "spatial_relationship")
+                if dim in dim_meta and video_path in dim_meta[dim]
+            ]
+            det_dims_batch = [dim for dim in det_dims_present if dim not in det_single_image_dims_set]
+            det_dims_single = [dim for dim in det_dims_present if dim in det_single_image_dims_set]
+
+            captions_det_batch = None
+            captions_det_single = None
+            if det_dims_batch:
+                t0 = time.perf_counter()
+                captions_det_batch = det_model.run_caption_tensor_batch(det_inputs)
+                det_dt = time.perf_counter() - t0
+                det_infer_sec += det_dt
+                local_times["det"] += det_dt
+            if det_dims_single:
+                t0 = time.perf_counter()
+                captions_det_single = []
+                for frame in det_inputs:
+                    cap, _ = det_model.run_caption_tensor(frame)
+                    captions_det_single.append(cap)
+                det_dt = time.perf_counter() - t0
+                det_infer_sec += det_dt
+                local_times["det"] += det_dt
+
+            def _captions_for_dim(dim_name: str):
+                use_single = dim_name in det_single_image_dims_set
+                selected = captions_det_single if use_single else captions_det_batch
+                if selected is None:
+                    raise RuntimeError(
+                        f"Missing detection captions for dim={dim_name}, "
+                        f"use_single={use_single}, video={video_path}"
+                    )
+                return selected
 
             if "object_class" in dim_meta and video_path in dim_meta["object_class"]:
                 object_meta = dim_meta["object_class"][video_path]
                 object_info = object_meta["auxiliary_info"]["object"]
-                object_preds = _object_preds_from_captions(captions_det)
+                object_preds = _object_preds_from_captions(_captions_for_dim("object_class"))
                 t0 = time.perf_counter()
                 success = object_mod.check_generate(object_info, object_preds)
                 score_dt = time.perf_counter() - t0
@@ -372,7 +414,7 @@ def run_fused_slow_dimensions(
             if "multiple_objects" in dim_meta and video_path in dim_meta["multiple_objects"]:
                 multi_meta = dim_meta["multiple_objects"][video_path]
                 multi_info = multi_meta["auxiliary_info"]["object"]
-                multi_preds = _multiple_preds_from_captions(captions_det)
+                multi_preds = _multiple_preds_from_captions(_captions_for_dim("multiple_objects"))
                 t0 = time.perf_counter()
                 success = multi_mod.check_generate(multi_info, multi_preds)
                 score_dt = time.perf_counter() - t0
@@ -386,7 +428,7 @@ def run_fused_slow_dimensions(
             if "spatial_relationship" in dim_meta and video_path in dim_meta["spatial_relationship"]:
                 spatial_meta = dim_meta["spatial_relationship"][video_path]
                 spatial_info = spatial_meta["auxiliary_info"]["spatial_relationship"]
-                spatial_preds = _spatial_preds_from_captions(captions_det)
+                spatial_preds = _spatial_preds_from_captions(_captions_for_dim("spatial_relationship"))
                 t0 = time.perf_counter()
                 frame_scores = spatial_mod.check_generate(spatial_info, spatial_preds)
                 score_dt = time.perf_counter() - t0

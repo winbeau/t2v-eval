@@ -2,7 +2,7 @@
 
 import torch
 
-from scripts.vbench_runner.core import _bind_runtime_device
+from scripts.vbench_runner.core import _bind_runtime_device, _resolve_str_list_option
 
 
 def test_bind_runtime_device_multigpu_uses_local_rank(monkeypatch):
@@ -56,3 +56,21 @@ def test_bind_runtime_device_cpu_skips_cuda_binding(monkeypatch):
 
     assert resolved == "cpu"
     assert called["set_device"] is False
+
+
+def test_resolve_str_list_option_accepts_list_and_csv():
+    cfg = {
+        "grit_batch_sensitive_dims_single_image": ["spatial_relationship", "object_class"],
+    }
+    assert _resolve_str_list_option(cfg, "grit_batch_sensitive_dims_single_image", []) == [
+        "spatial_relationship",
+        "object_class",
+    ]
+
+    cfg_csv = {
+        "grit_batch_sensitive_dims_single_image": "spatial_relationship, object_class",
+    }
+    assert _resolve_str_list_option(cfg_csv, "grit_batch_sensitive_dims_single_image", []) == [
+        "spatial_relationship",
+        "object_class",
+    ]

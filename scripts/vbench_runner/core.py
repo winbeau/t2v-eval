@@ -256,6 +256,21 @@ def _resolve_bool_option(vbench_config: dict, key: str, default: bool) -> bool:
     return default
 
 
+def _resolve_str_list_option(vbench_config: dict, key: str, default: list[str]) -> list[str]:
+    """Parse string list option from metrics.vbench with fallback and normalization."""
+    raw_value = vbench_config.get(key, default)
+    if raw_value is None:
+        return list(default)
+    if isinstance(raw_value, str):
+        items = [part.strip() for part in raw_value.split(",")]
+        return [item for item in items if item]
+    if isinstance(raw_value, (list, tuple)):
+        normalized = [str(item).strip() for item in raw_value]
+        return [item for item in normalized if item]
+    logger.warning("Invalid metrics.vbench.%s=%r, fallback to %s", key, raw_value, default)
+    return list(default)
+
+
 def _bind_runtime_device(
     runtime_config: dict,
     *,
@@ -392,6 +407,11 @@ def run_vbench_evaluation(
         key="grit_batch_parallel_enable",
         default=False,
     )
+    grit_batch_low_drift_mode = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="grit_batch_low_drift_mode",
+        default=False,
+    )
     grit_batch_size = _resolve_int_option(
         vbench_config=vbench_config,
         key="grit_batch_size",
@@ -399,20 +419,58 @@ def run_vbench_evaluation(
         min_value=1,
         max_value=256,
     )
+    grit_batch_autocast = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="grit_batch_autocast",
+        default=not grit_batch_low_drift_mode,
+    )
+    grit_batch_deterministic = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="grit_batch_deterministic",
+        default=grit_batch_low_drift_mode,
+    )
+    default_single_image_dims = ["spatial_relationship"] if grit_batch_low_drift_mode else []
+    grit_batch_sensitive_dims_single_image = _resolve_str_list_option(
+        vbench_config=vbench_config,
+        key="grit_batch_sensitive_dims_single_image",
+        default=default_single_image_dims,
+    )
+    supported_sensitive_dims = {"object_class", "multiple_objects", "spatial_relationship"}
+    invalid_sensitive_dims = sorted(
+        set(grit_batch_sensitive_dims_single_image) - supported_sensitive_dims
+    )
+    if invalid_sensitive_dims:
+        logger.warning(
+            "Ignoring unsupported metrics.vbench.grit_batch_sensitive_dims_single_image=%s; "
+            "supported=%s",
+            invalid_sensitive_dims,
+            sorted(supported_sensitive_dims),
+        )
+        grit_batch_sensitive_dims_single_image = [
+            dim for dim in grit_batch_sensitive_dims_single_image if dim in supported_sensitive_dims
+        ]
     if not grit_batch_parallel_enable and grit_batch_size != 1:
         logger.warning(
             "metrics.vbench.grit_batch_parallel_enable=false, forcing grit_batch_size=%d -> 1",
             grit_batch_size,
         )
         grit_batch_size = 1
+    if not grit_batch_parallel_enable:
+        grit_batch_sensitive_dims_single_image = []
     logger.info(
-        "GrIT batch mode config: parallel=%s batch_size=%d",
+        "GrIT batch mode config: parallel=%s batch_size=%d low_drift=%s autocast=%s deterministic=%s sensitive_single_image=%s",
         grit_batch_parallel_enable,
         grit_batch_size,
+        grit_batch_low_drift_mode,
+        grit_batch_autocast,
+        grit_batch_deterministic,
+        grit_batch_sensitive_dims_single_image,
     )
     apply_vbench_compat_patches(
         grit_batch_parallel_enable=grit_batch_parallel_enable,
         grit_batch_size=grit_batch_size,
+        grit_batch_autocast=grit_batch_autocast,
+        grit_batch_deterministic=grit_batch_deterministic,
     )
 
     long_kwargs = {
@@ -782,6 +840,7 @@ def run_vbench_evaluation(
                 shard_mode=slow_dims_shard_mode,
                 profile_window_clips=slow_dims_perf_window_clips,
                 stage_profile=slow_dims_stage_profile,
+                det_single_image_dims=grit_batch_sensitive_dims_single_image,
                 progress_callback=(
                     (
                         lambda payload: progress_reporter.update_live(

@@ -137,6 +137,9 @@ target-version = ["py310", "py311", "py312"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+markers = [
+    "gpu_integration: heavy CUDA/detectron2 integration tests for VBench parity checks",
+]
 
 [dependency-groups]
 dev = [

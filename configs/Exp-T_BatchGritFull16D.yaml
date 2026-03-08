@@ -55,6 +55,11 @@ metrics:
     slow_dims_stage_profile: true
     grit_batch_parallel_enable: true
     grit_batch_size: 4
+    grit_batch_low_drift_mode: true
+    grit_batch_autocast: false
+    grit_batch_deterministic: false
+    grit_batch_sensitive_dims_single_image:
+      - "spatial_relationship"
     scale_to_percent: []
     profile_output: "group_summary_full16d.csv"
     dimension_profile: "long_16"

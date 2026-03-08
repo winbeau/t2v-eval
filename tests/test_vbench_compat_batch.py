@@ -116,6 +116,8 @@ def fake_grit_predictor_module(monkeypatch: pytest.MonkeyPatch):
         "_orig_run_on_batch",
         "_grit_batch_parallel_enable",
         "_grit_batch_size",
+        "_grit_batch_autocast",
+        "_grit_batch_deterministic",
     ]:
         if hasattr(_FakeVisualizationDemo, attr):
             delattr(_FakeVisualizationDemo, attr)
@@ -155,6 +157,8 @@ def fake_grit_predictor_module_with_batch_assert(monkeypatch: pytest.MonkeyPatch
         "_orig_run_on_batch",
         "_grit_batch_parallel_enable",
         "_grit_batch_size",
+        "_grit_batch_autocast",
+        "_grit_batch_deterministic",
     ]:
         if hasattr(_AssertVisualizationDemo, attr):
             delattr(_AssertVisualizationDemo, attr)
@@ -262,15 +266,45 @@ def test_apply_vbench_compat_patches_forwards_batch_switch(monkeypatch: pytest.M
     monkeypatch.setattr(compat, "patch_color_object_matching", lambda: None)
     monkeypatch.setattr(compat, "patch_human_action_prompt_matching", lambda: None)
 
-    def _capture(*, enable_batch_parallel: bool, batch_size: int):
+    def _capture(
+        *,
+        enable_batch_parallel: bool,
+        batch_size: int,
+        autocast_enabled: bool,
+        deterministic: bool,
+    ):
         forwarded["enable_batch_parallel"] = enable_batch_parallel
         forwarded["batch_size"] = batch_size
+        forwarded["autocast_enabled"] = autocast_enabled
+        forwarded["deterministic"] = deterministic
 
     monkeypatch.setattr(compat, "patch_grit_batch_inference_compat", _capture)
 
-    compat.apply_vbench_compat_patches(grit_batch_parallel_enable=True, grit_batch_size=8)
+    compat.apply_vbench_compat_patches(
+        grit_batch_parallel_enable=True,
+        grit_batch_size=8,
+        grit_batch_autocast=False,
+        grit_batch_deterministic=True,
+    )
 
-    assert forwarded == {"enable_batch_parallel": True, "batch_size": 8}
+    assert forwarded == {
+        "enable_batch_parallel": True,
+        "batch_size": 8,
+        "autocast_enabled": False,
+        "deterministic": True,
+    }
+
+
+def test_patch_sets_low_drift_flags_on_visualization_demo(fake_grit_predictor_module):
+    compat.patch_grit_batch_inference_compat(
+        enable_batch_parallel=True,
+        batch_size=4,
+        autocast_enabled=False,
+        deterministic=True,
+    )
+
+    assert fake_grit_predictor_module._grit_batch_autocast is False
+    assert fake_grit_predictor_module._grit_batch_deterministic is True
 
 
 @pytest.fixture
