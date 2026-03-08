@@ -12,8 +12,9 @@ Fixes known issues in the VBench submodule without modifying its source:
   8. human_action extracts labels from filenames; custom videos need prompt matching
   9. GrIT inference speedup: skip unused visualization + FP16 autocast
  10. color check_generate uses exact match; custom prompts are multi-word
- 11. GrIT ROIHeads inference supports single-image inputs only; force safe
-     sequential inference for run_on_batch callers
+ 11. GrIT run_on_batch mode switch:
+     - safe mode: sequential inference with batch=1 assertion
+     - parallel mode: chunked batch inference for acceleration
 """
 
 try:
@@ -375,14 +376,19 @@ def patch_grit_fast_inference() -> None:
     logger.debug("Patched GrIT VisualizationDemo: skip visualization + FP16 autocast.")
 
 
-def patch_grit_batch_inference_compat() -> None:
+def patch_grit_batch_inference_compat(
+    *,
+    enable_batch_parallel: bool = False,
+    batch_size: int = 1,
+) -> None:
     """
-    Patch VisualizationDemo.run_on_batch to avoid unsupported multi-image forward.
+    Patch VisualizationDemo.run_on_batch with a runtime mode switch.
 
-    Some GrIT ROIHeads paths assert single-image inference (len(boxes) == 1).
-    Batched model(batch_inputs) triggers AssertionError for color/object_class/
-    multiple_objects/spatial_relationship dimensions. Force sequential single-image
-    predictor calls and return a list of per-image predictions.
+    Safe mode (default):
+      - uses sequential single-image predictor calls
+      - enforces batch_size == 1 via assertion
+    Parallel mode:
+      - uses chunked model(batch_inputs) for acceleration
     """
     try:
         import torch
@@ -390,22 +396,64 @@ def patch_grit_batch_inference_compat() -> None:
     except ImportError:
         return
 
-    if getattr(VisualizationDemo, "_patched_batch_compat", False):
-        return
+    requested_batch_size = max(1, int(batch_size))
+    effective_batch_size = requested_batch_size if enable_batch_parallel else 1
+    if not enable_batch_parallel and requested_batch_size != 1:
+        logger.warning(
+            "grit_batch_parallel_enable=false, forcing grit_batch_size from %d to 1",
+            requested_batch_size,
+        )
 
-    def _run_on_batch_safe(self, image_arrays):
-        predictions = []
-        for image in image_arrays:
-            if torch.cuda.is_available():
-                with torch.amp.autocast("cuda"):
-                    predictions.append(self.predictor(image))
-            else:
-                predictions.append(self.predictor(image))
-        return predictions
+    if not getattr(VisualizationDemo, "_patched_batch_compat", False):
+        VisualizationDemo._orig_run_on_batch = VisualizationDemo.run_on_batch  # type: ignore[attr-defined]
 
-    VisualizationDemo.run_on_batch = _run_on_batch_safe
-    VisualizationDemo._patched_batch_compat = True  # type: ignore[attr-defined]
-    logger.debug("Patched GrIT run_on_batch: sequential single-image inference.")
+        def _run_on_batch_switch(self, image_arrays):
+            parallel_enabled = bool(getattr(VisualizationDemo, "_grit_batch_parallel_enable", False))
+            configured_bs = int(getattr(VisualizationDemo, "_grit_batch_size", 1))
+
+            if not parallel_enabled:
+                assert configured_bs == 1, (
+                    "Safe mode requires grit_batch_size == 1 when "
+                    "grit_batch_parallel_enable is false"
+                )
+                predictions = []
+                for image in image_arrays:
+                    if torch.cuda.is_available():
+                        with torch.amp.autocast("cuda"):
+                            predictions.append(self.predictor(image))
+                    else:
+                        predictions.append(self.predictor(image))
+                return predictions
+
+            bs = max(1, configured_bs)
+            predictions = []
+            for start in range(0, len(image_arrays), bs):
+                chunk = image_arrays[start : start + bs]
+                with torch.no_grad():
+                    batch_inputs = []
+                    for image in chunk:
+                        height, width = image.shape[:2]
+                        self.predictor.aug.get_transform(image)
+                        tensor = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+                        batch_inputs.append({"image": tensor, "height": height, "width": width})
+                    if torch.cuda.is_available():
+                        with torch.amp.autocast("cuda"):
+                            chunk_preds = self.predictor.model(batch_inputs)
+                    else:
+                        chunk_preds = self.predictor.model(batch_inputs)
+                predictions.extend(chunk_preds)
+            return predictions
+
+        VisualizationDemo.run_on_batch = _run_on_batch_switch
+        VisualizationDemo._patched_batch_compat = True  # type: ignore[attr-defined]
+
+    VisualizationDemo._grit_batch_parallel_enable = bool(enable_batch_parallel)  # type: ignore[attr-defined]
+    VisualizationDemo._grit_batch_size = int(effective_batch_size)  # type: ignore[attr-defined]
+    logger.info(
+        "Configured GrIT run_on_batch mode: parallel=%s batch_size=%d",
+        bool(enable_batch_parallel),
+        int(effective_batch_size),
+    )
 
 
 def patch_color_object_matching() -> None:
@@ -481,7 +529,11 @@ def patch_color_object_matching() -> None:
     logger.debug("Patched color check_generate for lenient object matching.")
 
 
-def apply_vbench_compat_patches() -> None:
+def apply_vbench_compat_patches(
+    *,
+    grit_batch_parallel_enable: bool = False,
+    grit_batch_size: int = 1,
+) -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
     patch_pretrained_model_tied_weights()
@@ -491,7 +543,10 @@ def apply_vbench_compat_patches() -> None:
     patch_grit_device_compat()
     patch_generation_mixin()
     patch_grit_fast_inference()
-    patch_grit_batch_inference_compat()
+    patch_grit_batch_inference_compat(
+        enable_batch_parallel=grit_batch_parallel_enable,
+        batch_size=grit_batch_size,
+    )
     patch_color_object_matching()
     patch_human_action_prompt_matching()
 

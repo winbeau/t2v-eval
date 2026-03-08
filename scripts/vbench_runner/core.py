@@ -241,6 +241,21 @@ def _resolve_int_option(
     return value
 
 
+def _resolve_bool_option(vbench_config: dict, key: str, default: bool) -> bool:
+    """Parse bool option from metrics.vbench with fallback and warning."""
+    raw_value = vbench_config.get(key, default)
+    if isinstance(raw_value, bool):
+        return raw_value
+    if isinstance(raw_value, str):
+        lowered = raw_value.strip().lower()
+        if lowered in {"1", "true", "yes", "y", "on"}:
+            return True
+        if lowered in {"0", "false", "no", "n", "off"}:
+            return False
+    logger.warning("Invalid metrics.vbench.%s=%r, fallback to %s", key, raw_value, default)
+    return default
+
+
 def _wait_for_rank_partial_files(
     partial_dir: Path,
     world_size: int,
@@ -324,7 +339,33 @@ def run_vbench_evaluation(
         logger.error("  pip install -r third_party/VBench/requirements.txt")
         raise
 
-    apply_vbench_compat_patches()
+    grit_batch_parallel_enable = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="grit_batch_parallel_enable",
+        default=False,
+    )
+    grit_batch_size = _resolve_int_option(
+        vbench_config=vbench_config,
+        key="grit_batch_size",
+        default=1,
+        min_value=1,
+        max_value=256,
+    )
+    if not grit_batch_parallel_enable and grit_batch_size != 1:
+        logger.warning(
+            "metrics.vbench.grit_batch_parallel_enable=false, forcing grit_batch_size=%d -> 1",
+            grit_batch_size,
+        )
+        grit_batch_size = 1
+    logger.info(
+        "GrIT batch mode config: parallel=%s batch_size=%d",
+        grit_batch_parallel_enable,
+        grit_batch_size,
+    )
+    apply_vbench_compat_patches(
+        grit_batch_parallel_enable=grit_batch_parallel_enable,
+        grit_batch_size=grit_batch_size,
+    )
 
     long_kwargs = {
         "use_semantic_splitting": bool(vbench_config.get("use_semantic_splitting", False)),
