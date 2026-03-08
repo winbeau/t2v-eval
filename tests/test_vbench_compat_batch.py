@@ -64,6 +64,25 @@ class _FakeVisualizationDemo:
         return ["ORIGINAL_SENTINEL", len(image_arrays)]
 
 
+class _AssertOnBatchPredictor(_FakePredictor):
+    """Simulate GRiT ROIHeads that reject multi-image batch proposals."""
+
+    def model(self, batch_inputs: list[dict]) -> list[dict]:
+        if len(batch_inputs) > 1:
+            raise AssertionError("len(boxes) == 1")
+        return super().model(batch_inputs)
+
+
+class _AssertVisualizationDemo:
+    """VisualizationDemo variant whose batch path triggers model-side assertion."""
+
+    def __init__(self):
+        self.predictor = _AssertOnBatchPredictor()
+
+    def run_on_batch(self, image_arrays):
+        return ["ORIGINAL_SENTINEL", len(image_arrays)]
+
+
 @pytest.fixture
 def fake_grit_predictor_module(monkeypatch: pytest.MonkeyPatch):
     """Inject fake vbench grit predictor module for import in compat patch."""
@@ -102,6 +121,45 @@ def fake_grit_predictor_module(monkeypatch: pytest.MonkeyPatch):
             delattr(_FakeVisualizationDemo, attr)
 
     return _FakeVisualizationDemo
+
+
+@pytest.fixture
+def fake_grit_predictor_module_with_batch_assert(monkeypatch: pytest.MonkeyPatch):
+    """Inject fake module whose predictor fails on multi-image model(batch_inputs)."""
+
+    vbench_pkg = ModuleType("vbench")
+    vbench_pkg.__path__ = []  # type: ignore[attr-defined]
+
+    third_party_pkg = ModuleType("vbench.third_party")
+    third_party_pkg.__path__ = []  # type: ignore[attr-defined]
+
+    grit_src_pkg = ModuleType("vbench.third_party.grit_src")
+    grit_src_pkg.__path__ = []  # type: ignore[attr-defined]
+
+    grit_pkg = ModuleType("vbench.third_party.grit_src.grit")
+    grit_pkg.__path__ = []  # type: ignore[attr-defined]
+
+    predictor_mod = ModuleType("vbench.third_party.grit_src.grit.predictor")
+    predictor_mod.VisualizationDemo = _AssertVisualizationDemo
+
+    monkeypatch.setitem(sys.modules, "vbench", vbench_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.third_party", third_party_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.third_party.grit_src", grit_src_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.third_party.grit_src.grit", grit_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.third_party.grit_src.grit.predictor", predictor_mod)
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+
+    for attr in [
+        "_patched_batch_compat",
+        "_orig_run_on_batch",
+        "_grit_batch_parallel_enable",
+        "_grit_batch_size",
+    ]:
+        if hasattr(_AssertVisualizationDemo, attr):
+            delattr(_AssertVisualizationDemo, attr)
+
+    return _AssertVisualizationDemo
 
 
 @pytest.fixture
@@ -151,6 +209,16 @@ def test_parallel_chunking_non_divisible_batch_keeps_full_order(
     outputs = demo.run_on_batch(sample_images)
 
     _assert_predictions_close(outputs, expected_scores)
+
+
+def test_parallel_assertion_bubbles_up_in_strict_mode(
+    fake_grit_predictor_module_with_batch_assert,
+    sample_images,
+):
+    compat.patch_grit_batch_inference_compat(enable_batch_parallel=True, batch_size=4)
+    demo = fake_grit_predictor_module_with_batch_assert()
+    with pytest.raises(AssertionError, match="len\\(boxes\\) == 1"):
+        demo.run_on_batch(sample_images)
 
 
 def test_safe_mode_asserts_when_batch_size_violates_invariant(

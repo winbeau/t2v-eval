@@ -426,6 +426,7 @@ def patch_grit_batch_inference_compat(
       - enforces batch_size == 1 via assertion
     Parallel mode:
       - uses chunked model(batch_inputs) for acceleration
+      - strict mode: any model-side assertion/error bubbles up (no auto-fallback)
     """
     try:
         import torch
@@ -448,19 +449,22 @@ def patch_grit_batch_inference_compat(
             parallel_enabled = bool(getattr(VisualizationDemo, "_grit_batch_parallel_enable", False))
             configured_bs = int(getattr(VisualizationDemo, "_grit_batch_size", 1))
 
+            def _run_chunk_sequential(chunk_images):
+                chunk_preds = []
+                for image in chunk_images:
+                    if torch.cuda.is_available():
+                        with torch.amp.autocast("cuda"):
+                            chunk_preds.append(self.predictor(image))
+                    else:
+                        chunk_preds.append(self.predictor(image))
+                return chunk_preds
+
             if not parallel_enabled:
                 assert configured_bs == 1, (
                     "Safe mode requires grit_batch_size == 1 when "
                     "grit_batch_parallel_enable is false"
                 )
-                predictions = []
-                for image in image_arrays:
-                    if torch.cuda.is_available():
-                        with torch.amp.autocast("cuda"):
-                            predictions.append(self.predictor(image))
-                    else:
-                        predictions.append(self.predictor(image))
-                return predictions
+                return _run_chunk_sequential(image_arrays)
 
             bs = max(1, configured_bs)
             predictions = []
