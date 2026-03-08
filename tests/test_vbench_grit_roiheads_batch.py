@@ -36,3 +36,10 @@ def test_roiheads_logits_are_split_per_image():
     source = _load_source()
     assert "logits_per_stage = [(h[1][0],) for h in head_outputs]" not in source
     assert "predictions[0].split(num_inst_per_image, dim=0)" in source
+
+
+def test_roiheads_pools_boxes_with_full_batch_box_list():
+    source = _load_source()
+    assert "self.object_feat_pooler(features, [pred_instance.pred_boxes])" not in source
+    assert "all_pred_boxes = [pred_instance.pred_boxes for pred_instance in pred_instances]" in source
+    assert "self.object_feat_pooler(features, all_pred_boxes)" in source
