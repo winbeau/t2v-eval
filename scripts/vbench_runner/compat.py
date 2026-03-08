@@ -165,10 +165,12 @@ def patch_clip_tokenize_truncate() -> None:
 
 def patch_grit_device_compat() -> None:
     """
-    Patch GrIT's get_parser to accept string device values.
+    Patch GrIT's get_parser to accept string device values and bind CUDA index.
 
     VBench stores device as a string (e.g. "cuda"), but GrIT's get_parser()
     accesses device.type which requires a torch.device object.
+    Also force MODEL.DEVICE to explicit cuda:{index} so each torchrun worker
+    stays on its assigned GPU.
     """
     try:
         import torch
@@ -178,10 +180,45 @@ def patch_grit_device_compat() -> None:
 
     original_get_parser = _idc.get_parser
 
+    def _normalize_device(value):
+        if isinstance(value, str):
+            raw = value.strip().lower()
+            if raw == "cuda" and torch.cuda.is_available():
+                return torch.device(f"cuda:{torch.cuda.current_device()}")
+            return torch.device(value)
+        if isinstance(value, torch.device) and value.type == "cuda" and value.index is None:
+            if torch.cuda.is_available():
+                return torch.device(f"cuda:{torch.cuda.current_device()}")
+        return value
+
+    def _with_model_device_override(args_dict: dict, device) -> dict:
+        if not isinstance(device, torch.device) or device.type != "cuda":
+            return args_dict
+        index = device.index
+        if index is None:
+            index = torch.cuda.current_device() if torch.cuda.is_available() else 0
+        device_str = f"cuda:{index}"
+        opts = list(args_dict.get("opts", []))
+        cleaned_opts: list = []
+        skip_next = False
+        for idx, item in enumerate(opts):
+            if skip_next:
+                skip_next = False
+                continue
+            if item == "MODEL.DEVICE":
+                skip_next = idx + 1 < len(opts)
+                continue
+            cleaned_opts.append(item)
+        cleaned_opts.extend(["MODEL.DEVICE", device_str])
+        args_dict["opts"] = cleaned_opts
+        return args_dict
+
     def _get_parser_compat(device, *args, **kwargs):
-        if isinstance(device, str):
-            device = torch.device(device)
-        return original_get_parser(device, *args, **kwargs)
+        normalized_device = _normalize_device(device)
+        parser_args = original_get_parser(normalized_device, *args, **kwargs)
+        if isinstance(parser_args, dict):
+            parser_args = _with_model_device_override(parser_args, normalized_device)
+        return parser_args
 
     if getattr(_idc.get_parser, "_patched_device", False):
         return

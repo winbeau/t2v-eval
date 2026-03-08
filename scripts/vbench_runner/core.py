@@ -256,6 +256,54 @@ def _resolve_bool_option(vbench_config: dict, key: str, default: bool) -> bool:
     return default
 
 
+def _bind_runtime_device(
+    runtime_config: dict,
+    *,
+    world_size: int,
+    rank: int,
+    local_rank: int,
+) -> str | object:
+    """
+    Resolve runtime device and bind CUDA default device for current process.
+
+    Important for torchrun workers: third-party code may use plain ``cuda``.
+    We pin process default CUDA device so ``cuda`` resolves to local_rank.
+    """
+    device = runtime_config.get("device", "cuda")
+    if not isinstance(device, str):
+        return device
+
+    raw = device.strip()
+    if not raw.startswith("cuda"):
+        return raw
+
+    resolved = raw
+    if world_size > 1:
+        resolved = f"cuda:{local_rank}"
+
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            if ":" in resolved:
+                index = int(resolved.split(":", 1)[1])
+            else:
+                index = 0
+            torch.cuda.set_device(index)
+            logger.info(
+                "CUDA binding: rank=%d local_rank=%d resolved_device=%s current_device=%d visible=%s",
+                rank,
+                local_rank,
+                resolved,
+                torch.cuda.current_device(),
+                os.environ.get("CUDA_VISIBLE_DEVICES", "<unset>"),
+            )
+    except Exception as exc:
+        logger.warning("Failed to bind CUDA device `%s`: %s", resolved, exc)
+
+    return resolved
+
+
 def _wait_for_rank_partial_files(
     partial_dir: Path,
     world_size: int,
@@ -1365,9 +1413,12 @@ def main():
             progress_board.start()
 
     try:
-        device = runtime_config.get("device", "cuda")
-        if world_size > 1 and isinstance(device, str) and device.startswith("cuda"):
-            device = f"cuda:{local_rank}"
+        device = _bind_runtime_device(
+            runtime_config,
+            world_size=world_size,
+            rank=rank,
+            local_rank=local_rank,
+        )
 
         # Try Python API first, fall back to CLI
         long_mode = use_vbench_long(config)

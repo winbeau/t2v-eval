@@ -203,3 +203,74 @@ def test_apply_vbench_compat_patches_forwards_batch_switch(monkeypatch: pytest.M
     compat.apply_vbench_compat_patches(grit_batch_parallel_enable=True, grit_batch_size=8)
 
     assert forwarded == {"enable_batch_parallel": True, "batch_size": 8}
+
+
+@pytest.fixture
+def fake_grit_image_dense_module(monkeypatch: pytest.MonkeyPatch):
+    """Inject fake image_dense_captions module for device-binding patch tests."""
+
+    vbench_pkg = ModuleType("vbench")
+    vbench_pkg.__path__ = []  # type: ignore[attr-defined]
+
+    third_party_pkg = ModuleType("vbench.third_party")
+    third_party_pkg.__path__ = []  # type: ignore[attr-defined]
+
+    grit_src_pkg = ModuleType("vbench.third_party.grit_src")
+    grit_src_pkg.__path__ = []  # type: ignore[attr-defined]
+
+    captured: dict[str, object] = {}
+
+    def _fake_get_parser(device, model_weight="dummy_weight.pth"):
+        captured["device"] = device
+        return {
+            "cpu": getattr(device, "type", "") == "cpu",
+            "config_file": "dummy_cfg.yaml",
+            "confidence_threshold": 0.5,
+            "test_task": "DenseCap",
+            "opts": ["MODEL.WEIGHTS", model_weight],
+        }
+
+    idc_mod = ModuleType("vbench.third_party.grit_src.image_dense_captions")
+    idc_mod.get_parser = _fake_get_parser
+    grit_src_pkg.image_dense_captions = idc_mod
+
+    monkeypatch.setitem(sys.modules, "vbench", vbench_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.third_party", third_party_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.third_party.grit_src", grit_src_pkg)
+    monkeypatch.setitem(
+        sys.modules,
+        "vbench.third_party.grit_src.image_dense_captions",
+        idc_mod,
+    )
+
+    return idc_mod, captured
+
+
+def test_grit_device_patch_expands_cuda_to_explicit_index(
+    fake_grit_image_dense_module,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    idc_mod, captured = fake_grit_image_dense_module
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "current_device", lambda: 2)
+
+    compat.patch_grit_device_compat()
+    parser_args = idc_mod.get_parser("cuda")
+
+    assert str(captured["device"]) == "cuda:2"
+    assert parser_args["opts"][-2:] == ["MODEL.DEVICE", "cuda:2"]
+
+
+def test_grit_device_patch_keeps_explicit_cuda_index(
+    fake_grit_image_dense_module,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    idc_mod, captured = fake_grit_image_dense_module
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "current_device", lambda: 0)
+
+    compat.patch_grit_device_compat()
+    parser_args = idc_mod.get_parser("cuda:3")
+
+    assert str(captured["device"]) == "cuda:3"
+    assert parser_args["opts"][-2:] == ["MODEL.DEVICE", "cuda:3"]
