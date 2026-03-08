@@ -53,8 +53,8 @@ metrics:
     slow_dims_shard_mode: "clip"
     slow_dims_perf_window_clips: 5
     slow_dims_stage_profile: true
-    grit_batch_parallel_enable: false
-    grit_batch_size: 1
+    grit_batch_parallel_enable: true
+    grit_batch_size: 4
     scale_to_percent: []
     profile_output: "group_summary_full16d.csv"
     dimension_profile: "long_16"
