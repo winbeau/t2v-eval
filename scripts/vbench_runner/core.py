@@ -339,6 +339,7 @@ def _apply_color_coverage_policy(
     expected_count: int,
     vbench_config: dict,
     record_diagnostics: dict[str, object],
+    strict_integrity: bool = False,
 ) -> list[tuple[str, int, int]]:
     """
     Build final coverage issues with optional color-specific threshold policy.
@@ -354,7 +355,7 @@ def _apply_color_coverage_policy(
         if covered != total:
             coverage_issue_map[name] = (covered, total)
 
-    color_min_coverage_ratio = _resolve_ratio_option(
+    color_min_coverage_ratio = 1.0 if strict_integrity else _resolve_ratio_option(
         vbench_config=vbench_config,
         key="color_min_coverage_ratio",
         default=1.0,
@@ -598,6 +599,45 @@ def run_vbench_evaluation(
         key="grit_batch_adaptive_score_threshold",
         default=0.02,
     )
+    appearance_style_batch_enable = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="appearance_style_batch_enable",
+        default=False,
+    )
+    appearance_style_batch_size = _resolve_int_option(
+        vbench_config=vbench_config,
+        key="appearance_style_batch_size",
+        default=16,
+        min_value=1,
+        max_value=256,
+    )
+    dynamic_degree_batch_enable = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="dynamic_degree_batch_enable",
+        default=False,
+    )
+    dynamic_degree_pair_batch_size = _resolve_int_option(
+        vbench_config=vbench_config,
+        key="dynamic_degree_pair_batch_size",
+        default=8,
+        min_value=1,
+        max_value=256,
+    )
+    batch_accel_fp16_enable = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="batch_accel_fp16_enable",
+        default=False,
+    )
+    batch_accel_strict_fp32 = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="batch_accel_strict_fp32",
+        default=True,
+    )
+    if batch_accel_strict_fp32 and batch_accel_fp16_enable:
+        logger.warning(
+            "batch_accel_strict_fp32=true, forcing batch_accel_fp16_enable from true to false"
+        )
+        batch_accel_fp16_enable = False
     supported_sensitive_dims = {"object_class", "multiple_objects", "spatial_relationship"}
     invalid_sensitive_dims = sorted(
         set(grit_batch_sensitive_dims_single_image) - supported_sensitive_dims
@@ -648,11 +688,25 @@ def run_vbench_evaluation(
         grit_batch_adaptive_probe_clips,
         grit_batch_adaptive_score_threshold,
     )
+    logger.info(
+        "VBench batch accel config: appearance_style(enable=%s, batch_size=%d) dynamic_degree(enable=%s, pair_batch_size=%d) fp16=%s strict_fp32=%s",
+        appearance_style_batch_enable,
+        appearance_style_batch_size,
+        dynamic_degree_batch_enable,
+        dynamic_degree_pair_batch_size,
+        batch_accel_fp16_enable,
+        batch_accel_strict_fp32,
+    )
     apply_vbench_compat_patches(
         grit_batch_parallel_enable=grit_batch_parallel_enable,
         grit_batch_size=grit_batch_size,
         grit_batch_autocast=grit_batch_autocast,
         grit_batch_deterministic=grit_batch_deterministic,
+        appearance_style_batch_enable=appearance_style_batch_enable,
+        appearance_style_batch_size=appearance_style_batch_size,
+        dynamic_degree_batch_enable=dynamic_degree_batch_enable,
+        dynamic_degree_pair_batch_size=dynamic_degree_pair_batch_size,
+        batch_accel_fp16_enable=batch_accel_fp16_enable,
     )
 
     long_kwargs = {
@@ -978,6 +1032,16 @@ def run_vbench_evaluation(
         )
         slow_dims_shard_mode = "clip"
     slow_dims_stage_profile = bool(vbench_config.get("slow_dims_stage_profile", True))
+    color_fill_zero_on_no_object = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="color_fill_zero_on_no_object",
+        default=not strict_integrity,
+    )
+    if strict_integrity and color_fill_zero_on_no_object:
+        logger.warning(
+            "metrics.vbench.strict_integrity=true, forcing color_fill_zero_on_no_object from true to false"
+        )
+        color_fill_zero_on_no_object = False
     active_slow_dims = [dim for dim in subtasks if dim in SLOW_DIM_SET]
     use_fused_slow_dims = bool(long_mode and slow_dims_fused and active_slow_dims)
     if use_fused_slow_dims:
@@ -1027,6 +1091,8 @@ def run_vbench_evaluation(
                 det_adaptive_dims=grit_batch_adaptive_fallback_dims,
                 det_adaptive_probe_clips=grit_batch_adaptive_probe_clips,
                 det_adaptive_score_threshold=grit_batch_adaptive_score_threshold,
+                color_fill_zero_on_no_object=color_fill_zero_on_no_object,
+                strict_integrity=strict_integrity,
                 progress_callback=(
                     (
                         lambda payload: progress_reporter.update_live(
@@ -1130,6 +1196,7 @@ def run_vbench_evaluation(
                         subtask=subtask,
                         valid_video_ids=valid_video_ids,
                         long_mode=long_mode,
+                        strict_integrity=strict_integrity,
                     )
                     results.extend(extracted)
 
@@ -1456,6 +1523,11 @@ def main():
     config_stem = Path(args.config).stem
     vbench_output = output_dir / f"vbench_{config_stem}.csv"
     vbench_config = config.get("metrics", {}).get("vbench", {})
+    strict_integrity = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="strict_integrity",
+        default=True,
+    )
     preprocess_workers, workers_source = _resolve_preprocess_workers(args, vbench_config)
 
     # Check if already exists
@@ -1508,6 +1580,11 @@ def main():
         key="group_mismatch_warn_only",
         default=True,
     )
+    if strict_integrity and group_mismatch_warn_only:
+        logger.warning(
+            "metrics.vbench.strict_integrity=true, forcing group_mismatch_warn_only from true to false"
+        )
+        group_mismatch_warn_only = False
     missing_groups = list(record_diagnostics.get("missing_groups", []))
     if missing_groups:
         missing_msg = f"Configured groups missing from prepared records: {missing_groups}"
@@ -1517,6 +1594,12 @@ def main():
             raise RuntimeError(
                 f"{missing_msg}. Set metrics.vbench.group_mismatch_warn_only=true to continue."
             )
+    fallback_count = int(record_diagnostics.get("fallback_count", 0))
+    if strict_integrity and fallback_count > 0:
+        raise RuntimeError(
+            "Prompt fallback to video_id is forbidden under strict integrity mode: "
+            f"{fallback_count}/{len(video_records)} records"
+        )
 
     if rank == 0:
         logger.info(f"Loaded {len(video_records)} videos for VBench evaluation")
@@ -1537,7 +1620,6 @@ def main():
         prompt_source_counter = dict(record_diagnostics.get("prompt_source_counter", {}))
         if prompt_source_counter:
             logger.info("Prompt source detail from prepared records: %s", prompt_source_counter)
-        fallback_count = int(record_diagnostics.get("fallback_count", 0))
         if fallback_count > 0:
             logger.warning(
                 "Prompt fallback to video_id in prepared records: %d/%d",
@@ -1844,6 +1926,7 @@ def main():
             expected_count=expected_count,
             vbench_config=vbench_config,
             record_diagnostics=record_diagnostics,
+            strict_integrity=strict_integrity,
         )
 
         # Optional output normalization: convert 0-1 dimensions to 0-100.
@@ -1902,6 +1985,8 @@ def main():
         profile = str(vbench_config.get("dimension_profile", "")).strip().lower()
         strict_full_coverage = bool(vbench_config.get("require_full_coverage", False))
         if not strict_full_coverage and profile in {"long_16", "16", "16d", "full", "full_16"}:
+            strict_full_coverage = True
+        if strict_integrity:
             strict_full_coverage = True
 
         if strict_full_coverage and coverage_issues:

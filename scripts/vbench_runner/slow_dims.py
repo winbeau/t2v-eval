@@ -239,6 +239,8 @@ def run_fused_slow_dimensions(
     det_adaptive_dims: list[str] | None = None,
     det_adaptive_probe_clips: int = 8,
     det_adaptive_score_threshold: float = 0.02,
+    color_fill_zero_on_no_object: bool = True,
+    strict_integrity: bool = False,
 ) -> tuple[list[dict], dict[str, float | int]]:
     """
     Run slow dimensions with shared decode/inference and return per-video rows.
@@ -352,6 +354,7 @@ def run_fused_slow_dimensions(
     det_infer_sec = 0.0
     color_infer_sec = 0.0
     score_sec = 0.0
+    color_no_object_count = 0
     decode_workers = max(1, int(decode_workers))
     decode_prefetch = max(1, int(decode_prefetch))
     profile_window_clips = max(1, int(profile_window_clips))
@@ -396,6 +399,7 @@ def run_fused_slow_dimensions(
         nonlocal color_infer_sec
         nonlocal tensorize_sec
         nonlocal score_sec
+        nonlocal color_no_object_count
 
         local_times = {
             "tensorize": 0.0,
@@ -576,6 +580,19 @@ def run_fused_slow_dimensions(
                 clip_results["color"].append(
                     {"video_path": video_path, "video_results": score}
                 )
+            elif strict_integrity:
+                resolved_video_id = resolve_video_id(video_path, valid_video_ids)
+                group_name = Path(video_path).parent.parent.name
+                raise RuntimeError(
+                    "color strict integrity violation: no matched object found for "
+                    f"video_path={video_path} video_id={resolved_video_id} group={group_name} "
+                    f"prompt={prompt_text!r} color={color_info!r} object_key={object_key!r}"
+                )
+            elif color_fill_zero_on_no_object:
+                color_no_object_count += 1
+                clip_results["color"].append(
+                    {"video_path": video_path, "video_results": 0.0}
+                )
         tensorize_sec += local_times["tensorize"]
         return local_times
 
@@ -683,6 +700,7 @@ def run_fused_slow_dimensions(
                 subtask=dim,
                 valid_video_ids=valid_video_ids,
                 long_mode=True,
+                strict_integrity=strict_integrity,
             )
         )
 
@@ -697,6 +715,7 @@ def run_fused_slow_dimensions(
         "score_sec": round(score_sec, 4),
         "init_det_sec": round(init_det_sec, 4),
         "init_color_sec": round(init_color_sec, 4),
+        "color_no_object_count": int(color_no_object_count),
     }
     if det_adaptive_state:
         triggered_dims = [
@@ -733,4 +752,10 @@ def run_fused_slow_dimensions(
         active_decode_backend,
         shard_mode,
     )
+    if int(color_no_object_count) > 0 and color_fill_zero_on_no_object:
+        logger.warning(
+            "[rank %d] slow-dims color fallback: %d clips had no matched object; assigned color score=0.0",
+            rank,
+            int(color_no_object_count),
+        )
     return rows, stats

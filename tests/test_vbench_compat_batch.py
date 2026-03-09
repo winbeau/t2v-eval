@@ -254,6 +254,7 @@ def test_patch_is_idempotent_and_preserves_original_reference(fake_grit_predicto
 
 def test_apply_vbench_compat_patches_forwards_batch_switch(monkeypatch: pytest.MonkeyPatch):
     forwarded: dict[str, int | bool] = {}
+    accel_forwarded: dict[str, int | bool] = {}
 
     monkeypatch.setattr(compat, "patch_transformers_compat", lambda: None)
     monkeypatch.setattr(compat, "patch_pretrained_model_tied_weights", lambda: None)
@@ -265,6 +266,16 @@ def test_apply_vbench_compat_patches_forwards_batch_switch(monkeypatch: pytest.M
     monkeypatch.setattr(compat, "patch_grit_fast_inference", lambda: None)
     monkeypatch.setattr(compat, "patch_color_object_matching", lambda: None)
     monkeypatch.setattr(compat, "patch_human_action_prompt_matching", lambda: None)
+    monkeypatch.setattr(
+        compat,
+        "patch_appearance_style_batch_inference",
+        lambda **kwargs: accel_forwarded.update({"appearance": kwargs}),
+    )
+    monkeypatch.setattr(
+        compat,
+        "patch_dynamic_degree_pair_batch_inference",
+        lambda **kwargs: accel_forwarded.update({"dynamic": kwargs}),
+    )
 
     def _capture(
         *,
@@ -285,6 +296,11 @@ def test_apply_vbench_compat_patches_forwards_batch_switch(monkeypatch: pytest.M
         grit_batch_size=8,
         grit_batch_autocast=False,
         grit_batch_deterministic=True,
+        appearance_style_batch_enable=True,
+        appearance_style_batch_size=12,
+        dynamic_degree_batch_enable=True,
+        dynamic_degree_pair_batch_size=6,
+        batch_accel_fp16_enable=False,
     )
 
     assert forwarded == {
@@ -292,6 +308,16 @@ def test_apply_vbench_compat_patches_forwards_batch_switch(monkeypatch: pytest.M
         "batch_size": 8,
         "autocast_enabled": False,
         "deterministic": True,
+    }
+    assert accel_forwarded["appearance"] == {
+        "enable_batch_parallel": True,
+        "batch_size": 12,
+        "autocast_enabled": False,
+    }
+    assert accel_forwarded["dynamic"] == {
+        "enable_batch_parallel": True,
+        "pair_batch_size": 6,
+        "autocast_enabled": False,
     }
 
 
@@ -305,6 +331,23 @@ def test_patch_sets_low_drift_flags_on_visualization_demo(fake_grit_predictor_mo
 
     assert fake_grit_predictor_module._grit_batch_autocast is False
     assert fake_grit_predictor_module._grit_batch_deterministic is True
+
+
+def test_patch_color_object_matching_preserves_zero_division(monkeypatch: pytest.MonkeyPatch):
+    color_mod = ModuleType("vbench.color")
+
+    def _raise_zero_division(model, video_dict, device):
+        raise ZeroDivisionError("no objects")
+
+    color_mod.color = _raise_zero_division
+    color_mod.check_generate = lambda *args, **kwargs: (0, 0)
+
+    monkeypatch.setitem(sys.modules, "vbench.color", color_mod)
+
+    compat.patch_color_object_matching()
+
+    with pytest.raises(ZeroDivisionError, match="no objects"):
+        color_mod.color(None, [], "cuda")
 
 
 @pytest.fixture

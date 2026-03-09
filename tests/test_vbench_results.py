@@ -130,6 +130,16 @@ class TestApplyLongConsistencyPrefixFallback:
         assert len(result) == 1
         assert result[0]["video_id"] == "head_001"
 
+    def test_strict_mode_rejects_prefix_fallback(self):
+        with pytest.raises(RuntimeError, match="strict integrity violation"):
+            apply_long_consistency_prefix_fallback(
+                [],
+                [("/path/frame.mp4", 0.9)],
+                "subject_consistency",
+                {"frame_001"},
+                strict_integrity=True,
+            )
+
 
 # ---------------------------------------------------------------------------
 # extract_subtask_scores
@@ -173,6 +183,17 @@ class TestExtractSubtaskScores:
         valid = {"vid_001"}
         result = extract_subtask_scores(data, "test", valid)
         assert len(result) == 0
+
+    def test_unresolved_raises_in_strict_mode(self):
+        data = [
+            0.85,
+            [
+                {"video_path": "/path/unknown.mp4", "video_results": 0.7},
+            ],
+        ]
+        valid = {"vid_001"}
+        with pytest.raises(RuntimeError, match="strict integrity violation"):
+            extract_subtask_scores(data, "test", valid, strict_integrity=True)
 
     def test_non_list_input(self):
         result = extract_subtask_scores("not_a_list", "test", set())

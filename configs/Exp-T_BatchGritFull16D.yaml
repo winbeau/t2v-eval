@@ -40,6 +40,11 @@ metrics:
     enabled: true
     backend: "vbench_long"
     use_long: true
+    strict_integrity: true
+    require_full_coverage: true
+    group_mismatch_warn_only: false
+    color_min_coverage_ratio: 1.0
+    color_fill_zero_on_no_object: false
     preprocess_workers: 48
     slow_dims_fused: true
     slow_dims_decode_total_workers: 48

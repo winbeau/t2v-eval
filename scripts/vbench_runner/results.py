@@ -41,6 +41,8 @@ def apply_long_consistency_prefix_fallback(
     unresolved_items: list[tuple[str, float]],
     subtask: str,
     valid_video_ids: set[str],
+    *,
+    strict_integrity: bool = False,
 ) -> list[dict]:
     """
     Fallback for VBench-Long subject/background id truncation.
@@ -53,6 +55,12 @@ def apply_long_consistency_prefix_fallback(
         return parsed_items
     if not unresolved_items:
         return parsed_items
+    if strict_integrity:
+        sample_paths = ", ".join(video_path for video_path, _ in unresolved_items[:3])
+        raise RuntimeError(
+            f"[{subtask}] strict integrity violation: unresolved long-mode ids require "
+            f"prefix fallback; sample_paths=[{sample_paths}]"
+        )
 
     prefix_to_video_ids: dict[str, list[str]] = {}
     for video_id in sorted(valid_video_ids):
@@ -101,6 +109,8 @@ def extract_subtask_scores(
     subtask: str,
     valid_video_ids: set[str],
     long_mode: bool = False,
+    *,
+    strict_integrity: bool = False,
 ) -> list[dict]:
     """Extract per-video scores from one subtask result blob."""
     if not isinstance(dimension_data, list):
@@ -141,9 +151,16 @@ def extract_subtask_scores(
             unresolved_items=unresolved_items,
             subtask=subtask,
             valid_video_ids=valid_video_ids,
+            strict_integrity=strict_integrity,
         )
 
     if unresolved_count > 0:
+        if strict_integrity:
+            sample_paths = ", ".join(video_path for video_path, _ in unresolved_items[:3])
+            raise RuntimeError(
+                f"[{subtask}] strict integrity violation: {unresolved_count} unresolved "
+                f"video ids from raw VBench output; sample_paths=[{sample_paths}]"
+            )
         logger.info(
             f"[{subtask}] skipped {unresolved_count} unresolved video ids from raw VBench output"
         )

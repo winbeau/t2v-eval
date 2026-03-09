@@ -53,3 +53,15 @@ class TestApplyColorCoveragePolicy:
             record_diagnostics={"missing_groups": [], "fallback_count": 0},
         )
         assert ("scene", 6, 10) in issues
+
+    def test_strict_integrity_ignores_relaxed_color_threshold(self):
+        coverage_rows = [("color", 8, 10), ("scene", 10, 10)]
+        issues = _apply_color_coverage_policy(
+            coverage_rows=coverage_rows,
+            all_subtasks=["color", "scene"],
+            expected_count=10,
+            vbench_config={"color_min_coverage_ratio": 0.7},
+            record_diagnostics={"missing_groups": [], "fallback_count": 0},
+            strict_integrity=True,
+        )
+        assert ("color", 8, 10) in issues

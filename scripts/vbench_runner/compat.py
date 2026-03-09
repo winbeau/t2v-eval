@@ -564,6 +564,198 @@ def patch_grit_batch_inference_compat(
     )
 
 
+def patch_appearance_style_batch_inference(
+    *,
+    enable_batch_parallel: bool = False,
+    batch_size: int = 16,
+    autocast_enabled: bool = False,
+) -> None:
+    """
+    Patch appearance_style to support frame-batch CLIP inference.
+
+    Default remains original per-frame path. When enabled, frames from the same
+    clip are processed in chunks to reduce Python and kernel-launch overhead.
+    """
+    try:
+        import torch
+        from vbench import appearance_style as _appearance
+    except ImportError:
+        return
+
+    effective_batch_size = max(1, int(batch_size))
+    if not enable_batch_parallel and effective_batch_size != 16:
+        logger.warning(
+            "appearance_style_batch_enable=false, keeping configured batch_size=%d unused",
+            effective_batch_size,
+        )
+
+    if not getattr(_appearance, "_patched_batch_inference", False):
+        _orig_appearance_style = _appearance.appearance_style
+
+        def _appearance_style_batch(clip_model, video_dict, device, sample="rand"):
+            enabled = bool(getattr(_appearance, "_appearance_style_batch_enable", False))
+            bs = max(1, int(getattr(_appearance, "_appearance_style_batch_size", 16)))
+            use_autocast = bool(getattr(_appearance, "_appearance_style_batch_autocast", False))
+            if not enabled:
+                return _orig_appearance_style(clip_model, video_dict, device, sample)
+
+            @contextmanager
+            def _maybe_autocast():
+                if torch.cuda.is_available() and use_autocast:
+                    with torch.amp.autocast("cuda"):
+                        yield
+                else:
+                    yield
+
+            sim = 0.0
+            cnt = 0
+            video_results = []
+            image_transform = _appearance.clip_transform_Image(224)
+            for info in _appearance.tqdm(video_dict, disable=_appearance.get_rank() > 0):
+                if "auxiliary_info" not in info:
+                    raise "Auxiliary info is not in json, please check your json."
+                query = info["auxiliary_info"]["appearance_style"]
+                text = _appearance.clip.tokenize([query]).to(device)
+                video_list = info["video_list"]
+                for video_path in video_list:
+                    with torch.no_grad():
+                        video_arrays = _appearance.load_video(video_path, return_tensor=False)
+                        frame_tensors = [
+                            image_transform(_appearance.Image.fromarray(frame)) for frame in video_arrays
+                        ]
+                        frame_scores: list[float] = []
+                        for start in range(0, len(frame_tensors), bs):
+                            chunk = frame_tensors[start : start + bs]
+                            if not chunk:
+                                continue
+                            image_batch = torch.stack(chunk, dim=0).to(device)
+                            with _maybe_autocast():
+                                logits_per_image, _ = clip_model(image_batch, text)
+                            chunk_scores = (
+                                logits_per_image[:, 0].float().detach().cpu() / 100.0
+                            ).tolist()
+                            frame_scores.extend(float(value) for value in chunk_scores)
+
+                    for frame_score in frame_scores:
+                        sim += frame_score
+                        cnt += 1
+
+                    video_sim = float(_appearance.np.mean(frame_scores)) if frame_scores else 0.0
+                    cur_sim = float(frame_scores[-1]) if frame_scores else 0.0
+                    video_results.append(
+                        {
+                            "video_path": video_path,
+                            "video_results": video_sim,
+                            "frame_results": frame_scores,
+                            "cur_sim": cur_sim,
+                        }
+                    )
+            sim_per_frame = sim / cnt if cnt > 0 else 0.0
+            return sim_per_frame, video_results
+
+        _appearance.appearance_style = _appearance_style_batch
+        _appearance._patched_batch_inference = True  # type: ignore[attr-defined]
+
+    _appearance._appearance_style_batch_enable = bool(enable_batch_parallel)  # type: ignore[attr-defined]
+    _appearance._appearance_style_batch_size = int(effective_batch_size)  # type: ignore[attr-defined]
+    _appearance._appearance_style_batch_autocast = bool(autocast_enabled)  # type: ignore[attr-defined]
+    logger.info(
+        "Configured appearance_style batch mode: enable=%s batch_size=%d autocast=%s",
+        bool(enable_batch_parallel),
+        int(effective_batch_size),
+        bool(autocast_enabled),
+    )
+
+
+def patch_dynamic_degree_pair_batch_inference(
+    *,
+    enable_batch_parallel: bool = False,
+    pair_batch_size: int = 8,
+    autocast_enabled: bool = False,
+) -> None:
+    """
+    Patch dynamic_degree to support pair-batch RAFT inference.
+
+    Default remains original pair-by-pair path. When enabled, adjacent frame
+    pairs are chunked into mini-batches for RAFT forward.
+    """
+    try:
+        import torch
+        from vbench import dynamic_degree as _dynamic
+    except ImportError:
+        return
+
+    effective_batch_size = max(1, int(pair_batch_size))
+    if not getattr(_dynamic, "_patched_pair_batch_inference", False):
+        _orig_infer = _dynamic.DynamicDegree.infer
+
+        def _infer_pair_batch(self, video_path):
+            enabled = bool(getattr(_dynamic, "_dynamic_degree_batch_enable", False))
+            bs = max(1, int(getattr(_dynamic, "_dynamic_degree_pair_batch_size", 8)))
+            use_autocast = bool(getattr(_dynamic, "_dynamic_degree_batch_autocast", False))
+            if not enabled:
+                return _orig_infer(self, video_path)
+
+            def _batch_pair_scores(flow_up_batch: torch.Tensor) -> list[float]:
+                rad = torch.sqrt(
+                    torch.square(flow_up_batch[:, 0, :, :]) + torch.square(flow_up_batch[:, 1, :, :])
+                )
+                _, h, w = rad.shape
+                cut_index = int(h * w * 0.05)
+                if cut_index <= 0:
+                    return [0.0 for _ in range(rad.shape[0])]
+                flat = rad.reshape(rad.shape[0], -1)
+                top_vals = torch.topk(flat, k=cut_index, dim=1, largest=True).values
+                return top_vals.mean(dim=1).detach().cpu().tolist()
+
+            @contextmanager
+            def _maybe_autocast():
+                if torch.cuda.is_available() and use_autocast:
+                    with torch.amp.autocast("cuda"):
+                        yield
+                else:
+                    yield
+
+            with torch.no_grad():
+                if video_path.endswith(".mp4"):
+                    frames = self.get_frames(video_path)
+                elif os.path.isdir(video_path):
+                    frames = self.get_frames_from_img_folder(video_path)
+                else:
+                    raise NotImplementedError
+
+                self.set_params(frame=frames[0], count=len(frames))
+                static_score: list[float] = []
+                pair_count = max(0, len(frames) - 1)
+                for start in range(0, pair_count, bs):
+                    end = min(pair_count, start + bs)
+                    image1_batch = torch.cat([frames[idx] for idx in range(start, end)], dim=0)
+                    image2_batch = torch.cat([frames[idx + 1] for idx in range(start, end)], dim=0)
+                    padder = _dynamic.InputPadder(image1_batch.shape)
+                    image1_batch, image2_batch = padder.pad(image1_batch, image2_batch)
+                    with _maybe_autocast():
+                        _, flow_up = self.model(image1_batch, image2_batch, iters=20, test_mode=True)
+                    static_score.extend(_batch_pair_scores(flow_up))
+
+                whether_move = self.check_move(static_score)
+                return whether_move
+
+        import os
+
+        _dynamic.DynamicDegree.infer = _infer_pair_batch
+        _dynamic._patched_pair_batch_inference = True  # type: ignore[attr-defined]
+
+    _dynamic._dynamic_degree_batch_enable = bool(enable_batch_parallel)  # type: ignore[attr-defined]
+    _dynamic._dynamic_degree_pair_batch_size = int(effective_batch_size)  # type: ignore[attr-defined]
+    _dynamic._dynamic_degree_batch_autocast = bool(autocast_enabled)  # type: ignore[attr-defined]
+    logger.info(
+        "Configured dynamic_degree batch mode: enable=%s pair_batch_size=%d autocast=%s",
+        bool(enable_batch_parallel),
+        int(effective_batch_size),
+        bool(autocast_enabled),
+    )
+
+
 def patch_color_object_matching() -> None:
     """
     Patch color dimension for custom video prompts.
@@ -574,7 +766,7 @@ def patch_color_object_matching() -> None:
     but custom prompts like "a red car driving on a highway" strip to
     "car driving on highway" which never matches the GrIT label "car".
 
-    Also guards against ZeroDivisionError when no objects are detected.
+    Matching is relaxed for custom prompts, but scoring failures still bubble up.
     """
     try:
         from vbench import color as _color
@@ -620,14 +812,11 @@ def patch_color_object_matching() -> None:
     _orig_color_fn = _color.color
 
     def _color_safe(model, video_dict, device):
-        """Wrap color() with the lenient check_generate and zero-division guard."""
+        """Wrap color() while preserving lenient object matching semantics only."""
         orig_cg = _color.check_generate
         _color.check_generate = _check_generate_lenient
         try:
             result = _orig_color_fn(model, video_dict, device)
-        except ZeroDivisionError:
-            logger.warning("color dimension: no objects detected in any video, returning score 0.")
-            result = (0.0, [])
         finally:
             _color.check_generate = orig_cg
         return result
@@ -643,6 +832,11 @@ def apply_vbench_compat_patches(
     grit_batch_size: int = 1,
     grit_batch_autocast: bool = True,
     grit_batch_deterministic: bool = False,
+    appearance_style_batch_enable: bool = False,
+    appearance_style_batch_size: int = 16,
+    dynamic_degree_batch_enable: bool = False,
+    dynamic_degree_pair_batch_size: int = 8,
+    batch_accel_fp16_enable: bool = False,
 ) -> None:
     """Apply all VBench compatibility patches."""
     patch_transformers_compat()
@@ -658,6 +852,16 @@ def apply_vbench_compat_patches(
         batch_size=grit_batch_size,
         autocast_enabled=grit_batch_autocast,
         deterministic=grit_batch_deterministic,
+    )
+    patch_appearance_style_batch_inference(
+        enable_batch_parallel=appearance_style_batch_enable,
+        batch_size=appearance_style_batch_size,
+        autocast_enabled=batch_accel_fp16_enable,
+    )
+    patch_dynamic_degree_pair_batch_inference(
+        enable_batch_parallel=dynamic_degree_batch_enable,
+        pair_batch_size=dynamic_degree_pair_batch_size,
+        autocast_enabled=batch_accel_fp16_enable,
     )
     patch_color_object_matching()
     patch_human_action_prompt_matching()
