@@ -125,6 +125,123 @@ PROMPT_STOPWORDS = {
     "bottom",
 }
 
+# Common scene/location words that tag2text is likely to caption
+SCENE_KEYWORDS = {
+    "beach",
+    "ocean",
+    "sea",
+    "lake",
+    "river",
+    "mountain",
+    "forest",
+    "park",
+    "garden",
+    "city",
+    "street",
+    "road",
+    "highway",
+    "room",
+    "kitchen",
+    "bedroom",
+    "bathroom",
+    "living",
+    "office",
+    "classroom",
+    "studio",
+    "stage",
+    "field",
+    "farm",
+    "desert",
+    "snow",
+    "rain",
+    "sunset",
+    "sunrise",
+    "night",
+    "sky",
+    "underwater",
+    "space",
+    "jungle",
+    "cave",
+    "bridge",
+    "castle",
+    "church",
+    "temple",
+    "market",
+    "restaurant",
+    "cafe",
+    "bar",
+    "hospital",
+    "school",
+    "library",
+    "museum",
+    "airport",
+    "station",
+    "pool",
+    "gym",
+    "stadium",
+    "arena",
+    "courtyard",
+    "balcony",
+    "rooftop",
+    "hallway",
+    "corridor",
+    "basement",
+    "attic",
+    "garage",
+    "yard",
+    "lawn",
+    "meadow",
+    "valley",
+    "cliff",
+    "waterfall",
+    "island",
+    "harbor",
+    "dock",
+    "pier",
+    "alley",
+    "plaza",
+    "square",
+    "mall",
+    "store",
+    "shop",
+    "warehouse",
+    "factory",
+    "laboratory",
+    "countryside",
+    "village",
+    "town",
+    "suburb",
+    "woodland",
+    "savanna",
+    "tundra",
+    "swamp",
+    "marsh",
+    "canyon",
+    "volcano",
+    "glacier",
+    "campsite",
+    "trail",
+    "pathway",
+    "sidewalk",
+    "playground",
+    "carnival",
+    "circus",
+    "concert",
+    "theater",
+    "cinema",
+    "gallery",
+    "lobby",
+    "staircase",
+    "elevator",
+    "train",
+    "bus",
+    "airplane",
+    "boat",
+    "ship",
+    "outdoor",
+    "indoor",
+}
+
 
 # =============================================================================
 # Prompt text helpers
@@ -259,12 +376,18 @@ def extract_color_object_candidates(prompt_text: str, color_key: str) -> list[st
     ranked = sorted(
         ordered,
         key=lambda token: (
-            0
-            if token in non_small_explicit_set
-            or any(base in non_small_explicit_set for base in expand_visual_object_aliases(token))
-            else 1
-            if token in primary_subject_aliases and token not in SMALL_COLOR_OBJECT_TOKENS
-            else 2 if token in SMALL_COLOR_OBJECT_TOKENS else 1,
+            (
+                0
+                if token in non_small_explicit_set
+                or any(
+                    base in non_small_explicit_set for base in expand_visual_object_aliases(token)
+                )
+                else (
+                    1
+                    if token in primary_subject_aliases and token not in SMALL_COLOR_OBJECT_TOKENS
+                    else 2 if token in SMALL_COLOR_OBJECT_TOKENS else 1
+                )
+            ),
             0 if token not in SMALL_COLOR_OBJECT_TOKENS else 1,
             ordered.index(token),
         ),
@@ -355,37 +478,63 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
         return {"appearance_style": style}
 
     if dimension == "scene":
+        tokens = tokenize_prompt_words(prompt_simple)
+        # Find the first scene-related keyword in the prompt
+        for token in tokens:
+            if token in SCENE_KEYWORDS:
+                return {"scene": {"scene": token}}
+        # Fallback: use preposition-context extraction ("in a park", "on the beach", etc.)
+        loc_match = re.search(
+            r"(?:in|on|at|near|through|across|along|beside|under|over)\s+"
+            r"(?:a|an|the|)\s*([a-z]+)",
+            prompt_simple,
+        )
+        if loc_match:
+            candidate = loc_match.group(1).strip()
+            if candidate not in PROMPT_STOPWORDS and candidate not in COLOR_WORDS:
+                return {"scene": {"scene": candidate}}
+        # Final fallback
         first_clause = re.split(r"[,.;]", prompt_simple, maxsplit=1)[0]
         return {"scene": {"scene": extract_object_token(first_clause, default="outdoor")}}
 
     if dimension == "object_class":
         first_clause = re.split(r"[,.;]", prompt_simple, maxsplit=1)[0]
-        return {"object": extract_object_token(first_clause, default="person")}
+        return {"object": extract_primary_subject_token(first_clause, default="person")}
 
     if dimension == "multiple_objects":
+        # Try "X and Y" pattern first
         pattern = re.search(
             r"(?:^|\b)(.+?)\s+and\s+(.+?)(?:$|,|;|\.)",
             prompt_simple,
         )
         if pattern:
-            obj_a = extract_object_token(pattern.group(1), default="person")
-            obj_b = extract_object_token(pattern.group(2), default="object")
+            obj_a = extract_primary_subject_token(pattern.group(1), default="person")
+            obj_b = extract_primary_subject_token(pattern.group(2), default="object")
         else:
-            words = [
-                token
-                for token in tokenize_prompt_words(prompt_simple)
-                if token not in PROMPT_STOPWORDS and token not in COLOR_WORDS
-            ]
-            obj_a = words[0] if len(words) >= 1 else "person"
-            obj_b = words[1] if len(words) >= 2 else "object"
+            # Try "X with Y", "X beside Y", "X near Y" patterns
+            prep_pattern = re.search(
+                r"(?:^|\b)(.+?)\s+(?:with|beside|near|next to|behind|facing)\s+(.+?)(?:$|,|;|\.)",
+                prompt_simple,
+            )
+            if prep_pattern:
+                obj_a = extract_primary_subject_token(prep_pattern.group(1), default="person")
+                obj_b = extract_primary_subject_token(prep_pattern.group(2), default="object")
+            else:
+                words = [
+                    token
+                    for token in tokenize_prompt_words(prompt_simple)
+                    if token not in PROMPT_STOPWORDS and token not in COLOR_WORDS
+                ]
+                obj_a = words[0] if len(words) >= 1 else "person"
+                obj_b = words[1] if len(words) >= 2 else "object"
         return {"object": f"{obj_a} and {obj_b}"}
 
     if dimension == "spatial_relationship":
         for relation in SPATIAL_RELATIONS:
             if relation in prompt_simple:
                 left, right = prompt_simple.split(relation, 1)
-                obj_a = extract_object_token(left, default="object")
-                obj_b = extract_object_token(right, default="object")
+                obj_a = extract_primary_subject_token(left, default="object")
+                obj_b = extract_primary_subject_token(right, default="object")
                 return {
                     "spatial_relationship": {
                         "object_a": obj_a,
@@ -393,10 +542,19 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
                         "relationship": relation,
                     }
                 }
+        # No explicit spatial relation in prompt — extract two objects and
+        # default to "on the left of" (score will depend on GrIT detections)
+        words = [
+            token
+            for token in tokenize_prompt_words(prompt_simple)
+            if token not in PROMPT_STOPWORDS and token not in COLOR_WORDS
+        ]
+        obj_a = extract_primary_subject_token(prompt_simple, default="object")
+        obj_b = words[1] if len(words) >= 2 and words[1] != obj_a else "object"
         return {
             "spatial_relationship": {
-                "object_a": extract_object_token(prompt_simple, default="object"),
-                "object_b": "object",
+                "object_a": obj_a,
+                "object_b": obj_b,
                 "relationship": "on the left of",
             }
         }
@@ -407,7 +565,7 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
                 normalized_color = normalize_color_token(color)
                 return normalize_color_auxiliary_payload(
                     {
-                    "color": normalized_color,
+                        "color": normalized_color,
                     },
                     prompt_text,
                 )
@@ -464,6 +622,7 @@ def resolve_auxiliary_payload(
     simple_lookup: dict[str, dict[str, dict]],
 ) -> tuple[dict | None, str]:
     """Resolve auxiliary payload by official lookup first, then heuristic fallback."""
+
     def _finalize_color_payload(payload: dict | None) -> dict | None:
         if dimension != "color":
             return payload

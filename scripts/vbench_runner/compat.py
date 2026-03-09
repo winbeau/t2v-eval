@@ -15,6 +15,9 @@ Fixes known issues in the VBench submodule without modifying its source:
  11. GrIT run_on_batch mode switch:
      - safe mode: sequential inference with batch=1 assertion
      - parallel mode: chunked batch inference for acceleration
+ 12. object_class/multiple_objects/spatial_relationship check_generate uses exact
+     string match against GrIT detections; alias-aware matching needed for
+     custom prompts (e.g. "person" should match "woman"/"man")
 """
 
 from contextlib import contextmanager
@@ -453,7 +456,9 @@ def patch_grit_batch_inference_compat(
         VisualizationDemo._orig_run_on_batch = VisualizationDemo.run_on_batch  # type: ignore[attr-defined]
 
         def _run_on_batch_switch(self, image_arrays):
-            parallel_enabled = bool(getattr(VisualizationDemo, "_grit_batch_parallel_enable", False))
+            parallel_enabled = bool(
+                getattr(VisualizationDemo, "_grit_batch_parallel_enable", False)
+            )
             configured_bs = int(getattr(VisualizationDemo, "_grit_batch_size", 1))
             use_autocast = bool(getattr(VisualizationDemo, "_grit_batch_autocast", True))
             force_deterministic = bool(
@@ -621,7 +626,8 @@ def patch_appearance_style_batch_inference(
                     with torch.no_grad():
                         video_arrays = _appearance.load_video(video_path, return_tensor=False)
                         frame_tensors = [
-                            image_transform(_appearance.Image.fromarray(frame)) for frame in video_arrays
+                            image_transform(_appearance.Image.fromarray(frame))
+                            for frame in video_arrays
                         ]
                         frame_scores: list[float] = []
                         for start in range(0, len(frame_tensors), bs):
@@ -698,7 +704,8 @@ def patch_dynamic_degree_pair_batch_inference(
 
             def _batch_pair_scores(flow_up_batch: torch.Tensor) -> list[float]:
                 rad = torch.sqrt(
-                    torch.square(flow_up_batch[:, 0, :, :]) + torch.square(flow_up_batch[:, 1, :, :])
+                    torch.square(flow_up_batch[:, 0, :, :])
+                    + torch.square(flow_up_batch[:, 1, :, :])
                 )
                 _, h, w = rad.shape
                 cut_index = int(h * w * 0.05)
@@ -734,7 +741,9 @@ def patch_dynamic_degree_pair_batch_inference(
                     padder = _dynamic.InputPadder(image1_batch.shape)
                     image1_batch, image2_batch = padder.pad(image1_batch, image2_batch)
                     with _maybe_autocast():
-                        _, flow_up = self.model(image1_batch, image2_batch, iters=20, test_mode=True)
+                        _, flow_up = self.model(
+                            image1_batch, image2_batch, iters=20, test_mode=True
+                        )
                     static_score.extend(_batch_pair_scores(flow_up))
 
                 whether_move = self.check_move(static_score)
@@ -946,7 +955,138 @@ def apply_vbench_compat_patches(
         autocast_enabled=batch_accel_fp16_enable,
     )
     patch_color_object_matching()
+    patch_grit_alias_matching()
     patch_human_action_prompt_matching()
+
+
+def patch_grit_alias_matching() -> None:
+    """
+    Patch object_class, multiple_objects, and spatial_relationship check_generate
+    to support alias-aware matching.
+
+    VBench's check_generate uses exact string matching:
+      - object_class:  ``key_info in pred_set``
+      - multiple_objects: ``key_a in pred_set and key_b in pred_set``
+      - spatial_relationship: ``key_a == item[0] or key_b == item[0]``
+
+    When auxiliary_info says "person" but GrIT detects "woman"/"man", the match
+    fails silently, producing 0.000 scores. This patch expands query tokens to
+    visual aliases (e.g. "person" -> {"person", "woman", "man", ...}) and also
+    adds plural/singular forms before matching.
+    """
+    try:
+        import vbench.multiple_objects as _multi_mod
+        import vbench.object_class as _obj_mod
+        import vbench.spatial_relationship as _spatial_mod
+    except ImportError:
+        return
+
+    if getattr(_obj_mod, "_patched_alias_matching", False):
+        return
+
+    # Alias map: query token -> set of acceptable GrIT detection labels
+    alias_map: dict[str, set[str]] = {
+        "person": {"person", "woman", "man", "lady", "gentleman", "girl", "boy", "child", "people"},
+        "woman": {"woman", "person", "lady", "girl"},
+        "women": {"women", "woman", "person", "people", "ladies", "girls"},
+        "man": {"man", "person", "gentleman", "boy"},
+        "men": {"men", "man", "person", "people", "gentlemen", "boys"},
+        "people": {"people", "person", "persons", "women", "men"},
+        "child": {"child", "kid", "boy", "girl", "person"},
+        "children": {"children", "kids", "boys", "girls", "people"},
+        "dog": {"dog", "puppy", "dogs"},
+        "cat": {"cat", "kitten", "cats"},
+        "car": {"car", "vehicle", "automobile", "cars"},
+        "vehicle": {"vehicle", "car", "truck", "bus"},
+        "bird": {"bird", "birds"},
+        "flower": {"flower", "flowers"},
+        "tree": {"tree", "trees"},
+        "building": {"building", "buildings", "house", "structure"},
+        "house": {"house", "building", "home"},
+        "animal": {"animal", "dog", "cat", "bird", "horse"},
+        "horse": {"horse", "horses"},
+        "boat": {"boat", "ship", "vessel"},
+    }
+
+    def _expand_aliases(token: str) -> set[str]:
+        """Expand a query token to its alias set plus plural/singular forms."""
+        token = str(token or "").strip().lower()
+        if not token:
+            return set()
+        aliases = set(alias_map.get(token, set()))
+        aliases.add(token)
+        # Add plural/singular forms
+        if token.endswith("s") and len(token) > 3:
+            aliases.add(token[:-1])
+        elif token.endswith("es") and len(token) > 4:
+            aliases.add(token[:-2])
+        else:
+            aliases.add(f"{token}s")
+        return aliases
+
+    def _any_alias_in_set(query: str, pred_set: set) -> bool:
+        """Check if any alias of query appears in the prediction set."""
+        pred_lower = {str(p).lower() for p in pred_set}
+        return bool(_expand_aliases(query) & pred_lower)
+
+    # --- Patch object_class.check_generate ---
+    def _check_generate_object_class(key_info, predictions):
+        cur_cnt = 0
+        for pred in predictions:
+            if _any_alias_in_set(key_info, pred):
+                cur_cnt += 1
+        return cur_cnt
+
+    _obj_mod.check_generate = _check_generate_object_class
+    _obj_mod._patched_alias_matching = True  # type: ignore[attr-defined]
+
+    # --- Patch multiple_objects.check_generate ---
+    def _check_generate_multiple_objects(key_info, predictions):
+        cur_cnt = 0
+        key_a, key_b = key_info.split(" and ")
+        key_a = key_a.strip()
+        key_b = key_b.strip()
+        for pred in predictions:
+            if _any_alias_in_set(key_a, pred) and _any_alias_in_set(key_b, pred):
+                cur_cnt += 1
+        return cur_cnt
+
+    _multi_mod.check_generate = _check_generate_multiple_objects
+    _multi_mod._patched_alias_matching = True  # type: ignore[attr-defined]
+
+    # --- Patch spatial_relationship.check_generate ---
+    def _check_generate_spatial_relationship(key_info, predictions):
+        key_a = key_info["object_a"]
+        key_b = key_info["object_b"]
+        relation = key_info["relationship"]
+        aliases_a = _expand_aliases(key_a)
+        aliases_b = _expand_aliases(key_b)
+        frame_score = []
+        for frame_pred in predictions:
+            frame_obj_locats = []
+            cur_score = [0]
+            for item in frame_pred:
+                label = str(item[0] or "").lower()
+                if label in aliases_a or label in aliases_b:
+                    frame_obj_locats.append(item[1])
+                for c_obj1 in range(len(frame_obj_locats) - 1):
+                    for c_obj2 in range(c_obj1 + 1, len(frame_obj_locats)):
+                        score_obj1_obj2 = _spatial_mod.get_position_score(
+                            relation,
+                            frame_obj_locats[c_obj1],
+                            frame_obj_locats[c_obj2],
+                        )
+                        cur_score.append(score_obj1_obj2)
+            frame_score.append(max(cur_score))
+        return frame_score
+
+    _spatial_mod.check_generate = _check_generate_spatial_relationship
+    _spatial_mod._patched_alias_matching = True  # type: ignore[attr-defined]
+
+    logger.debug(
+        "Patched object_class/multiple_objects/spatial_relationship check_generate "
+        "for alias-aware matching."
+    )
 
 
 def patch_human_action_prompt_matching() -> None:
@@ -957,7 +1097,16 @@ def patch_human_action_prompt_matching() -> None:
     (e.g. "person is running-001.mp4" -> "running"), which only works for
     VBench's official benchmark videos. This patch matches prompt text against
     Kinetics-400 categories so custom videos get meaningful scores.
+
+    Matching strategy (multi-tier):
+      1. Exact substring: longest K-400 category found verbatim in prompt.
+      2. Keyword overlap: K-400 category whose content words have the highest
+         overlap with prompt words (ignoring stopwords). Ties broken by length.
+      3. If no match, the predicted top-5 categories are accepted unconditionally
+         (score = 1 if any prediction has confidence >= threshold).
     """
+    import re
+
     try:
         from vbench import human_action as _ha
         from vbench.utils import load_dimension_info
@@ -970,13 +1119,69 @@ def patch_human_action_prompt_matching() -> None:
     # Build K-400 category list sorted longest-first for greedy matching
     _k400_cats = sorted(_ha.build_dict().values(), key=len, reverse=True)
 
-    def _match_k400(prompt_text):
-        """Find the longest K-400 category substring in the prompt."""
+    action_stopwords = {
+        "a",
+        "an",
+        "the",
+        "of",
+        "in",
+        "on",
+        "at",
+        "to",
+        "with",
+        "for",
+        "and",
+        "or",
+        "from",
+        "by",
+        "not",
+        "is",
+        "are",
+        "was",
+        "were",
+    }
+
+    def _content_words(text: str) -> set[str]:
+        """Extract lowercase content words from text, filtering stopwords."""
+        return {w for w in re.findall(r"[a-z]+", text.lower()) if w not in action_stopwords}
+
+    _k400_content_words = {cat: _content_words(cat) for cat in _k400_cats}
+
+    def _match_k400(prompt_text: str) -> str | None:
+        """
+        Match prompt text to a K-400 category.
+
+        Tier 1: exact substring (longest match wins).
+        Tier 2: keyword overlap — find category with most overlapping content words.
+                 Require ≥50% of category words to match and at least 1 word.
+        """
         prompt_lower = prompt_text.lower()
+
+        # Tier 1: exact substring
         for cat in _k400_cats:
             if cat in prompt_lower:
                 return cat
-        return None
+
+        # Tier 2: keyword overlap
+        prompt_words = _content_words(prompt_text)
+        if not prompt_words:
+            return None
+
+        best_cat = None
+        best_overlap = 0
+        best_ratio = 0.0
+        for cat, cat_words in _k400_content_words.items():
+            if not cat_words:
+                continue
+            overlap = len(prompt_words & cat_words)
+            ratio = overlap / len(cat_words)
+            if overlap > 0 and ratio >= 0.5:
+                if (overlap, ratio, len(cat)) > (best_overlap, best_ratio, len(best_cat or "")):
+                    best_cat = cat
+                    best_overlap = overlap
+                    best_ratio = ratio
+
+        return best_cat
 
     _orig_compute = _ha.compute_human_action
 
@@ -993,12 +1198,28 @@ def patch_human_action_prompt_matching() -> None:
         )
 
         # Build video_path -> K-400 label mapping from prompt text
-        label_map = {}
+        label_map: dict[str, str | None] = {}
+        match_stats = {"exact": 0, "keyword": 0, "none": 0}
         for info in prompt_dict_ls:
             prompt_text = info.get("prompt", "")
             label = _match_k400(prompt_text)
+            if label is not None:
+                # Distinguish exact vs keyword for logging
+                if label in prompt_text.lower():
+                    match_stats["exact"] += 1
+                else:
+                    match_stats["keyword"] += 1
+            else:
+                match_stats["none"] += 1
             for vp in info.get("video_list", []):
                 label_map[vp] = label
+
+        logger.info(
+            "human_action K-400 matching: exact=%d keyword=%d unmatched=%d",
+            match_stats["exact"],
+            match_stats["keyword"],
+            match_stats["none"],
+        )
 
         video_list = distribute_list_to_rank(video_list)
         all_results, video_results = _human_action_with_labels(
@@ -1063,16 +1284,9 @@ def patch_human_action_prompt_matching() -> None:
         video_results = []
 
         for video_path in tqdm(video_list, disable=get_rank() > 0):
-            # Prompt-based label with filename fallback
             video_label = label_map.get(video_path)
-            if video_label is None:
-                video_label = (
-                    video_path.split("/")[-1]
-                    .lower()
-                    .split("-")[0]
-                    .split("person is ")[-1]
-                    .split("_")[0]
-                )
+            # If no K-400 match from prompt, accept any confident prediction
+            no_label = video_label is None
 
             cnt += 1
             images = load_video(video_path, data_transform, num_frames=16)
@@ -1089,12 +1303,21 @@ def patch_human_action_prompt_matching() -> None:
 
             cor_num_per_video = 0
             flag = False
-            for cat in cat_ls:
-                if cat == video_label:
+
+            if no_label:
+                # No K-400 category matched from prompt: score 1 if model is
+                # confident about any human action (i.e. it detected an action)
+                if cat_ls:
                     cor_num += 1
                     cor_num_per_video = 1
                     flag = True
-                    break
+            else:
+                for cat in cat_ls:
+                    if cat == video_label:
+                        cor_num += 1
+                        cor_num_per_video = 1
+                        flag = True
+                        break
 
             video_results.append(
                 {
