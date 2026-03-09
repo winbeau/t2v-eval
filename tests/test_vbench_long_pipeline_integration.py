@@ -11,6 +11,10 @@ from scripts.vbench_runner.core import _apply_color_coverage_policy
 from scripts.vbench_runner.distributed import merge_rank_partial_results
 from scripts.vbench_runner.env import get_vbench_subtasks
 from scripts.vbench_runner.results import extract_subtask_scores
+from scripts.vbench_runner.scaling import (
+    compute_official_vbench_scores,
+    compute_semantic_lite_vbench_scores,
+)
 
 
 LONG_16 = [
@@ -188,3 +192,37 @@ def test_full_16_coverage_flags_non_color_dimension_under_strict_mode():
     )
 
     assert ("scene", 3, 4) in issues
+
+
+def test_lite_scores_survive_pipeline_shape_when_color_is_absent():
+    df = pd.DataFrame(
+        [
+            {
+                "video_id": "vid_001",
+                "subject_consistency": 0.91,
+                "background_consistency": 0.81,
+                "temporal_flickering": 0.71,
+                "motion_smoothness": 0.61,
+                "temporal_style": 0.55,
+                "appearance_style": 0.45,
+                "scene": 0.35,
+                "object_class": 0.25,
+                "multiple_objects": 0.15,
+                "spatial_relationship": 0.65,
+                "human_action": 0.75,
+                "overall_consistency": 0.95,
+                "dynamic_degree": 0.52,
+                "imaging_quality": 0.68,
+                "aesthetic_quality": 0.58,
+            }
+        ]
+    )
+
+    assert compute_official_vbench_scores(df) == []
+    assert compute_semantic_lite_vbench_scores(df) == [
+        "vbench_quality_score",
+        "vbench_semantic_lite_score",
+        "vbench_total_lite_score",
+    ]
+    assert "vbench_semantic_lite_score" in df.columns
+    assert "vbench_total_lite_score" in df.columns

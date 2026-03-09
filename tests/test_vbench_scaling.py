@@ -9,6 +9,7 @@ from scripts.vbench_runner.scaling import (
     ALL_16_COLUMNS,
     apply_output_percent_scaling,
     compute_official_vbench_scores,
+    compute_semantic_lite_vbench_scores,
     resolve_output_percent_columns,
 )
 
@@ -193,3 +194,102 @@ class TestComputeOfficialVBenchScores:
         assert df.loc[0, "vbench_quality_score"] == pytest.approx(expected_quality, abs=1e-6)
         # Semantic: all at max, so still 100
         assert df.loc[0, "vbench_semantic_score"] == pytest.approx(100.0, abs=1e-6)
+
+
+class TestComputeSemanticLiteVBenchScores:
+    @staticmethod
+    def _make_full_df_without_color(**overrides):
+        defaults = {col: 0.5 for col in ALL_16_COLUMNS if col != "color"}
+        defaults["video_id"] = "v1"
+        defaults.update(overrides)
+        return pd.DataFrame([defaults])
+
+    def test_lite_scores_compute_when_color_is_missing(self):
+        df = self._make_full_df_without_color()
+
+        result = compute_semantic_lite_vbench_scores(df)
+
+        assert set(result) == {
+            "vbench_quality_score",
+            "vbench_semantic_lite_score",
+            "vbench_total_lite_score",
+        }
+        assert "vbench_semantic_lite_score" in df.columns
+        assert "vbench_total_lite_score" in df.columns
+        assert "vbench_semantic_score" not in df.columns
+        assert "vbench_total_score" not in df.columns
+
+    def test_lite_scores_skip_when_non_color_semantic_dimension_is_missing(self):
+        df = pd.DataFrame(
+            {
+                "video_id": ["v1"],
+                "subject_consistency": [0.9],
+                "background_consistency": [0.8],
+                "temporal_flickering": [0.7],
+                "motion_smoothness": [0.6],
+                "dynamic_degree": [0.5],
+                "aesthetic_quality": [0.4],
+                "imaging_quality": [0.3],
+                "object_class": [0.2],
+                "multiple_objects": [0.1],
+                "human_action": [0.9],
+                "spatial_relationship": [0.8],
+                "scene": [0.7],
+                "appearance_style": [0.6],
+                "temporal_style": [0.5],
+                # overall_consistency missing
+            }
+        )
+
+        result = compute_semantic_lite_vbench_scores(df)
+
+        assert result == []
+        assert "vbench_semantic_lite_score" not in df.columns
+        assert "vbench_total_lite_score" not in df.columns
+
+    def test_lite_scores_skip_when_quality_dimension_is_missing(self):
+        df = pd.DataFrame(
+            {
+                "video_id": ["v1"],
+                "subject_consistency": [0.9],
+                "background_consistency": [0.8],
+                "temporal_flickering": [0.7],
+                "motion_smoothness": [0.6],
+                # dynamic_degree missing
+                "aesthetic_quality": [0.4],
+                "imaging_quality": [0.3],
+                "object_class": [0.2],
+                "multiple_objects": [0.1],
+                "human_action": [0.9],
+                "spatial_relationship": [0.8],
+                "scene": [0.7],
+                "appearance_style": [0.6],
+                "temporal_style": [0.5],
+                "overall_consistency": [0.4],
+            }
+        )
+
+        result = compute_semantic_lite_vbench_scores(df)
+
+        assert result == []
+
+    def test_lite_total_uses_same_quality_semantic_weighting(self):
+        df = self._make_full_df_without_color()
+
+        compute_semantic_lite_vbench_scores(df)
+        q = df.loc[0, "vbench_quality_score"]
+        s_lite = df.loc[0, "vbench_semantic_lite_score"]
+        expected_total = (q * 4 + s_lite * 1) / 5
+
+        assert df.loc[0, "vbench_total_lite_score"] == pytest.approx(expected_total, abs=1e-6)
+
+    def test_full_16_can_emit_official_and_lite_scores_together(self):
+        df = pd.DataFrame([{**{col: 0.5 for col in ALL_16_COLUMNS}, "video_id": "v1"}])
+
+        compute_official_vbench_scores(df)
+        compute_semantic_lite_vbench_scores(df)
+
+        assert "vbench_semantic_score" in df.columns
+        assert "vbench_total_score" in df.columns
+        assert "vbench_semantic_lite_score" in df.columns
+        assert "vbench_total_lite_score" in df.columns

@@ -15,6 +15,8 @@ RESERVED_COLUMNS = {
     "vbench_quality_score",
     "vbench_semantic_score",
     "vbench_total_score",
+    "vbench_semantic_lite_score",
+    "vbench_total_lite_score",
 }
 
 # ---------------------------------------------------------------------------
@@ -106,6 +108,7 @@ _SEMANTIC_WEIGHT = 1
 
 # All 16 column names required for official scoring.
 ALL_16_COLUMNS: frozenset[str] = frozenset(_COL_TO_VBENCH_DIM.keys())
+SEMANTIC_LITE_COLUMNS: frozenset[str] = frozenset(ALL_16_COLUMNS - {"color"})
 
 
 def _normalize_name_list(raw: object) -> list[str]:
@@ -204,8 +207,47 @@ def compute_official_vbench_scores(df: pd.DataFrame) -> list[str]:
 
     Returns the list of new columns added (empty if skipped).
     """
+    return _compute_vbench_score_bundle(
+        df=df,
+        required_columns=ALL_16_COLUMNS,
+        semantic_columns={
+            col for col, dim_name in _COL_TO_VBENCH_DIM.items() if dim_name in _SEMANTIC_LIST
+        },
+        semantic_col_name="vbench_semantic_score",
+        total_col_name="vbench_total_score",
+    )
+
+
+def compute_semantic_lite_vbench_scores(df: pd.DataFrame) -> list[str]:
+    """
+    Compute VBench lite scores that exclude the `color` semantic dimension.
+
+    The normalization logic, per-dimension weights, and total-score weighting
+    remain identical to the official scoring path.
+    """
+    return _compute_vbench_score_bundle(
+        df=df,
+        required_columns=SEMANTIC_LITE_COLUMNS,
+        semantic_columns={
+            col
+            for col, dim_name in _COL_TO_VBENCH_DIM.items()
+            if dim_name in _SEMANTIC_LIST and dim_name != "color"
+        },
+        semantic_col_name="vbench_semantic_lite_score",
+        total_col_name="vbench_total_lite_score",
+    )
+
+
+def _compute_vbench_score_bundle(
+    *,
+    df: pd.DataFrame,
+    required_columns: frozenset[str] | set[str],
+    semantic_columns: set[str],
+    semantic_col_name: str,
+    total_col_name: str,
+) -> list[str]:
     present_cols = {col for col in _COL_TO_VBENCH_DIM if col in df.columns}
-    if not ALL_16_COLUMNS.issubset(present_cols):
+    if not set(required_columns).issubset(present_cols):
         return []
 
     quality_weighted_sum = pd.Series(0.0, index=df.index)
@@ -214,6 +256,8 @@ def compute_official_vbench_scores(df: pd.DataFrame) -> list[str]:
     semantic_weight_sum = 0.0
 
     for col, dim_name in _COL_TO_VBENCH_DIM.items():
+        if col not in required_columns:
+            continue
         raw = pd.to_numeric(df[col], errors="coerce")
         norm_range = _NORMALIZE_DIC[dim_name]
         lo, hi = norm_range["Min"], norm_range["Max"]
@@ -224,12 +268,12 @@ def compute_official_vbench_scores(df: pd.DataFrame) -> list[str]:
         weight = _DIM_WEIGHT[dim_name]
         weighted = normalized * weight
 
-        if dim_name in _QUALITY_LIST:
-            quality_weighted_sum += weighted
-            quality_weight_sum += weight
-        else:
+        if col in semantic_columns:
             semantic_weighted_sum += weighted
             semantic_weight_sum += weight
+        else:
+            quality_weighted_sum += weighted
+            quality_weight_sum += weight
 
     quality_score = (quality_weighted_sum / quality_weight_sum) * 100.0
     semantic_score = (semantic_weighted_sum / semantic_weight_sum) * 100.0
@@ -237,10 +281,10 @@ def compute_official_vbench_scores(df: pd.DataFrame) -> list[str]:
         _QUALITY_WEIGHT + _SEMANTIC_WEIGHT
     )
 
-    new_cols = ["vbench_quality_score", "vbench_semantic_score", "vbench_total_score"]
+    new_cols = ["vbench_quality_score", semantic_col_name, total_col_name]
     df["vbench_quality_score"] = quality_score
-    df["vbench_semantic_score"] = semantic_score
-    df["vbench_total_score"] = total_score
+    df[semantic_col_name] = semantic_score
+    df[total_col_name] = total_score
     return new_cols
 
 

@@ -66,7 +66,11 @@ try:
         summarize_vbench_stdout,
     )
     from .results import extract_subtask_scores
-    from .scaling import apply_output_percent_scaling, compute_official_vbench_scores
+    from .scaling import (
+        apply_output_percent_scaling,
+        compute_official_vbench_scores,
+        compute_semantic_lite_vbench_scores,
+    )
     from .slow_dims import SLOW_DIM_SET, run_fused_slow_dimensions
     from .video_records import (
         are_split_clips_ready,
@@ -119,7 +123,11 @@ except ImportError:
         summarize_vbench_stdout,
     )
     from vbench_runner.results import extract_subtask_scores
-    from vbench_runner.scaling import apply_output_percent_scaling, compute_official_vbench_scores
+    from vbench_runner.scaling import (
+        apply_output_percent_scaling,
+        compute_official_vbench_scores,
+        compute_semantic_lite_vbench_scores,
+    )
     from vbench_runner.slow_dims import SLOW_DIM_SET, run_fused_slow_dimensions
     from vbench_runner.video_records import (
         are_split_clips_ready,
@@ -1252,6 +1260,9 @@ def run_vbench_evaluation(
         official_cols = compute_official_vbench_scores(df_pivot)
         if official_cols:
             logger.info(f"[rank {rank}] Computed official VBench scores: {official_cols}")
+        lite_cols = compute_semantic_lite_vbench_scores(df_pivot)
+        if lite_cols:
+            logger.info(f"[rank {rank}] Computed VBench lite scores: {lite_cols}")
 
         return df_pivot
     else:
@@ -1385,6 +1396,7 @@ def run_vbench_cli_fallback(
 
         # Compute official VBench quality/semantic/total scores when all 16 dims present
         compute_official_vbench_scores(df_pivot)
+        compute_semantic_lite_vbench_scores(df_pivot)
 
         return df_pivot
 
