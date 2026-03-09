@@ -519,6 +519,11 @@ def run_vbench_evaluation(
 
     # VBench configuration
     vbench_config = config.get("metrics", {}).get("vbench", {})
+    strict_integrity = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="strict_integrity",
+        default=True,
+    )
     subtasks = (
         list(subtasks_override) if subtasks_override is not None else get_vbench_subtasks(config)
     )
