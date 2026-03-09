@@ -209,6 +209,25 @@ class TestInferAuxiliaryFromPrompt:
         )
         assert result is not None
         assert "object" in result
+        assert result["object"] == "cat"
+
+    def test_object_class_verb_filtered(self):
+        """Verbs should not be extracted as the object class."""
+        result = infer_auxiliary_from_prompt(
+            "object_class",
+            "a slowly spinning globe on a desk",
+        )
+        assert result is not None
+        assert result["object"] == "globe"
+
+    def test_object_class_long_prompt(self):
+        """Long prompts without person tokens should still extract a noun."""
+        result = infer_auxiliary_from_prompt(
+            "object_class",
+            "a beautiful flowing waterfall cascading down rocks",
+        )
+        assert result is not None
+        assert result["object"] == "waterfall"
 
     # --- multiple_objects with "and" ---
     def test_multiple_objects_with_and(self):
@@ -271,6 +290,18 @@ class TestInferAuxiliaryFromPrompt:
         )
         assert result is not None
         assert result["spatial_relationship"]["relationship"] == "on the left of"
+        assert result["spatial_relationship"]["object_a"] == "cat"
+
+    def test_spatial_without_relation_verb_filtered(self):
+        """Fallback obj_b should not be a verb."""
+        result = infer_auxiliary_from_prompt(
+            "spatial_relationship",
+            "a dog running across a field",
+        )
+        assert result is not None
+        sr = result["spatial_relationship"]
+        assert sr["object_a"] == "dog"
+        assert "running" not in sr["object_b"]
 
     # --- color ---
     def test_color_found(self):

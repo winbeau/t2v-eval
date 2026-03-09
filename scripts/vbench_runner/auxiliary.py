@@ -384,7 +384,9 @@ def _meaningful_tokens(text: str) -> list[str]:
     return [
         token
         for token in tokenize_prompt_words(text)
-        if token not in PROMPT_STOPWORDS and token not in COLOR_WORDS
+        if token not in PROMPT_STOPWORDS
+        and token not in COLOR_WORDS
+        and token not in COMMON_ACTION_WORDS
     ]
 
 
@@ -642,7 +644,9 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
         words = [
             token
             for token in tokenize_prompt_words(prompt_simple)
-            if token not in PROMPT_STOPWORDS and token not in COLOR_WORDS
+            if token not in PROMPT_STOPWORDS
+            and token not in COLOR_WORDS
+            and token not in COMMON_ACTION_WORDS
         ]
         obj_a = extract_primary_subject_token(prompt_simple, default="object")
         obj_b = words[1] if len(words) >= 2 and words[1] != obj_a else "object"
