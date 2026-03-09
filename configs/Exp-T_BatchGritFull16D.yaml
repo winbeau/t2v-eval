@@ -59,6 +59,12 @@ metrics:
       - "spatial_relationship"
     grit_batch_adaptive_probe_clips: 8
     grit_batch_adaptive_score_threshold: 0.02
+    appearance_style_batch_enable: true
+    appearance_style_batch_size: 16
+    dynamic_degree_batch_enable: true
+    dynamic_degree_pair_batch_size: 8
+    batch_accel_fp16_enable: false
+    batch_accel_strict_fp32: true
     scale_to_percent: []
     profile_output: "group_summary_full16d.csv"
     dimension_profile: "long_16"
