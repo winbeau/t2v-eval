@@ -46,6 +46,22 @@ class TestResolveVideoId:
         result = resolve_video_id("/path/vid_001-Scene-001/some_clip.mp4", valid)
         assert result == "vid_001"
 
+    def test_nested_long_mode_parent_folder_match(self):
+        valid = {"g1_video_000"}
+        result = resolve_video_id(
+            "/path/split_clip/g1_video_000/g1_video_000_000.mp4/g1.mp4",
+            valid,
+        )
+        assert result == "g1_video_000"
+
+    def test_file_like_parent_name_strips_extension_and_suffix(self):
+        valid = {"g1_video_000"}
+        result = resolve_video_id(
+            "/path/g1_video_000_000.mp4/frame.png",
+            valid,
+        )
+        assert result == "g1_video_000"
+
     def test_no_match_returns_stem(self):
         valid = {"vid_001"}
         result = resolve_video_id("/path/unknown_video.mp4", valid)

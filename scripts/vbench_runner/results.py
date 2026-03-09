@@ -19,21 +19,50 @@ def resolve_video_id(video_path: str, valid_video_ids: set[str]) -> str:
     Long-mode outputs are often clip-level paths, so we attempt multiple candidates.
     """
     path = Path(video_path)
-    stem = path.stem
-    candidates = [stem, path.parent.name]
+    candidates: list[str] = []
 
-    if stem.rsplit("_", 1)[-1].isdigit():
-        candidates.append(stem.rsplit("_", 1)[0])
-    if "-Scene" in stem:
-        candidates.append(stem.split("-Scene")[0])
-    if "-Scene" in path.parent.name:
-        candidates.append(path.parent.name.split("-Scene")[0])
+    def _add_candidate(value: str) -> None:
+        raw = str(value or "").strip()
+        if not raw:
+            return
+        for candidate in _expand_candidate(raw):
+            if candidate and candidate not in candidates:
+                candidates.append(candidate)
+
+    def _expand_candidate(value: str) -> list[str]:
+        expanded: list[str] = []
+        raw = str(value or "").strip()
+        if not raw:
+            return expanded
+
+        base = Path(raw).stem if "." in raw else raw
+        for item in (raw, base):
+            cleaned = str(item or "").strip()
+            if not cleaned:
+                continue
+            if cleaned not in expanded:
+                expanded.append(cleaned)
+            if cleaned.rsplit("_", 1)[-1].isdigit():
+                stripped = cleaned.rsplit("_", 1)[0]
+                if stripped and stripped not in expanded:
+                    expanded.append(stripped)
+            if "-Scene" in cleaned:
+                scene_stripped = cleaned.split("-Scene")[0]
+                if scene_stripped and scene_stripped not in expanded:
+                    expanded.append(scene_stripped)
+        return expanded
+
+    _add_candidate(path.name)
+    _add_candidate(path.stem)
+    _add_candidate(path.parent.name)
+    for ancestor in path.parents:
+        _add_candidate(ancestor.name)
 
     for candidate in candidates:
         if candidate in valid_video_ids:
             return candidate
 
-    return stem
+    return path.stem
 
 
 def apply_long_consistency_prefix_fallback(
