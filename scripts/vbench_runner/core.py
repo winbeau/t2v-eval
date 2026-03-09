@@ -429,11 +429,34 @@ def run_vbench_evaluation(
         key="grit_batch_deterministic",
         default=grit_batch_low_drift_mode,
     )
-    default_single_image_dims = ["spatial_relationship"] if grit_batch_low_drift_mode else []
+    default_single_image_dims: list[str] = []
     grit_batch_sensitive_dims_single_image = _resolve_str_list_option(
         vbench_config=vbench_config,
         key="grit_batch_sensitive_dims_single_image",
         default=default_single_image_dims,
+    )
+    grit_batch_adaptive_fallback_enable = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="grit_batch_adaptive_fallback_enable",
+        default=grit_batch_low_drift_mode and grit_batch_parallel_enable,
+    )
+    default_adaptive_dims = ["spatial_relationship"] if grit_batch_low_drift_mode else []
+    grit_batch_adaptive_fallback_dims = _resolve_str_list_option(
+        vbench_config=vbench_config,
+        key="grit_batch_adaptive_fallback_dims",
+        default=default_adaptive_dims,
+    )
+    grit_batch_adaptive_probe_clips = _resolve_int_option(
+        vbench_config=vbench_config,
+        key="grit_batch_adaptive_probe_clips",
+        default=8,
+        min_value=1,
+        max_value=1000,
+    )
+    grit_batch_adaptive_score_threshold = _resolve_float_option(
+        vbench_config=vbench_config,
+        key="grit_batch_adaptive_score_threshold",
+        default=0.02,
     )
     supported_sensitive_dims = {"object_class", "multiple_objects", "spatial_relationship"}
     invalid_sensitive_dims = sorted(
@@ -449,6 +472,19 @@ def run_vbench_evaluation(
         grit_batch_sensitive_dims_single_image = [
             dim for dim in grit_batch_sensitive_dims_single_image if dim in supported_sensitive_dims
         ]
+    invalid_adaptive_dims = sorted(
+        set(grit_batch_adaptive_fallback_dims) - supported_sensitive_dims
+    )
+    if invalid_adaptive_dims:
+        logger.warning(
+            "Ignoring unsupported metrics.vbench.grit_batch_adaptive_fallback_dims=%s; "
+            "supported=%s",
+            invalid_adaptive_dims,
+            sorted(supported_sensitive_dims),
+        )
+        grit_batch_adaptive_fallback_dims = [
+            dim for dim in grit_batch_adaptive_fallback_dims if dim in supported_sensitive_dims
+        ]
     if not grit_batch_parallel_enable and grit_batch_size != 1:
         logger.warning(
             "metrics.vbench.grit_batch_parallel_enable=false, forcing grit_batch_size=%d -> 1",
@@ -457,14 +493,20 @@ def run_vbench_evaluation(
         grit_batch_size = 1
     if not grit_batch_parallel_enable:
         grit_batch_sensitive_dims_single_image = []
+        grit_batch_adaptive_fallback_enable = False
+        grit_batch_adaptive_fallback_dims = []
     logger.info(
-        "GrIT batch mode config: parallel=%s batch_size=%d low_drift=%s autocast=%s deterministic=%s sensitive_single_image=%s",
+        "GrIT batch mode config: parallel=%s batch_size=%d low_drift=%s autocast=%s deterministic=%s sensitive_single_image=%s adaptive_fallback=%s adaptive_dims=%s adaptive_probe_clips=%d adaptive_threshold=%.6f",
         grit_batch_parallel_enable,
         grit_batch_size,
         grit_batch_low_drift_mode,
         grit_batch_autocast,
         grit_batch_deterministic,
         grit_batch_sensitive_dims_single_image,
+        grit_batch_adaptive_fallback_enable,
+        grit_batch_adaptive_fallback_dims,
+        grit_batch_adaptive_probe_clips,
+        grit_batch_adaptive_score_threshold,
     )
     apply_vbench_compat_patches(
         grit_batch_parallel_enable=grit_batch_parallel_enable,
@@ -841,6 +883,10 @@ def run_vbench_evaluation(
                 profile_window_clips=slow_dims_perf_window_clips,
                 stage_profile=slow_dims_stage_profile,
                 det_single_image_dims=grit_batch_sensitive_dims_single_image,
+                det_adaptive_enabled=grit_batch_adaptive_fallback_enable,
+                det_adaptive_dims=grit_batch_adaptive_fallback_dims,
+                det_adaptive_probe_clips=grit_batch_adaptive_probe_clips,
+                det_adaptive_score_threshold=grit_batch_adaptive_score_threshold,
                 progress_callback=(
                     (
                         lambda payload: progress_reporter.update_live(

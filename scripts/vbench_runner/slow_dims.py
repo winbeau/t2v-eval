@@ -184,6 +184,39 @@ def _collect_clip_meta(full_info_path: Path, dimension: str) -> dict[str, dict]:
     return clip_meta
 
 
+def _resolve_det_exec_plan(
+    *,
+    det_dims_present: list[str],
+    det_single_image_dims_set: set[str],
+    det_adaptive_state: dict[str, dict[str, float | int | bool]],
+    det_adaptive_probe_clips: int,
+) -> tuple[list[str], list[str], list[str]]:
+    """
+    Resolve detection execution mode for current clip.
+
+    Returns:
+        (det_dims_batch, det_dims_single, probe_dims)
+    """
+    forced_single_dims = set(det_single_image_dims_set)
+    forced_single_dims.update(
+        dim
+        for dim, state in det_adaptive_state.items()
+        if bool(state.get("triggered", False))
+    )
+    probe_dims = [
+        dim
+        for dim in det_dims_present
+        if dim in det_adaptive_state
+        and dim not in det_single_image_dims_set
+        and not bool(det_adaptive_state[dim].get("triggered", False))
+        and int(det_adaptive_state[dim].get("probed", 0)) < det_adaptive_probe_clips
+    ]
+
+    det_dims_single = [dim for dim in det_dims_present if dim in forced_single_dims or dim in probe_dims]
+    det_dims_batch = [dim for dim in det_dims_present if dim not in forced_single_dims]
+    return det_dims_batch, det_dims_single, probe_dims
+
+
 def run_fused_slow_dimensions(
     *,
     full_info_path: Path,
@@ -202,6 +235,10 @@ def run_fused_slow_dimensions(
     profile_window_clips: int = 100,
     stage_profile: bool = True,
     det_single_image_dims: list[str] | None = None,
+    det_adaptive_enabled: bool = False,
+    det_adaptive_dims: list[str] | None = None,
+    det_adaptive_probe_clips: int = 8,
+    det_adaptive_score_threshold: float = 0.02,
 ) -> tuple[list[dict], dict[str, float | int]]:
     """
     Run slow dimensions with shared decode/inference and return per-video rows.
@@ -220,6 +257,29 @@ def run_fused_slow_dimensions(
             "[rank %d] Slow-dims low-drift single-image det dims: %s",
             rank,
             sorted(det_single_image_dims_set),
+        )
+    det_adaptive_probe_clips = max(0, int(det_adaptive_probe_clips))
+    det_adaptive_score_threshold = max(0.0, float(det_adaptive_score_threshold))
+    det_adaptive_candidates = set(det_adaptive_dims or []) & {
+        "object_class",
+        "multiple_objects",
+        "spatial_relationship",
+    }
+    if det_single_image_dims_set:
+        det_adaptive_candidates -= det_single_image_dims_set
+    if not det_adaptive_enabled:
+        det_adaptive_candidates = set()
+    det_adaptive_state: dict[str, dict[str, float | int | bool]] = {
+        dim: {"probed": 0, "triggered": False, "max_abs_diff": 0.0}
+        for dim in sorted(det_adaptive_candidates)
+    }
+    if det_adaptive_state:
+        logger.info(
+            "[rank %d] Slow-dims adaptive fallback enabled: dims=%s probe_clips=%d score_threshold=%.6f",
+            rank,
+            sorted(det_adaptive_state.keys()),
+            det_adaptive_probe_clips,
+            det_adaptive_score_threshold,
         )
     if not active_dims:
         return [], {
@@ -366,8 +426,12 @@ def run_fused_slow_dimensions(
                 for dim in ("object_class", "multiple_objects", "spatial_relationship")
                 if dim in dim_meta and video_path in dim_meta[dim]
             ]
-            det_dims_batch = [dim for dim in det_dims_present if dim not in det_single_image_dims_set]
-            det_dims_single = [dim for dim in det_dims_present if dim in det_single_image_dims_set]
+            det_dims_batch, det_dims_single, probe_dims = _resolve_det_exec_plan(
+                det_dims_present=det_dims_present,
+                det_single_image_dims_set=det_single_image_dims_set,
+                det_adaptive_state=det_adaptive_state,
+                det_adaptive_probe_clips=det_adaptive_probe_clips,
+            )
 
             captions_det_batch = None
             captions_det_single = None
@@ -387,54 +451,94 @@ def run_fused_slow_dimensions(
                 det_infer_sec += det_dt
                 local_times["det"] += det_dt
 
-            def _captions_for_dim(dim_name: str):
-                use_single = dim_name in det_single_image_dims_set
+            def _captions_for_dim(dim_name: str, use_single: bool):
                 selected = captions_det_single if use_single else captions_det_batch
                 if selected is None:
                     raise RuntimeError(
                         f"Missing detection captions for dim={dim_name}, "
-                        f"use_single={use_single}, video={video_path}"
+                        f"use_single={use_single}, video={video_path}, "
+                        f"batch_dims={det_dims_batch}, single_dims={det_dims_single}, probe_dims={probe_dims}"
                     )
                 return selected
 
-            if "object_class" in dim_meta and video_path in dim_meta["object_class"]:
+            def _score_object_class(captions_list) -> float:
+                nonlocal score_sec
                 object_meta = dim_meta["object_class"][video_path]
                 object_info = object_meta["auxiliary_info"]["object"]
-                object_preds = _object_preds_from_captions(_captions_for_dim("object_class"))
+                object_preds = _object_preds_from_captions(captions_list)
                 t0 = time.perf_counter()
                 success = object_mod.check_generate(object_info, object_preds)
                 score_dt = time.perf_counter() - t0
                 score_sec += score_dt
                 local_times["score"] += score_dt
-                score = success / len(object_preds)
-                clip_results["object_class"].append(
-                    {"video_path": video_path, "video_results": score}
-                )
+                return success / len(object_preds)
 
-            if "multiple_objects" in dim_meta and video_path in dim_meta["multiple_objects"]:
+            def _score_multiple_objects(captions_list) -> float:
+                nonlocal score_sec
                 multi_meta = dim_meta["multiple_objects"][video_path]
                 multi_info = multi_meta["auxiliary_info"]["object"]
-                multi_preds = _multiple_preds_from_captions(_captions_for_dim("multiple_objects"))
+                multi_preds = _multiple_preds_from_captions(captions_list)
                 t0 = time.perf_counter()
                 success = multi_mod.check_generate(multi_info, multi_preds)
                 score_dt = time.perf_counter() - t0
                 score_sec += score_dt
                 local_times["score"] += score_dt
-                score = success / len(multi_preds)
-                clip_results["multiple_objects"].append(
-                    {"video_path": video_path, "video_results": score}
-                )
+                return success / len(multi_preds)
 
-            if "spatial_relationship" in dim_meta and video_path in dim_meta["spatial_relationship"]:
+            def _score_spatial_relationship(captions_list) -> float:
+                nonlocal score_sec
                 spatial_meta = dim_meta["spatial_relationship"][video_path]
                 spatial_info = spatial_meta["auxiliary_info"]["spatial_relationship"]
-                spatial_preds = _spatial_preds_from_captions(_captions_for_dim("spatial_relationship"))
+                spatial_preds = _spatial_preds_from_captions(captions_list)
                 t0 = time.perf_counter()
                 frame_scores = spatial_mod.check_generate(spatial_info, spatial_preds)
                 score_dt = time.perf_counter() - t0
                 score_sec += score_dt
                 local_times["score"] += score_dt
-                score = float(np.mean(frame_scores))
+                return float(np.mean(frame_scores))
+
+            def _pick_dim_score(dim_name: str, score_fn) -> float:
+                state = det_adaptive_state.get(dim_name)
+                probing_now = dim_name in probe_dims and state is not None
+                if probing_now:
+                    score_batch = score_fn(_captions_for_dim(dim_name, use_single=False))
+                    score_single = score_fn(_captions_for_dim(dim_name, use_single=True))
+                    abs_diff = abs(float(score_batch) - float(score_single))
+                    state["probed"] = int(state.get("probed", 0)) + 1
+                    state["max_abs_diff"] = max(float(state.get("max_abs_diff", 0.0)), abs_diff)
+                    if abs_diff > det_adaptive_score_threshold:
+                        state["triggered"] = True
+                        logger.warning(
+                            "[rank %d] Slow-dims adaptive fallback triggered for %s: "
+                            "abs(score_batch-score_single)=%.6f > %.6f (video=%s)",
+                            rank,
+                            dim_name,
+                            abs_diff,
+                            det_adaptive_score_threshold,
+                            video_path,
+                        )
+                        return float(score_single)
+                    return float(score_batch)
+
+                use_single = dim_name in det_single_image_dims_set or (
+                    state is not None and bool(state.get("triggered", False))
+                )
+                return float(score_fn(_captions_for_dim(dim_name, use_single=use_single)))
+
+            if "object_class" in dim_meta and video_path in dim_meta["object_class"]:
+                score = _pick_dim_score("object_class", _score_object_class)
+                clip_results["object_class"].append(
+                    {"video_path": video_path, "video_results": score}
+                )
+
+            if "multiple_objects" in dim_meta and video_path in dim_meta["multiple_objects"]:
+                score = _pick_dim_score("multiple_objects", _score_multiple_objects)
+                clip_results["multiple_objects"].append(
+                    {"video_path": video_path, "video_results": score}
+                )
+
+            if "spatial_relationship" in dim_meta and video_path in dim_meta["spatial_relationship"]:
+                score = _pick_dim_score("spatial_relationship", _score_spatial_relationship)
                 clip_results["spatial_relationship"].append(
                     {"video_path": video_path, "video_results": score}
                 )
@@ -594,6 +698,24 @@ def run_fused_slow_dimensions(
         "init_det_sec": round(init_det_sec, 4),
         "init_color_sec": round(init_color_sec, 4),
     }
+    if det_adaptive_state:
+        triggered_dims = [
+            dim
+            for dim, state in det_adaptive_state.items()
+            if bool(state.get("triggered", False))
+        ]
+        stats["adaptive_triggered_dims"] = len(triggered_dims)
+        stats["adaptive_probe_clips"] = det_adaptive_probe_clips
+        stats["adaptive_score_threshold"] = round(det_adaptive_score_threshold, 6)
+        for dim, state in det_adaptive_state.items():
+            logger.info(
+                "[rank %d] Slow-dims adaptive summary [%s]: probed=%d triggered=%s max_abs_diff=%.6f",
+                rank,
+                dim,
+                int(state.get("probed", 0)),
+                bool(state.get("triggered", False)),
+                float(state.get("max_abs_diff", 0.0)),
+            )
 
     logger.info(
         "[rank %d] slow-dims fused stats: clips %d/%d decode=%.2fs tensorize=%.2fs resize=%.2fs det=%.2fs color=%.2fs score=%.2fs decode_workers=%d prefetch=%d backend=%s shard_mode=%s",
