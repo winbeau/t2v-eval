@@ -106,12 +106,20 @@ def test_run_fused_slow_dimensions_color_strict_raises(monkeypatch: pytest.Monke
         lambda full_info_path, dim: {
             "/tmp/dataset/g1/clip_scene/clip.mp4": {
                 "prompt": "a red car driving",
-                "auxiliary_info": {"color": "red"},
+                "auxiliary_info": {
+                    "color": "red",
+                    "object": "car",
+                    "object_candidates": ["car"],
+                    "object_key": "car driving",
+                },
             }
         },
     )
 
-    with pytest.raises(RuntimeError, match="color strict integrity violation"):
+    with pytest.raises(
+        RuntimeError,
+        match="color strict integrity violation.*object='car'.*object_candidates=\\['car'\\]",
+    ):
         slow_dims.run_fused_slow_dimensions(
             full_info_path=None,
             subtasks=["color"],

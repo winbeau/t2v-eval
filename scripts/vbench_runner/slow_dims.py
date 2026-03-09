@@ -20,11 +20,11 @@ import torch
 from torchvision import transforms
 
 try:
-    from .auxiliary import build_color_object_key
+    from .auxiliary import normalize_color_auxiliary_payload, normalize_color_token
     from .env import logger
     from .results import extract_subtask_scores, resolve_video_id
 except ImportError:
-    from vbench_runner.auxiliary import build_color_object_key
+    from vbench_runner.auxiliary import normalize_color_auxiliary_payload, normalize_color_token
     from vbench_runner.env import logger
     from vbench_runner.results import extract_subtask_scores, resolve_video_id
 
@@ -565,15 +565,22 @@ def run_fused_slow_dimensions(
 
             color_preds = _color_preds_from_captions(captions_color)
             color_meta = dim_meta["color"][video_path]
-            color_aux = color_meta["auxiliary_info"]
-            color_info = str(color_aux["color"]).strip().lower()
+            color_aux = normalize_color_auxiliary_payload(
+                color_meta["auxiliary_info"],
+                color_meta["prompt"],
+            ) or {}
+            color_info = normalize_color_token(color_aux["color"])
             prompt_text = color_meta["prompt"]
-            object_key = str(
-                color_aux.get("object_key") or build_color_object_key(prompt_text, color_info)
-            ).strip()
+            object_name = str(color_aux.get("object", "")).strip()
+            object_candidates = [
+                str(item or "").strip()
+                for item in color_aux.get("object_candidates", [])
+                if str(item or "").strip()
+            ]
+            object_key = str(color_aux.get("object_key", "")).strip()
             t0 = time.perf_counter()
             cur_object, cur_object_color = color_mod.check_generate(
-                color_info, object_key, color_preds
+                color_info, color_aux, color_preds
             )
             score_dt = time.perf_counter() - t0
             score_sec += score_dt
@@ -589,7 +596,8 @@ def run_fused_slow_dimensions(
                 raise RuntimeError(
                     "color strict integrity violation: no matched object found for "
                     f"video_path={video_path} video_id={resolved_video_id} group={group_name} "
-                    f"prompt={prompt_text!r} color={color_info!r} object_key={object_key!r}"
+                    f"prompt={prompt_text!r} color={color_info!r} object={object_name!r} "
+                    f"object_candidates={object_candidates!r} object_key={object_key!r}"
                 )
             elif color_fill_zero_on_no_object:
                 color_no_object_count += 1

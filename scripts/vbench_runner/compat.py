@@ -770,10 +770,13 @@ def patch_color_object_matching() -> None:
     """
     try:
         from vbench import color as _color
-        from .auxiliary import build_color_object_key
+        from .auxiliary import normalize_color_auxiliary_payload, normalize_color_token
     except ImportError:
         try:
-            from vbench_runner.auxiliary import build_color_object_key
+            from vbench_runner.auxiliary import (
+                normalize_color_auxiliary_payload,
+                normalize_color_token,
+            )
             from vbench import color as _color
         except ImportError:
             return
@@ -781,15 +784,53 @@ def patch_color_object_matching() -> None:
     if getattr(_color, "_patched_color_matching", False):
         return
 
-    def _check_generate_lenient(color_key, object_key, predictions):
+    def _normalize_object_candidates(object_target) -> list[str]:
+        if isinstance(object_target, dict):
+            candidates = object_target.get("object_candidates") or []
+            primary = str(object_target.get("object", "")).strip().lower()
+            ordered = [primary, *[str(item or "").strip().lower() for item in candidates]]
+        elif isinstance(object_target, (list, tuple, set)):
+            ordered = [str(item or "").strip().lower() for item in object_target]
+        else:
+            ordered = [str(object_target or "").strip().lower()]
+
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for token in ordered:
+            if not token:
+                continue
+            candidate_forms = {token}
+            if token.endswith("s") and len(token) > 3:
+                candidate_forms.add(token[:-1])
+            else:
+                candidate_forms.add(f"{token}s")
+            for form in candidate_forms:
+                if form and form not in seen:
+                    normalized.append(form)
+                    seen.add(form)
+        return normalized
+
+    def _prediction_matches_object(pred_type: str, candidates: list[str]) -> bool:
+        label = str(pred_type or "").strip().lower()
+        if not label:
+            return False
+        label_forms = {label}
+        if label.endswith("s") and len(label) > 3:
+            label_forms.add(label[:-1])
+        else:
+            label_forms.add(f"{label}s")
+        return any(candidate in label_forms for candidate in candidates)
+
+    def _check_generate_lenient(color_key, object_target, predictions):
         cur_object_color, cur_object = 0, 0
-        object_key_lower = object_key.lower().strip()
+        color_key = normalize_color_token(color_key)
+        object_candidates = _normalize_object_candidates(object_target)
         for frame_pred in predictions:
             object_flag, color_flag = False, False
             for pred in frame_pred:
                 pred_type = str(pred[1]).lower().strip() if pred[1] else ""
-                # Lenient: GrIT label is a substring of object_key (e.g. "car" in "car driving")
-                if pred_type and pred_type in object_key_lower:
+                pred_caption = str(pred[0] or "").lower()
+                if pred_type and _prediction_matches_object(pred_type, object_candidates):
                     for color_query in [
                         "white",
                         "red",
@@ -804,9 +845,9 @@ def patch_color_object_matching() -> None:
                         "black",
                         "grey",
                     ]:
-                        if color_query in pred[0]:
+                        if color_query in pred_caption:
                             object_flag = True
-                    if color_key in pred[0]:
+                    if color_key in pred_caption:
                         color_flag = True
             if color_flag:
                 cur_object_color += 1
@@ -823,13 +864,9 @@ def patch_color_object_matching() -> None:
             if "auxiliary_info" not in info:
                 raise RuntimeError("Auxiliary info is not in json, please check your json.")
             color_aux = info["auxiliary_info"]
-            color_info = str(color_aux.get("color", "")).strip().lower()
-            if color_info == "grey":
-                color_info = "gray"
             prompt_text = str(info.get("prompt", "")).strip()
-            object_key = str(
-                color_aux.get("object_key") or build_color_object_key(prompt_text, color_info)
-            ).strip()
+            color_aux = normalize_color_auxiliary_payload(color_aux, prompt_text) or {}
+            color_info = normalize_color_token(color_aux.get("color", ""))
             for video_path in info.get("video_list", []):
                 video_arrays = _color.load_video(video_path, num_frames=16, return_tensor=False)
                 _, h, w, _ = video_arrays.shape
@@ -847,7 +884,7 @@ def patch_color_object_matching() -> None:
                     video_arrays = resized_video
                 cur_video_pred = _color.get_dect_from_grit(model, video_arrays)
                 cur_object, cur_object_color = _check_generate_lenient(
-                    color_info, object_key, cur_video_pred
+                    color_info, color_aux, cur_video_pred
                 )
                 if cur_object > 0:
                     cur_success_frame_rate = cur_object_color / cur_object

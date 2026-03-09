@@ -359,7 +359,9 @@ def test_patch_color_object_matching_preserves_zero_division(monkeypatch: pytest
         )
 
 
-def test_patch_color_object_matching_uses_safe_object_key(monkeypatch: pytest.MonkeyPatch):
+def test_patch_color_object_matching_uses_structured_object_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+):
     vbench_pkg = ModuleType("vbench")
     vbench_pkg.__path__ = []  # type: ignore[attr-defined]
     color_mod = ModuleType("vbench.color")
@@ -387,6 +389,44 @@ def test_patch_color_object_matching_uses_safe_object_key(monkeypatch: pytest.Mo
                     "A stylish woman strolls down a street wearing a red dress, "
                     "captured in a paired cinematic shot."
                 ),
+                "auxiliary_info": {"color": "red"},
+                "video_list": ["v.mp4"],
+            }
+        ],
+        "cuda",
+    )
+
+    assert score == 1.0
+    assert len(video_results) == 1
+
+
+def test_patch_color_object_matching_deprioritizes_small_color_objects(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    vbench_pkg = ModuleType("vbench")
+    vbench_pkg.__path__ = []  # type: ignore[attr-defined]
+    color_mod = ModuleType("vbench.color")
+    color_mod.color = lambda model, video_dict, device: ("ORIGINAL", [])
+    color_mod.check_generate = lambda *args, **kwargs: (0, 0)
+    color_mod.tqdm = lambda items, disable=False: items
+    color_mod.get_rank = lambda: 0
+    color_mod.load_video = lambda *args, **kwargs: np.zeros((2, 4, 4, 3), dtype=np.uint8)
+    color_mod.get_dect_from_grit = (
+        lambda model, image_arrays: [[["a woman wearing red lipstick", "woman"]]] * len(image_arrays)
+    )
+    color_mod.np = np
+    color_mod.cv2 = __import__("cv2")
+
+    monkeypatch.setitem(sys.modules, "vbench", vbench_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.color", color_mod)
+
+    compat.patch_color_object_matching()
+
+    score, video_results = color_mod.color(
+        None,
+        [
+            {
+                "prompt": "A woman with red lipstick smiles at the camera.",
                 "auxiliary_info": {"color": "red"},
                 "video_list": ["v.mp4"],
             }

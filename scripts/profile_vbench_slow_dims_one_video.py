@@ -31,7 +31,7 @@ import numpy as np
 import torch
 from torchvision import transforms
 
-from scripts.vbench_runner.auxiliary import build_color_object_key
+from scripts.vbench_runner.auxiliary import normalize_color_auxiliary_payload
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VBENCH_ROOT = REPO_ROOT / "third_party" / "VBench"
@@ -99,6 +99,12 @@ def _patch_grit_batch_inference_compat() -> None:
 
     VisualizationDemo.run_on_batch = _run_on_batch_safe
     VisualizationDemo._profile_patched_batch_compat = True  # type: ignore[attr-defined]
+
+
+def _patch_color_matching_compat() -> None:
+    from scripts.vbench_runner.compat import patch_color_object_matching
+
+    patch_color_object_matching()
 
 
 def _configure_warning_filters() -> None:
@@ -208,7 +214,7 @@ def _profile_color(
     device: str,
     cap_model: Any,
     color_key: str,
-    object_key: str,
+    color_target: dict[str, Any],
 ) -> dict:
     result: dict[str, float] = {}
     video_arrays, t_decode = _time_block(
@@ -222,7 +228,7 @@ def _profile_color(
     preds, t_infer = _time_block(device, lambda: color_mod.get_dect_from_grit(cap_model, video_arrays))
     result["infer"] = t_infer
 
-    _, t_score = _time_block(device, lambda: color_mod.check_generate(color_key, object_key, preds))
+    _, t_score = _time_block(device, lambda: color_mod.check_generate(color_key, color_target, preds))
     result["score"] = t_score
     result["total"] = sum(result.values())
     return result
@@ -338,13 +344,13 @@ def main() -> None:
         "--color-prompt",
         type=str,
         default=None,
-        help="Optional raw prompt to derive a safe color object_key automatically.",
+        help="Optional raw prompt to derive structured color target automatically.",
     )
     parser.add_argument(
         "--color-object-key",
         type=str,
         default="car",
-        help="object_key for color.check_generate",
+        help="Fallback object token for color.check_generate when --color-prompt is unset.",
     )
     parser.add_argument(
         "--spatial-object-a", type=str, default="person", help="object_a for spatial check_generate"
@@ -368,6 +374,7 @@ def main() -> None:
     _configure_warning_filters()
     _ensure_vbench_imports()
     _patch_grit_batch_inference_compat()
+    _patch_color_matching_compat()
 
     video_path = _choose_video(args.video, args.video_dir)
     if args.device.startswith("cuda") and not torch.cuda.is_available():
@@ -393,10 +400,13 @@ def main() -> None:
         "object_b": args.spatial_object_b,
         "relationship": args.spatial_relation,
     }
-    color_object_key = (
-        build_color_object_key(args.color_prompt, args.color_key)
+    color_target = (
+        normalize_color_auxiliary_payload({"color": args.color_key}, args.color_prompt)
         if args.color_prompt
-        else args.color_object_key
+        else normalize_color_auxiliary_payload(
+            {"color": args.color_key, "object": args.color_object_key},
+            args.color_object_key,
+        )
     )
 
     def _run_once() -> dict[str, dict[str, float]]:
@@ -408,7 +418,7 @@ def main() -> None:
                 str(video_path), device, det_model, args.multi_key
             ),
             "color": _profile_color(
-                str(video_path), device, cap_model, args.color_key, color_object_key
+                str(video_path), device, cap_model, args.color_key, color_target
             ),
             "spatial_relationship": _profile_spatial_relationship(
                 str(video_path), device, det_model, spatial_key

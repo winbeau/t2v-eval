@@ -42,6 +42,54 @@ COLOR_WORDS = (
     "brown",
 )
 
+PERSON_TOKENS = {
+    "person",
+    "people",
+    "woman",
+    "women",
+    "man",
+    "men",
+    "girl",
+    "boy",
+    "lady",
+    "gentleman",
+    "child",
+    "children",
+}
+
+SMALL_COLOR_OBJECT_TOKENS = {
+    "lipstick",
+    "earring",
+    "earrings",
+    "ring",
+    "rings",
+    "nail",
+    "nails",
+    "bracelet",
+    "bracelets",
+    "necklace",
+    "necklaces",
+}
+
+VISUAL_OBJECT_ALIASES = {
+    "woman": ["woman", "person", "lady", "girl"],
+    "women": ["women", "woman", "person", "people", "ladies", "girls"],
+    "man": ["man", "person", "gentleman", "boy"],
+    "men": ["men", "man", "person", "people", "gentlemen", "boys"],
+    "person": ["person", "woman", "man", "lady", "gentleman", "girl", "boy"],
+    "people": ["people", "persons", "women", "men"],
+    "purse": ["purse", "bag", "handbag"],
+    "handbag": ["handbag", "bag", "purse"],
+    "bag": ["bag", "handbag", "purse"],
+    "dress": ["dress", "gown"],
+    "shirt": ["shirt", "top", "blouse"],
+    "blouse": ["blouse", "shirt", "top"],
+    "jacket": ["jacket", "coat"],
+    "coat": ["coat", "jacket"],
+    "boots": ["boots", "boot"],
+    "boot": ["boot", "boots"],
+}
+
 SPATIAL_RELATIONS = (
     "on the left of",
     "on the right of",
@@ -108,6 +156,122 @@ def extract_object_token(text: str, default: str = "object") -> str:
     return tokens[-1] if tokens else default
 
 
+def normalize_color_token(color_key: str) -> str:
+    """Normalize color token for comparisons."""
+    normalized = str(color_key or "").strip().lower()
+    return "gray" if normalized == "grey" else normalized
+
+
+def _color_aliases(color_key: str) -> set[str]:
+    normalized = normalize_color_token(color_key)
+    aliases = {normalized} if normalized else set()
+    if normalized == "gray":
+        aliases.add("grey")
+    return aliases
+
+
+def _meaningful_tokens(text: str) -> list[str]:
+    return [
+        token
+        for token in tokenize_prompt_words(text)
+        if token not in PROMPT_STOPWORDS and token not in COLOR_WORDS
+    ]
+
+
+def extract_primary_subject_token(text: str, default: str = "object") -> str:
+    """Extract a likely main visible subject from prompt text."""
+    tokens = _meaningful_tokens(text)
+    if not tokens:
+        return default
+    for token in tokens[:12]:
+        if token in PERSON_TOKENS:
+            return token
+    return tokens[0]
+
+
+def expand_visual_object_aliases(token: str) -> list[str]:
+    """Expand a canonical token to a small explicit alias set."""
+    normalized = str(token or "").strip().lower()
+    if not normalized:
+        return []
+    aliases = VISUAL_OBJECT_ALIASES.get(normalized)
+    if aliases is not None:
+        return list(dict.fromkeys(aliases))
+    return [normalized]
+
+
+def _candidate_priority(token: str) -> tuple[int, str]:
+    normalized = str(token or "").strip().lower()
+    if normalized in SMALL_COLOR_OBJECT_TOKENS:
+        return (2, normalized)
+    if normalized in PERSON_TOKENS:
+        return (1, normalized)
+    return (0, normalized)
+
+
+def extract_color_object_candidates(prompt_text: str, color_key: str) -> list[str]:
+    """
+    Extract ordered object candidates for a color prompt.
+
+    Priority:
+      1. Objects directly following the target color word.
+      2. Main visible subject inferred from prompt.
+      3. Unique, visually plausible alternatives from the same prompt.
+    """
+    prompt_simple = simplify_prompt_text(prompt_text)
+    tokens = tokenize_prompt_words(prompt_simple)
+    color_aliases = _color_aliases(color_key)
+
+    explicit_candidates: list[str] = []
+    for idx, token in enumerate(tokens):
+        if token not in color_aliases:
+            continue
+        for look_ahead in range(idx + 1, min(len(tokens), idx + 5)):
+            candidate = tokens[look_ahead]
+            if candidate in PROMPT_STOPWORDS or candidate in COLOR_WORDS:
+                continue
+            explicit_candidates.append(candidate)
+            break
+
+    fallback_candidates: list[str] = []
+    primary_subject = extract_primary_subject_token(prompt_simple, default="object")
+    if primary_subject:
+        fallback_candidates.append(primary_subject)
+    for token in _meaningful_tokens(prompt_simple):
+        fallback_candidates.append(token)
+
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for token in explicit_candidates + fallback_candidates:
+        for alias in expand_visual_object_aliases(token):
+            if alias and alias not in seen:
+                ordered.append(alias)
+                seen.add(alias)
+
+    if not ordered:
+        return ["object"]
+
+    explicit_set = set(explicit_candidates)
+    non_small_explicit_set = {
+        token for token in explicit_set if token not in SMALL_COLOR_OBJECT_TOKENS
+    }
+    primary_subject_aliases = set(expand_visual_object_aliases(primary_subject))
+    ranked = sorted(
+        ordered,
+        key=lambda token: (
+            0
+            if token in non_small_explicit_set
+            or any(base in non_small_explicit_set for base in expand_visual_object_aliases(token))
+            else 1
+            if token in primary_subject_aliases and token not in SMALL_COLOR_OBJECT_TOKENS
+            else 2 if token in SMALL_COLOR_OBJECT_TOKENS else 1,
+            0 if token not in SMALL_COLOR_OBJECT_TOKENS else 1,
+            ordered.index(token),
+        ),
+    )
+    return list(dict.fromkeys(ranked))
+
+
 def build_color_object_key(prompt_text: str, color_key: str, default: str = "object") -> str:
     """
     Build a safe object-matching text for the color dimension.
@@ -116,15 +280,7 @@ def build_color_object_key(prompt_text: str, color_key: str, default: str = "obj
     article/color tokens and keeps words like "woman", "paired", and "captured" intact.
     """
     prompt_simple = simplify_prompt_text(prompt_text)
-    normalized_color = str(color_key or "").strip().lower()
-    if normalized_color == "grey":
-        normalized_color = "gray"
-
-    color_aliases = {normalized_color} if normalized_color else set()
-    if normalized_color == "gray":
-        color_aliases.add("grey")
-    elif normalized_color == "grey":
-        color_aliases.add("gray")
+    color_aliases = _color_aliases(color_key)
 
     filtered_tokens = [
         token
@@ -135,6 +291,45 @@ def build_color_object_key(prompt_text: str, color_key: str, default: str = "obj
     if object_key:
         return object_key
     return extract_object_token(prompt_simple, default=default)
+
+
+def normalize_color_auxiliary_payload(
+    payload: dict | None,
+    prompt_text: str,
+) -> dict | None:
+    """Return a color auxiliary payload with normalized structured fields."""
+    if not isinstance(payload, dict):
+        return payload
+    normalized = deepcopy(payload)
+    color_value = normalize_color_token(normalized.get("color", ""))
+    normalized["color"] = color_value or "red"
+
+    candidates = normalized.get("object_candidates")
+    if not isinstance(candidates, list) or not candidates:
+        candidates = extract_color_object_candidates(prompt_text, normalized["color"])
+
+    deduped_candidates: list[str] = []
+    seen: set[str] = set()
+    for token in candidates:
+        raw = str(token or "").strip().lower()
+        if not raw:
+            continue
+        for alias in expand_visual_object_aliases(raw):
+            if alias and alias not in seen:
+                deduped_candidates.append(alias)
+                seen.add(alias)
+    if not deduped_candidates:
+        deduped_candidates = extract_color_object_candidates(prompt_text, normalized["color"])
+
+    normalized["object_candidates"] = deduped_candidates
+    object_value = str(normalized.get("object", "")).strip().lower()
+    normalized["object"] = object_value or deduped_candidates[0]
+    if normalized["object"] not in deduped_candidates:
+        normalized["object_candidates"] = [normalized["object"], *deduped_candidates]
+    normalized["object_key"] = str(
+        normalized.get("object_key") or build_color_object_key(prompt_text, normalized["color"])
+    ).strip()
+    return normalized
 
 
 # =============================================================================
@@ -209,15 +404,15 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
     if dimension == "color":
         for color in COLOR_WORDS:
             if re.search(rf"\b{re.escape(color)}\b", prompt_simple):
-                normalized_color = "gray" if color == "grey" else color
-                return {
+                normalized_color = normalize_color_token(color)
+                return normalize_color_auxiliary_payload(
+                    {
                     "color": normalized_color,
-                    "object_key": build_color_object_key(prompt_text, normalized_color),
-                }
-        return {
-            "color": "red",
-            "object_key": build_color_object_key(prompt_text, "red"),
-        }
+                    },
+                    prompt_text,
+                )
+        fallback_color = "red"
+        return normalize_color_auxiliary_payload({"color": fallback_color}, prompt_text)
 
     return None
 
@@ -271,16 +466,9 @@ def resolve_auxiliary_payload(
 ) -> tuple[dict | None, str]:
     """Resolve auxiliary payload by official lookup first, then heuristic fallback."""
     def _finalize_color_payload(payload: dict | None) -> dict | None:
-        if dimension != "color" or not isinstance(payload, dict):
+        if dimension != "color":
             return payload
-        normalized = deepcopy(payload)
-        color_value = str(normalized.get("color", "")).strip().lower()
-        if color_value == "grey":
-            color_value = "gray"
-            normalized["color"] = color_value
-        if "object_key" not in normalized:
-            normalized["object_key"] = build_color_object_key(prompt_text, color_value or "red")
-        return normalized
+        return normalize_color_auxiliary_payload(payload, prompt_text)
 
     norm_key = normalize_prompt_text(prompt_text)
     simple_key = simplify_prompt_text(prompt_text)
