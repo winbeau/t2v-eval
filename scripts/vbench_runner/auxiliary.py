@@ -411,8 +411,7 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
                     },
                     prompt_text,
                 )
-        fallback_color = "red"
-        return normalize_color_auxiliary_payload({"color": fallback_color}, prompt_text)
+        return None
 
     return None
 

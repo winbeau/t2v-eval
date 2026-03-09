@@ -265,12 +265,9 @@ class TestInferAuxiliaryFromPrompt:
         assert result["object"] == "cat"
         assert result["object_key"] == "cat"
 
-    def test_color_fallback(self):
+    def test_color_without_explicit_target_returns_none(self):
         result = infer_auxiliary_from_prompt("color", "A car on the road")
-        assert result is not None
-        assert result["color"] == "red"  # default
-        assert result["object"] == "car"
-        assert result["object_key"] == "car on road"
+        assert result is None
 
     def test_color_multiple_same_color_objects_prefers_main_visual_entity(self):
         result = infer_auxiliary_from_prompt(
@@ -370,6 +367,13 @@ class TestResolveAuxiliaryPayload:
         assert source == "heuristic"
         assert payload["color"] == "blue"
         assert payload["object"] == "sky"
+
+    def test_color_without_explicit_target_returns_missing(self):
+        payload, source = resolve_auxiliary_payload(
+            "color", "A herd of mammoths walks through a snowy meadow", {}, {}
+        )
+        assert payload is None
+        assert source == "missing"
 
     def test_missing_dimension(self):
         payload, source = resolve_auxiliary_payload(
