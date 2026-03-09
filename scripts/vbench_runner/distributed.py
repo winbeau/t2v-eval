@@ -16,12 +16,12 @@ import pandas as pd
 try:
     from .env import PROJECT_ROOT, get_vbench_subtasks, logger, use_vbench_long
     from .group_labels import build_group_alias_map, remap_group_column
-    from .scaling import apply_output_percent_scaling
+    from .scaling import RESERVED_COLUMNS, apply_output_percent_scaling
     from .video_records import ensure_unique_video_ids, load_video_records_for_vbench
 except ImportError:
     from vbench_runner.env import PROJECT_ROOT, get_vbench_subtasks, logger, use_vbench_long
     from vbench_runner.group_labels import build_group_alias_map, remap_group_column
-    from vbench_runner.scaling import apply_output_percent_scaling
+    from vbench_runner.scaling import RESERVED_COLUMNS, apply_output_percent_scaling
     from vbench_runner.video_records import ensure_unique_video_ids, load_video_records_for_vbench
 
 
@@ -88,15 +88,13 @@ def split_subtasks_for_rank(
 
 def merge_rank_partial_results(partial_frames: list[pd.DataFrame]) -> pd.DataFrame:
     """Merge rank-local wide tables into one final wide table on CPU."""
+    # Exclude reserved/aggregate columns — they are recomputed after merge.
+    skip_cols = RESERVED_COLUMNS | {"vbench_temporal_score"}
     long_rows = []
     for frame in partial_frames:
         if frame is None or frame.empty or "video_id" not in frame.columns:
             continue
-        metric_cols = [
-            col
-            for col in frame.columns
-            if col not in {"video_id", "group", "vbench_temporal_score"}
-        ]
+        metric_cols = [col for col in frame.columns if col not in skip_cols]
         for col in metric_cols:
             if frame[col].notna().any():
                 temp = frame[["video_id", col]].copy()

@@ -1256,13 +1256,9 @@ def run_vbench_evaluation(
         if subtask_cols:
             df_pivot["vbench_temporal_score"] = df_pivot[subtask_cols].mean(axis=1)
 
-        # Compute official VBench quality/semantic/total scores when all 16 dims present
-        official_cols = compute_official_vbench_scores(df_pivot)
-        if official_cols:
-            logger.info(f"[rank {rank}] Computed official VBench scores: {official_cols}")
-        lite_cols = compute_semantic_lite_vbench_scores(df_pivot)
-        if lite_cols:
-            logger.info(f"[rank {rank}] Computed VBench lite scores: {lite_cols}")
+        # NOTE: Official VBench aggregate scores (quality/semantic/total) are
+        # computed in main() after merging all ranks, so that they use the full
+        # dataset rather than per-rank partial data.
 
         return df_pivot
     else:
@@ -1394,9 +1390,8 @@ def run_vbench_cli_fallback(
         if subtask_cols:
             df_pivot["vbench_temporal_score"] = df_pivot[subtask_cols].mean(axis=1)
 
-        # Compute official VBench quality/semantic/total scores when all 16 dims present
-        compute_official_vbench_scores(df_pivot)
-        compute_semantic_lite_vbench_scores(df_pivot)
+        # NOTE: Official VBench aggregate scores are computed in main() after
+        # merging all ranks, not here.
 
         return df_pivot
 
@@ -1945,6 +1940,16 @@ def main():
             record_diagnostics=record_diagnostics,
             strict_integrity=strict_integrity,
         )
+
+        # Compute official VBench aggregate scores *after* merge (full data)
+        # and *before* percent scaling (input must be on [0,1] scale).
+        if not df_results.empty:
+            official_cols = compute_official_vbench_scores(df_results)
+            if official_cols:
+                logger.info("Computed official VBench scores: %s", official_cols)
+            lite_cols = compute_semantic_lite_vbench_scores(df_results)
+            if lite_cols:
+                logger.info("Computed VBench lite scores: %s", lite_cols)
 
         # Optional output normalization: convert 0-1 dimensions to 0-100.
         if not df_results.empty:

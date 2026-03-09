@@ -227,6 +227,29 @@ class TestInferAuxiliaryFromPrompt:
         )
         assert result is not None
         assert "object" in result
+        assert "cat" in result["object"]
+        assert "dog" in result["object"]
+
+    def test_multiple_objects_verb_filtered(self):
+        """Verbs like 'walking' should not be extracted as the second object."""
+        result = infer_auxiliary_from_prompt(
+            "multiple_objects",
+            "a person walking in the park",
+        )
+        assert result is not None
+        assert "walking" not in result["object"]
+        # Should extract nouns only: person, park
+        assert "person" in result["object"]
+        assert "park" in result["object"]
+
+    def test_multiple_objects_adjective_filtered(self):
+        """Adjectives like 'beautiful' should not be extracted as objects."""
+        result = infer_auxiliary_from_prompt(
+            "multiple_objects",
+            "a beautiful sunset over mountains",
+        )
+        assert result is not None
+        assert "beautiful" not in result["object"]
 
     # --- spatial_relationship ---
     def test_spatial_with_relation(self):
