@@ -96,12 +96,9 @@ hf/
 *.zip
 *.7z
 
-# Track frontend output data for table UI
-!frontend/public/data/
-!frontend/public/data/**
-# Ignore run-generated VBench per-config exports (keep stable baseline file)
-frontend/public/data/vbench_*.csv
-!frontend/public/data/vbench_per_video.csv
+# Track frontend public assets/data for the table UI
+!frontend/public/
+!frontend/public/**
 
 # -----------------------------------------------------------------------------
 # Logs
