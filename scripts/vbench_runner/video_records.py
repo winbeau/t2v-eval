@@ -188,6 +188,15 @@ def build_video_list_from_local_dataset(config: dict) -> list:
     if prompt_files_by_group and not isinstance(prompt_files_by_group, dict):
         logger.warning("Ignoring dataset.prompt_files_by_group because it is not a mapping.")
         prompt_files_by_group = {}
+    if group_names and prompt_files_by_group:
+        missing_prompt_groups = sorted(
+            name for name in group_names if name not in set(prompt_files_by_group.keys())
+        )
+        if missing_prompt_groups:
+            logger.warning(
+                "Group prompt mapping missing for configured groups: %s",
+                missing_prompt_groups,
+            )
     for group_name, prompt_path_str in prompt_files_by_group.items():
         if not isinstance(group_name, str) or not group_name.strip():
             logger.warning("Skipping invalid group key in dataset.prompt_files_by_group: %r", group_name)
@@ -235,6 +244,7 @@ def build_video_list_from_local_dataset(config: dict) -> list:
                 "video_id": candidate_id,
                 "group": group,
                 "prompt": prompt,
+                "prompt_source": source_tag,
                 "video_path": str(video_path),
             }
         )
@@ -258,6 +268,14 @@ def build_video_list_from_local_dataset(config: dict) -> list:
                 "Prompt source by group [%s]: %s",
                 group_name,
                 dict(prompt_sources_by_group[group_name]),
+            )
+    if group_names:
+        discovered_groups = sorted({str(record.get("group", "")).strip() for record in records})
+        missing_groups = [name for name in group_names if name not in set(discovered_groups)]
+        if missing_groups:
+            logger.warning(
+                "Configured groups missing from local dataset: %s",
+                missing_groups,
             )
     return records
 

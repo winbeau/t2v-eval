@@ -263,6 +263,55 @@ class TestBuildVideoListFromLocalDataset:
         assert prompt_map[("group_a", "video_000")] == "global prompt"
         assert prompt_map[("group_b", "video_001")] == "video_001"
 
+    def test_warns_when_configured_groups_missing_from_local_dataset(self, tmp_path, caplog):
+        local_dir = tmp_path / "videos"
+        (local_dir / "group_a").mkdir(parents=True)
+        (local_dir / "group_a" / "video_000.mp4").write_text("")
+
+        config = {
+            "dataset": {
+                "local_video_dir": str(local_dir),
+            },
+            "groups": [{"name": "group_a"}, {"name": "group_b"}],
+        }
+
+        caplog.set_level("WARNING")
+        records = build_video_list_from_local_dataset(config)
+
+        assert len(records) == 1
+        assert records[0]["group"] == "group_a"
+        assert "Configured groups missing from local dataset" in caplog.text
+
+    def test_warns_when_prompt_mapping_missing_for_configured_group(self, tmp_path, caplog):
+        local_dir = tmp_path / "videos"
+        (local_dir / "group_a").mkdir(parents=True)
+        (local_dir / "group_b").mkdir(parents=True)
+        (local_dir / "group_a" / "video_000.mp4").write_text("")
+        (local_dir / "group_b" / "video_000.mp4").write_text("")
+
+        group_a_prompt = tmp_path / "group_a_prompts.csv"
+        pd.DataFrame({"video_id": ["video_000"], "prompt": ["group a prompt"]}).to_csv(
+            group_a_prompt, index=False
+        )
+        config = {
+            "dataset": {
+                "local_video_dir": str(local_dir),
+                "prompt_files_by_group": {
+                    "group_a": str(group_a_prompt),
+                },
+            },
+            "groups": [{"name": "group_a"}, {"name": "group_b"}],
+        }
+
+        caplog.set_level("WARNING")
+        records = build_video_list_from_local_dataset(config)
+        by_group = {r["group"]: r for r in records}
+
+        assert by_group["group_a"]["prompt"] == "group a prompt"
+        assert by_group["group_a"]["prompt_source"] == "group_id"
+        assert by_group["group_b"]["prompt_source"] == "fallback_video_id"
+        assert "Group prompt mapping missing for configured groups" in caplog.text
+
 
 # ---------------------------------------------------------------------------
 # get_input_video_files

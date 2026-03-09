@@ -11,10 +11,12 @@ Usage:
 
 import argparse
 import json
+import math
 import os
 import shutil
 import sys
 import time
+from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 
@@ -206,6 +208,26 @@ def _resolve_float_option(vbench_config: dict, key: str, default: float) -> floa
     return value
 
 
+def _resolve_ratio_option(vbench_config: dict, key: str, default: float) -> float:
+    """Parse ratio option from metrics.vbench and clamp to [0, 1]."""
+    raw_value = vbench_config.get(key, default)
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        logger.warning("Invalid metrics.vbench.%s=%r, fallback to %s", key, raw_value, default)
+        return default
+    if value < 0.0 or value > 1.0:
+        clamped = min(1.0, max(0.0, value))
+        logger.warning(
+            "metrics.vbench.%s=%r must be within [0, 1], clamp to %.3f",
+            key,
+            raw_value,
+            clamped,
+        )
+        return clamped
+    return value
+
+
 def _resolve_int_option(
     vbench_config: dict,
     key: str,
@@ -269,6 +291,124 @@ def _resolve_str_list_option(vbench_config: dict, key: str, default: list[str]) 
         return [item for item in normalized if item]
     logger.warning("Invalid metrics.vbench.%s=%r, fallback to %s", key, raw_value, default)
     return list(default)
+
+
+def _analyze_video_record_diagnostics(video_records: list[dict], config: dict) -> dict[str, object]:
+    """Collect diagnostics for group/prompt-source quality in prepared records."""
+    groups = config.get("groups", [])
+    configured_groups = [
+        str(group["name"]).strip()
+        for group in groups
+        if isinstance(group, dict) and str(group.get("name", "")).strip()
+    ]
+    configured_set = set(configured_groups)
+
+    discovered_groups = sorted(
+        {
+            str(record.get("group", "")).strip()
+            for record in video_records
+            if str(record.get("group", "")).strip()
+        }
+    )
+    discovered_set = set(discovered_groups)
+
+    missing_groups = [name for name in configured_groups if name not in discovered_set]
+    unexpected_groups = sorted(name for name in discovered_groups if name not in configured_set)
+
+    prompt_source_counter: Counter[str] = Counter()
+    for record in video_records:
+        source = str(record.get("prompt_source", "")).strip()
+        if source:
+            prompt_source_counter[source] += 1
+
+    fallback_count = int(prompt_source_counter.get("fallback_video_id", 0))
+    return {
+        "configured_groups": configured_groups,
+        "discovered_groups": discovered_groups,
+        "missing_groups": missing_groups,
+        "unexpected_groups": unexpected_groups,
+        "prompt_source_counter": dict(prompt_source_counter),
+        "fallback_count": fallback_count,
+    }
+
+
+def _apply_color_coverage_policy(
+    *,
+    coverage_rows: list[tuple[str, int, int]],
+    all_subtasks: list[str],
+    expected_count: int,
+    vbench_config: dict,
+    record_diagnostics: dict[str, object],
+) -> list[tuple[str, int, int]]:
+    """
+    Build final coverage issues with optional color-specific threshold policy.
+
+    Default behavior matches strict full coverage (ratio=1.0), but users may
+    lower `metrics.vbench.color_min_coverage_ratio`.
+    """
+    coverage_issue_map: dict[str, tuple[int, int]] = {}
+    for name, covered, total in coverage_rows:
+        if name == "color" and "color" in all_subtasks:
+            # Color uses its own threshold rule below.
+            continue
+        if covered != total:
+            coverage_issue_map[name] = (covered, total)
+
+    color_min_coverage_ratio = _resolve_ratio_option(
+        vbench_config=vbench_config,
+        key="color_min_coverage_ratio",
+        default=1.0,
+    )
+    if "color" in all_subtasks and expected_count > 0:
+        color_covered = next(
+            (covered for name, covered, _ in coverage_rows if name == "color"),
+            0,
+        )
+        color_ratio = float(color_covered) / float(expected_count)
+        min_required = min(
+            expected_count,
+            max(0, int(math.ceil(color_min_coverage_ratio * expected_count))),
+        )
+        logger.info(
+            "Color coverage summary: %d/%d (%.2f%%), threshold=%d/%d (%.2f%%)",
+            color_covered,
+            expected_count,
+            100.0 * color_ratio,
+            min_required,
+            expected_count,
+            100.0 * color_min_coverage_ratio,
+        )
+        if color_covered < min_required:
+            data_issue_hints: list[str] = []
+            missing_groups = list(record_diagnostics.get("missing_groups", []))
+            fallback_count = int(record_diagnostics.get("fallback_count", 0))
+            if missing_groups:
+                data_issue_hints.append(f"missing_groups={missing_groups}")
+            if fallback_count > 0:
+                data_issue_hints.append(
+                    f"prompt_fallback_video_id={fallback_count}/{expected_count}"
+                )
+            hint = (
+                f" Possible data issues: {', '.join(data_issue_hints)}."
+                if data_issue_hints
+                else ""
+            )
+            logger.error(
+                "Color coverage below threshold: %d/%d < %d/%d.%s",
+                color_covered,
+                expected_count,
+                min_required,
+                expected_count,
+                hint,
+            )
+            coverage_issue_map["color"] = (color_covered, min_required)
+    coverage_issues = [
+        (name, *coverage_issue_map[name]) for name in all_subtasks if name in coverage_issue_map
+    ]
+    for name, pair in coverage_issue_map.items():
+        if name not in set(all_subtasks):
+            coverage_issues.append((name, pair[0], pair[1]))
+    return coverage_issues
 
 
 def _bind_runtime_device(
@@ -1362,8 +1502,48 @@ def main():
             sys.exit(0)
         sys.exit(1)
 
+    record_diagnostics = _analyze_video_record_diagnostics(video_records, config)
+    group_mismatch_warn_only = _resolve_bool_option(
+        vbench_config=vbench_config,
+        key="group_mismatch_warn_only",
+        default=True,
+    )
+    missing_groups = list(record_diagnostics.get("missing_groups", []))
+    if missing_groups:
+        missing_msg = f"Configured groups missing from prepared records: {missing_groups}"
+        if group_mismatch_warn_only:
+            logger.warning(missing_msg)
+        else:
+            raise RuntimeError(
+                f"{missing_msg}. Set metrics.vbench.group_mismatch_warn_only=true to continue."
+            )
+
     if rank == 0:
         logger.info(f"Loaded {len(video_records)} videos for VBench evaluation")
+        configured_groups = list(record_diagnostics.get("configured_groups", []))
+        discovered_groups = list(record_diagnostics.get("discovered_groups", []))
+        logger.info(
+            "Video group alignment: configured=%d discovered=%d",
+            len(configured_groups),
+            len(discovered_groups),
+        )
+        if configured_groups:
+            logger.info("Configured groups: %s", configured_groups)
+        if discovered_groups:
+            logger.info("Discovered groups: %s", discovered_groups)
+        unexpected_groups = list(record_diagnostics.get("unexpected_groups", []))
+        if unexpected_groups:
+            logger.warning("Unexpected groups in prepared records: %s", unexpected_groups)
+        prompt_source_counter = dict(record_diagnostics.get("prompt_source_counter", {}))
+        if prompt_source_counter:
+            logger.info("Prompt source detail from prepared records: %s", prompt_source_counter)
+        fallback_count = int(record_diagnostics.get("fallback_count", 0))
+        if fallback_count > 0:
+            logger.warning(
+                "Prompt fallback to video_id in prepared records: %d/%d",
+                fallback_count,
+                len(video_records),
+            )
 
     all_subtasks = get_vbench_subtasks(config)
 
@@ -1658,9 +1838,13 @@ def main():
                     expected_count,
                 )
 
-        missing_coverage = [
-            (name, covered, total) for name, covered, total in coverage_rows if covered != total
-        ]
+        coverage_issues = _apply_color_coverage_policy(
+            coverage_rows=coverage_rows,
+            all_subtasks=all_subtasks,
+            expected_count=expected_count,
+            vbench_config=vbench_config,
+            record_diagnostics=record_diagnostics,
+        )
 
         # Optional output normalization: convert 0-1 dimensions to 0-100.
         if not df_results.empty:
@@ -1720,9 +1904,9 @@ def main():
         if not strict_full_coverage and profile in {"long_16", "16", "16d", "full", "full_16"}:
             strict_full_coverage = True
 
-        if strict_full_coverage and missing_coverage:
+        if strict_full_coverage and coverage_issues:
             short_msg = ", ".join(
-                f"{name}:{covered}/{total}" for name, covered, total in missing_coverage
+                f"{name}:{covered}/{total}" for name, covered, total in coverage_issues
             )
             if args.skip_on_error:
                 logger.warning(
