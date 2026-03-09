@@ -31,6 +31,7 @@ import numpy as np
 import torch
 from torchvision import transforms
 
+from scripts.vbench_runner.auxiliary import build_color_object_key
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VBENCH_ROOT = REPO_ROOT / "third_party" / "VBench"
@@ -334,6 +335,12 @@ def main() -> None:
     )
     parser.add_argument("--color-key", type=str, default="red", help="Key for color.check_generate")
     parser.add_argument(
+        "--color-prompt",
+        type=str,
+        default=None,
+        help="Optional raw prompt to derive a safe color object_key automatically.",
+    )
+    parser.add_argument(
         "--color-object-key",
         type=str,
         default="car",
@@ -386,6 +393,11 @@ def main() -> None:
         "object_b": args.spatial_object_b,
         "relationship": args.spatial_relation,
     }
+    color_object_key = (
+        build_color_object_key(args.color_prompt, args.color_key)
+        if args.color_prompt
+        else args.color_object_key
+    )
 
     def _run_once() -> dict[str, dict[str, float]]:
         return {
@@ -396,7 +408,7 @@ def main() -> None:
                 str(video_path), device, det_model, args.multi_key
             ),
             "color": _profile_color(
-                str(video_path), device, cap_model, args.color_key, args.color_object_key
+                str(video_path), device, cap_model, args.color_key, color_object_key
             ),
             "spatial_relationship": _profile_spatial_relationship(
                 str(video_path), device, det_model, spatial_key

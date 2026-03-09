@@ -20,9 +20,11 @@ import torch
 from torchvision import transforms
 
 try:
+    from .auxiliary import build_color_object_key
     from .env import logger
     from .results import extract_subtask_scores, resolve_video_id
 except ImportError:
+    from vbench_runner.auxiliary import build_color_object_key
     from vbench_runner.env import logger
     from vbench_runner.results import extract_subtask_scores, resolve_video_id
 
@@ -563,10 +565,11 @@ def run_fused_slow_dimensions(
 
             color_preds = _color_preds_from_captions(captions_color)
             color_meta = dim_meta["color"][video_path]
-            color_info = color_meta["auxiliary_info"]["color"]
+            color_aux = color_meta["auxiliary_info"]
+            color_info = str(color_aux["color"]).strip().lower()
             prompt_text = color_meta["prompt"]
-            object_key = prompt_text.replace("a ", "").replace("an ", "").replace(
-                color_info, ""
+            object_key = str(
+                color_aux.get("object_key") or build_color_object_key(prompt_text, color_info)
             ).strip()
             t0 = time.perf_counter()
             cur_object, cur_object_color = color_mod.check_generate(

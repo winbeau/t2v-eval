@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 from scripts.vbench_runner.auxiliary import (
+    build_color_object_key,
     build_auxiliary_prompt_lookup,
     extract_object_token,
     infer_auxiliary_from_prompt,
@@ -112,6 +113,26 @@ class TestExtractObjectToken:
         assert result == "cat"
 
 
+class TestBuildColorObjectKey:
+    def test_removes_only_standalone_color_tokens(self):
+        prompt = (
+            "A stylish woman wears a red dress and walks beside a red sign, "
+            "captured in a paired street shot."
+        )
+        result = build_color_object_key(prompt, "red")
+
+        assert "woman" in result
+        assert "paired" in result
+        assert "captured" in result
+        assert "dress" in result
+        assert " red " not in f" {result} "
+
+    def test_grey_alias_normalizes(self):
+        result = build_color_object_key("A grey cat near a wall", "gray")
+        assert "grey" not in result
+        assert "cat" in result
+
+
 # ---------------------------------------------------------------------------
 # infer_auxiliary_from_prompt — dimension-specific branches
 # ---------------------------------------------------------------------------
@@ -205,16 +226,19 @@ class TestInferAuxiliaryFromPrompt:
         result = infer_auxiliary_from_prompt("color", "A red car on the road")
         assert result is not None
         assert result["color"] == "red"
+        assert result["object_key"] == "car on road"
 
     def test_color_grey_normalized(self):
         result = infer_auxiliary_from_prompt("color", "A grey cat")
         assert result is not None
         assert result["color"] == "gray"  # grey → gray
+        assert result["object_key"] == "cat"
 
     def test_color_fallback(self):
         result = infer_auxiliary_from_prompt("color", "A car on the road")
         assert result is not None
         assert result["color"] == "red"  # default
+        assert result["object_key"] == "car on road"
 
     # --- unknown dimension ---
     def test_unknown_dimension(self):
@@ -273,7 +297,7 @@ class TestResolveAuxiliaryPayload:
         payload, source = resolve_auxiliary_payload(
             "color", "A Red Car On The Road", exact, {}
         )
-        assert payload == {"color": "red"}
+        assert payload == {"color": "red", "object_key": "car on road"}
         assert source == "exact"
 
     def test_simplified_match(self):
@@ -281,7 +305,7 @@ class TestResolveAuxiliaryPayload:
         payload, source = resolve_auxiliary_payload(
             "color", "A red car, on the road!", {}, simple
         )
-        assert payload == {"color": "red"}
+        assert payload == {"color": "red", "object_key": "car on road"}
         assert source == "simplified"
 
     def test_heuristic_fallback(self):

@@ -770,8 +770,13 @@ def patch_color_object_matching() -> None:
     """
     try:
         from vbench import color as _color
+        from .auxiliary import build_color_object_key
     except ImportError:
-        return
+        try:
+            from vbench_runner.auxiliary import build_color_object_key
+            from vbench import color as _color
+        except ImportError:
+            return
 
     if getattr(_color, "_patched_color_matching", False):
         return
@@ -809,18 +814,58 @@ def patch_color_object_matching() -> None:
                 cur_object += 1
         return cur_object, cur_object_color
 
-    _orig_color_fn = _color.color
-
     def _color_safe(model, video_dict, device):
-        """Wrap color() while preserving lenient object matching semantics only."""
-        orig_cg = _color.check_generate
-        _color.check_generate = _check_generate_lenient
-        try:
-            result = _orig_color_fn(model, video_dict, device)
-        finally:
-            _color.check_generate = orig_cg
-        return result
+        """Legacy color path with safe object-key normalization for custom prompts."""
+        success_frame_count_all = 0.0
+        video_count = 0
+        video_results = []
+        for info in _color.tqdm(video_dict, disable=_color.get_rank() > 0):
+            if "auxiliary_info" not in info:
+                raise RuntimeError("Auxiliary info is not in json, please check your json.")
+            color_aux = info["auxiliary_info"]
+            color_info = str(color_aux.get("color", "")).strip().lower()
+            if color_info == "grey":
+                color_info = "gray"
+            prompt_text = str(info.get("prompt", "")).strip()
+            object_key = str(
+                color_aux.get("object_key") or build_color_object_key(prompt_text, color_info)
+            ).strip()
+            for video_path in info.get("video_list", []):
+                video_arrays = _color.load_video(video_path, num_frames=16, return_tensor=False)
+                _, h, w, _ = video_arrays.shape
+                if min(h, w) > 768:
+                    scale = 720.0 / min(h, w)
+                    new_h = int(scale * h)
+                    new_w = int(scale * w)
+                    resized_video = _color.np.zeros(
+                        (video_arrays.shape[0], new_h, new_w, 3), dtype=video_arrays.dtype
+                    )
+                    for i in range(video_arrays.shape[0]):
+                        resized_video[i] = _color.cv2.resize(
+                            video_arrays[i], (new_w, new_h), interpolation=_color.cv2.INTER_LINEAR
+                        )
+                    video_arrays = resized_video
+                cur_video_pred = _color.get_dect_from_grit(model, video_arrays)
+                cur_object, cur_object_color = _check_generate_lenient(
+                    color_info, object_key, cur_video_pred
+                )
+                if cur_object > 0:
+                    cur_success_frame_rate = cur_object_color / cur_object
+                    success_frame_count_all += cur_success_frame_rate
+                    video_count += 1
+                    video_results.append(
+                        {
+                            "video_path": video_path,
+                            "video_results": cur_success_frame_rate,
+                            "cur_success_frame_rate": cur_success_frame_rate,
+                        }
+                    )
+        if video_count == 0:
+            raise ZeroDivisionError("color dimension: no objects detected in any video")
+        success_rate = success_frame_count_all / video_count
+        return success_rate, video_results
 
+    _color.check_generate = _check_generate_lenient
     _color.color = _color_safe
     _color._patched_color_matching = True  # type: ignore[attr-defined]
     logger.debug("Patched color check_generate for lenient object matching.")

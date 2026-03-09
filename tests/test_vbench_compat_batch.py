@@ -334,20 +334,68 @@ def test_patch_sets_low_drift_flags_on_visualization_demo(fake_grit_predictor_mo
 
 
 def test_patch_color_object_matching_preserves_zero_division(monkeypatch: pytest.MonkeyPatch):
+    vbench_pkg = ModuleType("vbench")
+    vbench_pkg.__path__ = []  # type: ignore[attr-defined]
     color_mod = ModuleType("vbench.color")
-
-    def _raise_zero_division(model, video_dict, device):
-        raise ZeroDivisionError("no objects")
-
-    color_mod.color = _raise_zero_division
+    color_mod.color = lambda model, video_dict, device: ("ORIGINAL", [])
     color_mod.check_generate = lambda *args, **kwargs: (0, 0)
+    color_mod.tqdm = lambda items, disable=False: items
+    color_mod.get_rank = lambda: 0
+    color_mod.load_video = lambda *args, **kwargs: np.zeros((2, 4, 4, 3), dtype=np.uint8)
+    color_mod.get_dect_from_grit = lambda model, image_arrays: [[["caption", "car"]]] * len(image_arrays)
+    color_mod.np = np
+    color_mod.cv2 = __import__("cv2")
 
+    monkeypatch.setitem(sys.modules, "vbench", vbench_pkg)
     monkeypatch.setitem(sys.modules, "vbench.color", color_mod)
 
     compat.patch_color_object_matching()
 
-    with pytest.raises(ZeroDivisionError, match="no objects"):
-        color_mod.color(None, [], "cuda")
+    with pytest.raises(ZeroDivisionError, match="no objects detected"):
+        color_mod.color(
+            None,
+            [{"prompt": "A stylish woman in a red dress", "auxiliary_info": {"color": "red"}, "video_list": ["v.mp4"]}],
+            "cuda",
+        )
+
+
+def test_patch_color_object_matching_uses_safe_object_key(monkeypatch: pytest.MonkeyPatch):
+    vbench_pkg = ModuleType("vbench")
+    vbench_pkg.__path__ = []  # type: ignore[attr-defined]
+    color_mod = ModuleType("vbench.color")
+    color_mod.color = lambda model, video_dict, device: ("ORIGINAL", [])
+    color_mod.check_generate = lambda *args, **kwargs: (0, 0)
+    color_mod.tqdm = lambda items, disable=False: items
+    color_mod.get_rank = lambda: 0
+    color_mod.load_video = lambda *args, **kwargs: np.zeros((2, 4, 4, 3), dtype=np.uint8)
+    color_mod.get_dect_from_grit = (
+        lambda model, image_arrays: [[["a red handbag carried by a woman", "woman"]]] * len(image_arrays)
+    )
+    color_mod.np = np
+    color_mod.cv2 = __import__("cv2")
+
+    monkeypatch.setitem(sys.modules, "vbench", vbench_pkg)
+    monkeypatch.setitem(sys.modules, "vbench.color", color_mod)
+
+    compat.patch_color_object_matching()
+
+    score, video_results = color_mod.color(
+        None,
+        [
+            {
+                "prompt": (
+                    "A stylish woman strolls down a street wearing a red dress, "
+                    "captured in a paired cinematic shot."
+                ),
+                "auxiliary_info": {"color": "red"},
+                "video_list": ["v.mp4"],
+            }
+        ],
+        "cuda",
+    )
+
+    assert score == 1.0
+    assert len(video_results) == 1
 
 
 @pytest.fixture

@@ -108,6 +108,35 @@ def extract_object_token(text: str, default: str = "object") -> str:
     return tokens[-1] if tokens else default
 
 
+def build_color_object_key(prompt_text: str, color_key: str, default: str = "object") -> str:
+    """
+    Build a safe object-matching text for the color dimension.
+
+    Unlike the upstream prompt.replace(...) approach, this only removes standalone
+    article/color tokens and keeps words like "woman", "paired", and "captured" intact.
+    """
+    prompt_simple = simplify_prompt_text(prompt_text)
+    normalized_color = str(color_key or "").strip().lower()
+    if normalized_color == "grey":
+        normalized_color = "gray"
+
+    color_aliases = {normalized_color} if normalized_color else set()
+    if normalized_color == "gray":
+        color_aliases.add("grey")
+    elif normalized_color == "grey":
+        color_aliases.add("gray")
+
+    filtered_tokens = [
+        token
+        for token in tokenize_prompt_words(prompt_simple)
+        if token not in {"a", "an", "the"} and token not in color_aliases
+    ]
+    object_key = " ".join(filtered_tokens).strip()
+    if object_key:
+        return object_key
+    return extract_object_token(prompt_simple, default=default)
+
+
 # =============================================================================
 # Auxiliary info inference
 # =============================================================================
@@ -181,8 +210,14 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
         for color in COLOR_WORDS:
             if re.search(rf"\b{re.escape(color)}\b", prompt_simple):
                 normalized_color = "gray" if color == "grey" else color
-                return {"color": normalized_color}
-        return {"color": "red"}
+                return {
+                    "color": normalized_color,
+                    "object_key": build_color_object_key(prompt_text, normalized_color),
+                }
+        return {
+            "color": "red",
+            "object_key": build_color_object_key(prompt_text, "red"),
+        }
 
     return None
 
@@ -235,19 +270,31 @@ def resolve_auxiliary_payload(
     simple_lookup: dict[str, dict[str, dict]],
 ) -> tuple[dict | None, str]:
     """Resolve auxiliary payload by official lookup first, then heuristic fallback."""
+    def _finalize_color_payload(payload: dict | None) -> dict | None:
+        if dimension != "color" or not isinstance(payload, dict):
+            return payload
+        normalized = deepcopy(payload)
+        color_value = str(normalized.get("color", "")).strip().lower()
+        if color_value == "grey":
+            color_value = "gray"
+            normalized["color"] = color_value
+        if "object_key" not in normalized:
+            normalized["object_key"] = build_color_object_key(prompt_text, color_value or "red")
+        return normalized
+
     norm_key = normalize_prompt_text(prompt_text)
     simple_key = simplify_prompt_text(prompt_text)
 
     by_exact = exact_lookup.get(dimension, {})
     by_simple = simple_lookup.get(dimension, {})
     if norm_key in by_exact:
-        return deepcopy(by_exact[norm_key]), "exact"
+        return _finalize_color_payload(by_exact[norm_key]), "exact"
     if simple_key in by_simple:
-        return deepcopy(by_simple[simple_key]), "simplified"
+        return _finalize_color_payload(by_simple[simple_key]), "simplified"
 
     inferred = infer_auxiliary_from_prompt(dimension, prompt_text)
     if inferred is not None:
-        return inferred, "heuristic"
+        return _finalize_color_payload(inferred), "heuristic"
     return None, "missing"
 
 
