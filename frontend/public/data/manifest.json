@@ -6,6 +6,7 @@
     "per_video_metrics.csv",
     "vbench_Exp-K_StaOscCompression.csv",
     "vbench_Exp-T-b1.csv",
+    "vbench_Exp-T-lite_12D.csv",
     "vbench_Exp-T-lite_BatchGrit15D.csv",
     "vbench_Exp-T_BatchGritFull16D.csv",
     "vbench_per_video.csv"
