@@ -1,7 +1,9 @@
 # =============================================================================
-# T2V-Eval Configuration - Exp-T-lite_BatchGrit15D
-# 2 groups (k1, k3) for strict long-mode evaluation without color.
-# Uses semantic-lite / total-lite aggregation when color is intentionally absent.
+# T2V-Eval Configuration - Exp-T-lite_12D
+# 2 groups (k1, k3) for strict long-mode evaluation.
+# 12D = 16D minus 4 GrIT-based dims (object_class, multiple_objects,
+# spatial_relationship, color) which are unreliable on custom prompts.
+# Uses semantic-lite / total-lite aggregation for the 12 remaining dims.
 # =============================================================================
 
 dataset:
@@ -13,7 +15,7 @@ dataset:
     k1_selfforcing_absolute21_baseline: "hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv"
     k3_sta_posneg_osc_phase6_tail4: "hf/AdaHead/Exp-K_StaOscCompression/k3_sta_posneg_osc_phase6_tail4/prompts.csv"
   prompt_file: "hf/AdaHead/Exp-K_StaOscCompression/k1_selfforcing_absolute21_baseline/prompts.csv"
-  video_dir: "videos/Exp-T-lite_BatchGrit15D"
+  video_dir: "videos/Exp-T-lite_12D"
 
 groups:
   - name: "k1_selfforcing_absolute21_baseline"
@@ -51,17 +53,7 @@ metrics:
     slow_dims_shard_mode: "clip"
     slow_dims_perf_window_clips: 5
     slow_dims_stage_profile: true
-    grit_batch_parallel_enable: true
-    grit_batch_size: 4
-    grit_batch_low_drift_mode: true
-    grit_batch_autocast: false
-    grit_batch_deterministic: false
-    grit_batch_sensitive_dims_single_image: []
-    grit_batch_adaptive_fallback_enable: true
-    grit_batch_adaptive_fallback_dims:
-      - "spatial_relationship"
-    grit_batch_adaptive_probe_clips: 8
-    grit_batch_adaptive_score_threshold: 0.02
+    grit_batch_parallel_enable: false
     appearance_style_batch_enable: true
     appearance_style_batch_size: 16
     dynamic_degree_batch_enable: true
@@ -69,8 +61,8 @@ metrics:
     batch_accel_fp16_enable: false
     batch_accel_strict_fp32: true
     scale_to_percent: []
-    profile_output: "group_summary_lite15d.csv"
-    dimension_profile: "long_16"
+    profile_output: "group_summary_lite12d.csv"
+    dimension_profile: "long_12"
     mode: "long_custom_input"
     use_semantic_splitting: false
     clip_length_config: "clip_length_mix.yaml"
@@ -86,9 +78,6 @@ metrics:
       - "temporal_style"
       - "appearance_style"
       - "scene"
-      - "object_class"
-      - "multiple_objects"
-      - "spatial_relationship"
       - "human_action"
       - "overall_consistency"
       - "dynamic_degree"
@@ -103,16 +92,16 @@ runtime:
 
 paths:
   cache_dir: "./eval_cache"
-  output_dir: "./outputs/Exp-T-lite_BatchGrit15D"
+  output_dir: "./outputs/Exp-T-lite_12D"
   metadata_file: "metadata.csv"
   processed_metadata: "processed_metadata.csv"
   per_video_metrics: "per_video_metrics.csv"
   group_summary: "group_summary.csv"
   runtime_csv: "runtime.csv"
-  figures_dir: "./outputs/Exp-T-lite_BatchGrit15D/figs"
-  experiment_output: "Exp-T-lite_BatchGrit15D.csv"
+  figures_dir: "./outputs/Exp-T-lite_12D/figs"
+  experiment_output: "Exp-T-lite_12D.csv"
 
 logging:
   level: "INFO"
-  log_file: "./outputs/Exp-T-lite_BatchGrit15D/eval.log"
+  log_file: "./outputs/Exp-T-lite_12D/eval.log"
   console: true

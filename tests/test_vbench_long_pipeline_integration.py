@@ -194,7 +194,8 @@ def test_full_16_coverage_flags_non_color_dimension_under_strict_mode():
     assert ("scene", 3, 4) in issues
 
 
-def test_lite_scores_survive_pipeline_shape_when_color_is_absent():
+def test_lite_scores_survive_pipeline_shape_when_grit_dims_are_absent():
+    """Lite scores should compute with 12D data (all 4 GrIT dims absent)."""
     df = pd.DataFrame(
         [
             {
@@ -206,9 +207,6 @@ def test_lite_scores_survive_pipeline_shape_when_color_is_absent():
                 "temporal_style": 0.55,
                 "appearance_style": 0.45,
                 "scene": 0.35,
-                "object_class": 0.25,
-                "multiple_objects": 0.15,
-                "spatial_relationship": 0.65,
                 "human_action": 0.75,
                 "overall_consistency": 0.95,
                 "dynamic_degree": 0.52,

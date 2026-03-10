@@ -108,7 +108,14 @@ _SEMANTIC_WEIGHT = 1
 
 # All 16 column names required for official scoring.
 ALL_16_COLUMNS: frozenset[str] = frozenset(_COL_TO_VBENCH_DIM.keys())
-SEMANTIC_LITE_COLUMNS: frozenset[str] = frozenset(ALL_16_COLUMNS - {"color"})
+
+# 4 GrIT-based dimensions excluded from lite scoring (unreliable on custom prompts).
+_GRIT_DIMS: frozenset[str] = frozenset(
+    {"object_class", "multiple_objects", "spatial_relationship", "color"}
+)
+
+# Lite = 12 dimensions (16 minus the 4 GrIT dims).
+SEMANTIC_LITE_COLUMNS: frozenset[str] = frozenset(ALL_16_COLUMNS - _GRIT_DIMS)
 
 
 def _normalize_name_list(raw: object) -> list[str]:
@@ -220,18 +227,20 @@ def compute_official_vbench_scores(df: pd.DataFrame) -> list[str]:
 
 def compute_semantic_lite_vbench_scores(df: pd.DataFrame) -> list[str]:
     """
-    Compute VBench lite scores that exclude the `color` semantic dimension.
+    Compute VBench lite scores excluding the 4 GrIT-based dimensions.
 
+    Excluded: object_class, multiple_objects, spatial_relationship, color.
     The normalization logic, per-dimension weights, and total-score weighting
     remain identical to the official scoring path.
     """
+    _grit_vbench_names = {_COL_TO_VBENCH_DIM[col] for col in _GRIT_DIMS}
     return _compute_vbench_score_bundle(
         df=df,
         required_columns=SEMANTIC_LITE_COLUMNS,
         semantic_columns={
             col
             for col, dim_name in _COL_TO_VBENCH_DIM.items()
-            if dim_name in _SEMANTIC_LIST and dim_name != "color"
+            if dim_name in _SEMANTIC_LIST and dim_name not in _grit_vbench_names
         },
         semantic_col_name="vbench_semantic_lite_score",
         total_col_name="vbench_total_lite_score",

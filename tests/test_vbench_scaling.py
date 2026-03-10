@@ -7,6 +7,7 @@ import pytest
 
 from scripts.vbench_runner.scaling import (
     ALL_16_COLUMNS,
+    SEMANTIC_LITE_COLUMNS,
     apply_output_percent_scaling,
     compute_official_vbench_scores,
     compute_semantic_lite_vbench_scores,
@@ -198,14 +199,15 @@ class TestComputeOfficialVBenchScores:
 
 class TestComputeSemanticLiteVBenchScores:
     @staticmethod
-    def _make_full_df_without_color(**overrides):
-        defaults = {col: 0.5 for col in ALL_16_COLUMNS if col != "color"}
+    def _make_lite_df(**overrides):
+        """DataFrame with exactly the 12 lite columns (no GrIT dims)."""
+        defaults = {col: 0.5 for col in SEMANTIC_LITE_COLUMNS}
         defaults["video_id"] = "v1"
         defaults.update(overrides)
         return pd.DataFrame([defaults])
 
-    def test_lite_scores_compute_when_color_is_missing(self):
-        df = self._make_full_df_without_color()
+    def test_lite_scores_compute_when_grit_dims_are_missing(self):
+        df = self._make_lite_df()
 
         result = compute_semantic_lite_vbench_scores(df)
 
@@ -219,27 +221,11 @@ class TestComputeSemanticLiteVBenchScores:
         assert "vbench_semantic_score" not in df.columns
         assert "vbench_total_score" not in df.columns
 
-    def test_lite_scores_skip_when_non_color_semantic_dimension_is_missing(self):
-        df = pd.DataFrame(
-            {
-                "video_id": ["v1"],
-                "subject_consistency": [0.9],
-                "background_consistency": [0.8],
-                "temporal_flickering": [0.7],
-                "motion_smoothness": [0.6],
-                "dynamic_degree": [0.5],
-                "aesthetic_quality": [0.4],
-                "imaging_quality": [0.3],
-                "object_class": [0.2],
-                "multiple_objects": [0.1],
-                "human_action": [0.9],
-                "spatial_relationship": [0.8],
-                "scene": [0.7],
-                "appearance_style": [0.6],
-                "temporal_style": [0.5],
-                # overall_consistency missing
-            }
-        )
+    def test_lite_scores_skip_when_non_grit_semantic_dimension_is_missing(self):
+        """Lite scores require all 12 non-GrIT dims; removing one should skip."""
+        data = {col: 0.5 for col in SEMANTIC_LITE_COLUMNS if col != "overall_consistency"}
+        data["video_id"] = "v1"
+        df = pd.DataFrame([data])
 
         result = compute_semantic_lite_vbench_scores(df)
 
@@ -248,33 +234,17 @@ class TestComputeSemanticLiteVBenchScores:
         assert "vbench_total_lite_score" not in df.columns
 
     def test_lite_scores_skip_when_quality_dimension_is_missing(self):
-        df = pd.DataFrame(
-            {
-                "video_id": ["v1"],
-                "subject_consistency": [0.9],
-                "background_consistency": [0.8],
-                "temporal_flickering": [0.7],
-                "motion_smoothness": [0.6],
-                # dynamic_degree missing
-                "aesthetic_quality": [0.4],
-                "imaging_quality": [0.3],
-                "object_class": [0.2],
-                "multiple_objects": [0.1],
-                "human_action": [0.9],
-                "spatial_relationship": [0.8],
-                "scene": [0.7],
-                "appearance_style": [0.6],
-                "temporal_style": [0.5],
-                "overall_consistency": [0.4],
-            }
-        )
+        """Lite scores require all 7 quality dims; removing one should skip."""
+        data = {col: 0.5 for col in SEMANTIC_LITE_COLUMNS if col != "dynamic_degree"}
+        data["video_id"] = "v1"
+        df = pd.DataFrame([data])
 
         result = compute_semantic_lite_vbench_scores(df)
 
         assert result == []
 
     def test_lite_total_uses_same_quality_semantic_weighting(self):
-        df = self._make_full_df_without_color()
+        df = self._make_lite_df()
 
         compute_semantic_lite_vbench_scores(df)
         q = df.loc[0, "vbench_quality_score"]

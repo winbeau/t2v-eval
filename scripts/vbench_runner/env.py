@@ -151,9 +151,12 @@ def get_vbench_subtasks(config: dict) -> list:
     if use_vbench_long(config):
         profile = vbench_config.get("dimension_profile", "long_6")
         subtasks = default_long_subtasks(profile=profile)
-        if str(profile).strip().lower() in {"long_16", "16", "16d", "full", "full_16"}:
+        profile_lower = str(profile).strip().lower()
+        if profile_lower in {"long_16", "16", "16d", "full", "full_16"}:
             logger.info("Using VBench-Long full 16-dimension profile.")
             logger.debug("Supported long subtasks: %s", supported_long_subtasks())
+        elif profile_lower in {"long_12", "12", "12d"}:
+            logger.info("Using VBench-Long 12-dimension profile (no GrIT dims).")
         else:
             logger.info("Using VBench-Long recommended 6-dimension profile.")
         return subtasks

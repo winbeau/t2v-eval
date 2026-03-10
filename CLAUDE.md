@@ -89,7 +89,7 @@ Custom VBench runner using a **dimension registry pattern**. To add a new dimens
 1. Create `scripts/vbench_runner/dimensions/my_dimension.py` with a `SPEC = DimensionSpec(...)` (see `base.py` for fields: key, description, requires_clip, requires_pyiqa, long_mode_only)
 2. Import and add the SPEC to the preset lists in `dimensions/registry.py`
 
-Two presets exist: `LONG_DIMENSIONS_16` (all 16, slow) and `LONG_DIMENSIONS_6_RECOMMENDED` (fast subset, skips 4 GrIT-based dimensions: object_class, multiple_objects, spatial_relationship, color).
+Two presets exist: `LONG_DIMENSIONS_16` (all 16, slow), `LONG_DIMENSIONS_12` (16 minus 4 GrIT-based dimensions: object_class, multiple_objects, spatial_relationship, color), and `LONG_DIMENSIONS_6_RECOMMENDED` (fast subset). GrIT-based dimensions are unreliable on custom prompts because GrIT object detection cannot robustly match free-form prompt objects.
 
 Key runner modules: `core.py` (orchestrator with multi-GPU support), `distributed.py` (GPU distribution), `results.py` (result extraction), `env.py` (dependency checks).
 
@@ -110,6 +110,20 @@ Vue 3 Composition API with `<script setup>`, styled with Tailwind CSS.
 ### Metric Direction Convention
 
 Higher is better: CLIPScore, VQAScore, all 16 VBench dimensions. Lower is better: Flicker, NIQE. This is encoded in `MetricConfig.direction` in the frontend and affects best-value highlighting in LaTeX output.
+
+### VBench Official Aggregate Scoring (`scripts/vbench_runner/scaling.py`)
+
+Follows `third_party/VBench/scripts/cal_final_score.py`. Per-video scoring:
+
+1. **Min-max normalize** each of the 16 dimensions to [0,1] using fixed ranges from `_NORMALIZE_DIC`.
+2. **Apply per-dimension weights** (`_DIM_WEIGHT`): all 1.0 except `dynamic_degree` = 0.5.
+3. **Quality Score** = weighted mean of 7 quality dims × 100 (weight sum = 6.5):
+   `subject_consistency, background_consistency, temporal_flickering, motion_smoothness, aesthetic_quality, imaging_quality, dynamic_degree`
+4. **Semantic Score** = weighted mean of 9 semantic dims × 100 (weight sum = 9):
+   `object_class, multiple_objects, human_action, color, spatial_relationship, scene, appearance_style, temporal_style, overall_consistency`
+5. **Total Score** = (Quality × 4 + Semantic × 1) / 5 — quality-heavy 80/20 weighting.
+
+Lite variants (`vbench_semantic_lite_score`, `vbench_total_lite_score`) exclude the 4 GrIT-based dimensions (`object_class`, `multiple_objects`, `spatial_relationship`, `color`) — 5 semantic dims instead of 9, 12 total dims instead of 16. Aggregate scores are computed in `main()` after multi-GPU merge and before percent scaling, so they always use the full dataset on [0,1] scale. The output is on [0,100] scale and is not further multiplied by percent scaling.
 
 ## Coding Conventions
 

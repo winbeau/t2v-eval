@@ -35,6 +35,24 @@ LONG_DIMENSIONS_16: list[DimensionSpec] = [
     AESTHETIC_QUALITY,
 ]
 
+# 12D = 16D minus 4 GrIT-based dimensions (object_class, multiple_objects,
+# spatial_relationship, color).  GrIT object detection is unreliable for
+# free-form custom prompts, so these dimensions are excluded.
+LONG_DIMENSIONS_12: list[DimensionSpec] = [
+    SUBJECT_CONSISTENCY,
+    BACKGROUND_CONSISTENCY,
+    TEMPORAL_FLICKERING,
+    MOTION_SMOOTHNESS,
+    TEMPORAL_STYLE,
+    APPEARANCE_STYLE,
+    SCENE,
+    HUMAN_ACTION,
+    OVERALL_CONSISTENCY,
+    DYNAMIC_DEGREE,
+    IMAGING_QUALITY,
+    AESTHETIC_QUALITY,
+]
+
 LONG_DIMENSIONS_6_RECOMMENDED: list[DimensionSpec] = [
     SUBJECT_CONSISTENCY,
     BACKGROUND_CONSISTENCY,
@@ -66,6 +84,8 @@ def default_long_subtasks(profile: str = "long_6") -> list[str]:
     profile_key = str(profile).strip().lower()
     if profile_key in {"long_16", "16", "16d", "full", "full_16"}:
         return [spec.key for spec in LONG_DIMENSIONS_16]
+    if profile_key in {"long_12", "12", "12d"}:
+        return [spec.key for spec in LONG_DIMENSIONS_12]
     return [spec.key for spec in LONG_DIMENSIONS_6_RECOMMENDED]
 
 
