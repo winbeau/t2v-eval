@@ -1,0 +1,94 @@
+generator_ckpt: checkpoints/ode_init.pt
+generator_fsdp_wrap_strategy: size
+real_score_fsdp_wrap_strategy: size
+fake_score_fsdp_wrap_strategy: size
+real_name: Wan2.1-T2V-14B
+text_encoder_fsdp_wrap_strategy: size
+denoising_step_list:
+- 1000
+- 750
+- 500
+- 250
+warp_denoising_step: true
+ts_schedule: false
+num_train_timestep: 1000
+timestep_shift: 5.0
+guidance_scale: 3.0
+denoising_loss_type: flow
+mixed_precision: true
+seed: 0
+wandb_host: WANDB_HOST
+wandb_key: WANDB_KEY
+wandb_entity: WANDB_ENTITY
+wandb_project: WANDB_PROJECT
+sharding_strategy: hybrid_full
+lr: 2.0e-06
+lr_critic: 4.0e-07
+beta1: 0.0
+beta2: 0.999
+beta1_critic: 0.0
+beta2_critic: 0.999
+data_path: prompts/MovieGenVideoBench_num25.txt
+batch_size: 1
+ema_weight: 0.99
+ema_start_step: 200
+total_batch_size: 64
+log_iters: 50
+negative_prompt: 色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走
+dfake_gen_update_ratio: 5
+image_or_video_shape:
+- 1
+- 21
+- 16
+- 60
+- 104
+distribution_loss: dmd
+trainer: score_distillation
+gradient_checkpointing: true
+num_frame_per_block: 3
+load_raw_video: false
+model_kwargs:
+  local_attn_size: -1
+  timestep_shift: 5.0
+use_headkv: true
+use_adaptive_headkv: true
+headkv_config_path: configs/head_configs/classification_results.csv
+headkv_policy_csv_path: configs/head_configs/classification_results.csv
+headkv_default_capacity: 32760
+headkv_frame_seq_length: 1560
+headkv_code_map:
+  '-1': 32760
+  '1': 32760
+  '2': 32760
+headkv_capture_frame_id_mode: mapped
+headkv_dynamic_capacity: 31200
+headkv_sink_tokens: 4680
+decoupled_sink_tokens: 0
+sink_grid_decoupling: true
+headkv_dynamic_rope_mode: window_clamp
+sink_time_clamp_min: 18
+sink_time_clamp_max: 21
+decoupled_sink_time_lag: 0
+history_time_mapping_mode: none
+history_relative_t_max: 21
+history_time_soft_factor: 1.0
+cyclic_enabled: true
+cyclic_period: 6
+cyclic_bucket_cap: 3
+cyclic_osc_only: true
+cyclic_dynamic_rope: true
+stride_enabled: true
+stride_interval: 6
+stride_dynamic_rope: true
+lag_enabled: false
+headkv_lag_offsets: []
+headkv_lag_history: 21
+lag_dynamic_rope: false
+headkv_osc_sink_frames: 1
+headkv_stable_sink_frames: 1
+headkv_recent_frames: 4
+headkv_stable_recent_frames: 2
+headkv_stable_policy_enabled: true
+update_interval: 1
+semantic_seed_ratio: 0.01
+headkv_disable_osc_sink: false
