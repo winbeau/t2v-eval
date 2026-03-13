@@ -1,5 +1,5 @@
 # =============================================================================
-# T2V-Eval Configuration - Exp-X
+# T2V-Eval Configuration - four-forcing-H200
 # 4 groups (deep-forcing, pyramid-forcing, rolling-forcing, self-forcing)
 # 12D profile: 16D minus 4 GrIT-based dims (object_class, multiple_objects,
 # spatial_relationship, color) which are unreliable on custom prompts.
@@ -101,16 +101,16 @@ runtime:
 
 paths:
   cache_dir: "./eval_cache"
-  output_dir: "./outputs/Exp-X"
+  output_dir: "./outputs/four-forcing-H200"
   metadata_file: "metadata.csv"
   processed_metadata: "processed_metadata.csv"
   per_video_metrics: "per_video_metrics.csv"
   group_summary: "group_summary.csv"
   runtime_csv: "runtime.csv"
-  figures_dir: "./outputs/Exp-X/figs"
-  experiment_output: "Exp-X.csv"
+  figures_dir: "./outputs/four-forcing-H200/figs"
+  experiment_output: "four-forcing-H200.csv"
 
 logging:
   level: "INFO"
-  log_file: "./outputs/Exp-X/eval.log"
+  log_file: "./outputs/four-forcing-H200/eval.log"
   console: true
