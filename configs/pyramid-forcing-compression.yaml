@@ -1,0 +1,194 @@
+# =============================================================================
+# T2V-Eval Configuration - pyramid-forcing-compression
+# 18 groups (3 methods x 6 ratios), 32 videos per group, local videos
+# 12D profile: aligned with configs/pyramid-forcing-sweep.yaml
+# =============================================================================
+
+dataset:
+  repo_id: "kv-compression/AdaHead"
+  split: "train"
+  use_local_videos: true
+  local_video_dir: "videos/pyramid-forcing-compression"
+  prompt_files_by_group:
+    osc_r1: "videos/pyramid-forcing-compression/osc_r1/prompts.csv"
+    osc_r10: "videos/pyramid-forcing-compression/osc_r10/prompts.csv"
+    osc_r15: "videos/pyramid-forcing-compression/osc_r15/prompts.csv"
+    osc_r20: "videos/pyramid-forcing-compression/osc_r20/prompts.csv"
+    osc_r3: "videos/pyramid-forcing-compression/osc_r3/prompts.csv"
+    osc_r5: "videos/pyramid-forcing-compression/osc_r5/prompts.csv"
+    sta_minus_r1: "videos/pyramid-forcing-compression/sta_minus_r1/prompts.csv"
+    sta_minus_r10: "videos/pyramid-forcing-compression/sta_minus_r10/prompts.csv"
+    sta_minus_r15: "videos/pyramid-forcing-compression/sta_minus_r15/prompts.csv"
+    sta_minus_r20: "videos/pyramid-forcing-compression/sta_minus_r20/prompts.csv"
+    sta_minus_r3: "videos/pyramid-forcing-compression/sta_minus_r3/prompts.csv"
+    sta_minus_r5: "videos/pyramid-forcing-compression/sta_minus_r5/prompts.csv"
+    sta_plus_r1: "videos/pyramid-forcing-compression/sta_plus_r1/prompts.csv"
+    sta_plus_r10: "videos/pyramid-forcing-compression/sta_plus_r10/prompts.csv"
+    sta_plus_r15: "videos/pyramid-forcing-compression/sta_plus_r15/prompts.csv"
+    sta_plus_r20: "videos/pyramid-forcing-compression/sta_plus_r20/prompts.csv"
+    sta_plus_r3: "videos/pyramid-forcing-compression/sta_plus_r3/prompts.csv"
+    sta_plus_r5: "videos/pyramid-forcing-compression/sta_plus_r5/prompts.csv"
+  # Current pipeline accepts one fallback prompt_file.
+  # Assume all groups share the same prompt schema keyed by video_id.
+  # If prompts differ by group, merge them first and then update prompt_file.
+  prompt_file: "videos/pyramid-forcing-compression/osc_r1/prompts.csv"
+  video_dir: "videos/pyramid-forcing-compression"
+
+groups:
+  - name: "osc_r1"
+    description: "Osc sweep, ratio 1"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "osc_r10"
+    description: "Osc sweep, ratio 10"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "osc_r15"
+    description: "Osc sweep, ratio 15"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "osc_r20"
+    description: "Osc sweep, ratio 20"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "osc_r3"
+    description: "Osc sweep, ratio 3"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "osc_r5"
+    description: "Osc sweep, ratio 5"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_minus_r1"
+    description: "STA-minus sweep, ratio 1"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_minus_r10"
+    description: "STA-minus sweep, ratio 10"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_minus_r15"
+    description: "STA-minus sweep, ratio 15"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_minus_r20"
+    description: "STA-minus sweep, ratio 20"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_minus_r3"
+    description: "STA-minus sweep, ratio 3"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_minus_r5"
+    description: "STA-minus sweep, ratio 5"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_plus_r1"
+    description: "STA-plus sweep, ratio 1"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_plus_r10"
+    description: "STA-plus sweep, ratio 10"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_plus_r15"
+    description: "STA-plus sweep, ratio 15"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_plus_r20"
+    description: "STA-plus sweep, ratio 20"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_plus_r3"
+    description: "STA-plus sweep, ratio 3"
+    latent_frames: 120
+    actual_frames: 480
+  - name: "sta_plus_r5"
+    description: "STA-plus sweep, ratio 5"
+    latent_frames: 120
+    actual_frames: 480
+
+group_categories:
+  by_method:
+    osc: ["osc_r1", "osc_r10", "osc_r15", "osc_r20", "osc_r3", "osc_r5"]
+    sta_minus: ["sta_minus_r1", "sta_minus_r10", "sta_minus_r15", "sta_minus_r20", "sta_minus_r3", "sta_minus_r5"]
+    sta_plus: ["sta_plus_r1", "sta_plus_r10", "sta_plus_r15", "sta_plus_r20", "sta_plus_r3", "sta_plus_r5"]
+
+protocol:
+  fps_eval: 8
+  num_frames: 288
+  resize: 256
+  frame_sampling: "uniform"
+  frame_padding: "loop"
+
+metrics:
+  enabled:
+    - "vbench_temporal"
+
+  vbench:
+    enabled: true
+    backend: "vbench_long"
+    use_long: true
+    strict_integrity: true
+    require_full_coverage: true
+    group_mismatch_warn_only: false
+    preprocess_workers: 48
+    slow_dims_fused: true
+    slow_dims_decode_total_workers: 48
+    slow_dims_decode_prefetch: 24
+    slow_dims_decode_backend: "decord"
+    slow_dims_shard_mode: "clip"
+    slow_dims_perf_window_clips: 5
+    slow_dims_stage_profile: true
+    grit_batch_parallel_enable: false
+    appearance_style_batch_enable: true
+    appearance_style_batch_size: 16
+    dynamic_degree_batch_enable: true
+    dynamic_degree_pair_batch_size: 8
+    batch_accel_fp16_enable: false
+    batch_accel_strict_fp32: true
+    scale_to_percent: []
+    profile_output: "group_summary_lite12d.csv"
+    dimension_profile: "long_12"
+    mode: "long_custom_input"
+    use_semantic_splitting: false
+    clip_length_config: "clip_length_mix.yaml"
+    static_filter_flag: false
+    scene_threshold: 35.0
+    sb_clip2clip_feat_extractor: "dino"
+    bg_clip2clip_feat_extractor: "clip"
+    subtasks:
+      - "subject_consistency"
+      - "background_consistency"
+      - "temporal_flickering"
+      - "motion_smoothness"
+      - "temporal_style"
+      - "appearance_style"
+      - "scene"
+      - "human_action"
+      - "overall_consistency"
+      - "dynamic_degree"
+      - "imaging_quality"
+      - "aesthetic_quality"
+
+runtime:
+  device: "cuda"
+  batch_size: 1
+  num_workers: 4
+  seed: 42
+
+paths:
+  cache_dir: "./eval_cache"
+  output_dir: "./outputs/pyramid-forcing-compression"
+  metadata_file: "metadata.csv"
+  processed_metadata: "processed_metadata.csv"
+  per_video_metrics: "per_video_metrics.csv"
+  group_summary: "group_summary.csv"
+  runtime_csv: "runtime.csv"
+  figures_dir: "./outputs/pyramid-forcing-compression/figs"
+  experiment_output: "pyramid-forcing-compression.csv"
+
+logging:
+  level: "INFO"
+  log_file: "./outputs/pyramid-forcing-compression/eval.log"
+  console: true
