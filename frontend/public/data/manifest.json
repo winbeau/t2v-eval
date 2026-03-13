@@ -12,6 +12,7 @@
     "vbench_Exp-X.csv",
     "vbench_four-forcing-H200.csv",
     "vbench_per_video.csv",
+    "vbench_pyramid-forcing-compression.csv",
     "vbench_pyramid-forcing-sweep.csv"
   ]
 }

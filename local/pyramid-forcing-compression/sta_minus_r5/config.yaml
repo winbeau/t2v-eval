@@ -1,0 +1,35 @@
+denoising_step_list:
+- 1000
+- 750
+- 500
+- 250
+warp_denoising_step: true
+num_frame_per_block: 3
+model_kwargs:
+  local_attn_size: -1
+  timestep_shift: 5.0
+use_headkv: true
+use_adaptive_headkv: true
+headkv_config_path: configs/head_configs/classification_results.csv
+headkv_policy_csv_path: configs/head_configs/classification_results.csv
+headkv_default_capacity: 32760
+headkv_code_map:
+  '-1': 32760
+  '1': 32760
+  '2': 32760
+headkv_dynamic_capacity: 31200
+headkv_sink_tokens: 4680
+sink_grid_decoupling: true
+headkv_dynamic_rope_mode: window_clamp
+history_time_soft_factor: 1.0
+headkv_lag_offsets: []
+headkv_label_phase_bucket_map:
+  '-1': 3
+headkv_label_stride_enabled_map:
+  '1': true
+  '2': false
+headkv_label_sink_frames_map:
+  '1': 3
+  '2': 3
+headkv_label_recent_frames_map:
+  '2': 5
