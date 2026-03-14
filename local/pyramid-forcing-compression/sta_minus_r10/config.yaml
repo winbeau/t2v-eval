@@ -18,18 +18,22 @@ headkv_code_map:
   '1': 32760
   '2': 32760
 headkv_dynamic_capacity: 31200
-headkv_sink_tokens: 4680
+headkv_sink_tokens: 1560
 sink_grid_decoupling: true
 headkv_dynamic_rope_mode: window_clamp
 history_time_soft_factor: 1.0
 headkv_lag_offsets: []
 headkv_label_phase_bucket_map:
-  '-1': 3
+  '-1': 0
 headkv_label_stride_enabled_map:
-  '1': true
+  '1': false
   '2': false
 headkv_label_sink_frames_map:
-  '1': 3
-  '2': 3
+  '1': 1
+  '2': 1
+  '-1': 1
+headkv_recent_frames: 20
 headkv_label_recent_frames_map:
+  '-1': 20
+  '1': 20
   '2': 10
