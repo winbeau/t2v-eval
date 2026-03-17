@@ -1,7 +1,8 @@
 # =============================================================================
 # T2V-Eval Configuration - Exp_pyramid_forcing_groups-H200
 # 6 groups (g1-g6), local videos
-# Long-video profile aligned to the repository's 120 latent / 480 actual frame runs.
+# 12D profile: 16D minus 4 GrIT-based dims (object_class, multiple_objects,
+# spatial_relationship, color) which are unreliable on custom prompts.
 # =============================================================================
 
 dataset:
@@ -57,27 +58,33 @@ protocol:
 
 metrics:
   enabled:
-    - "clip_or_vqa"
     - "vbench_temporal"
-    - "flicker"
-    - "niqe"
-
-  clip_or_vqa:
-    mode: "clip"
-    model_name: "ViT-B-32"
-    pretrained: "openai"
-    num_frames_for_score: 288
-    aggregation: "mean"
 
   vbench:
     enabled: true
     backend: "vbench_long"
     use_long: true
+    strict_integrity: true
+    require_full_coverage: true
+    group_mismatch_warn_only: false
     preprocess_workers: 48
+    slow_dims_fused: true
+    slow_dims_decode_total_workers: 48
+    slow_dims_decode_prefetch: 24
+    slow_dims_decode_backend: "decord"
+    slow_dims_shard_mode: "clip"
+    slow_dims_perf_window_clips: 5
+    slow_dims_stage_profile: true
     grit_batch_parallel_enable: false
-    grit_batch_size: 1
-    grit_batch_adaptive_fallback_enable: false
-    dimension_profile: "long_16"
+    appearance_style_batch_enable: true
+    appearance_style_batch_size: 16
+    dynamic_degree_batch_enable: true
+    dynamic_degree_pair_batch_size: 8
+    batch_accel_fp16_enable: false
+    batch_accel_strict_fp32: true
+    scale_to_percent: []
+    profile_output: "group_summary_lite12d.csv"
+    dimension_profile: "long_12"
     mode: "long_custom_input"
     use_semantic_splitting: false
     clip_length_config: "clip_length_mix.yaml"
@@ -93,27 +100,11 @@ metrics:
       - "temporal_style"
       - "appearance_style"
       - "scene"
-      - "object_class"
-      - "multiple_objects"
-      - "spatial_relationship"
       - "human_action"
-      - "color"
       - "overall_consistency"
       - "dynamic_degree"
       - "imaging_quality"
       - "aesthetic_quality"
-
-  flicker:
-    method: "l1"
-    normalize: true
-    compute_std: true
-    grayscale: false
-
-  niqe:
-    enabled: true
-    num_frames_for_niqe: 288
-    block_size: 96
-    alternative: "niqe"
 
 runtime:
   device: "cuda"
