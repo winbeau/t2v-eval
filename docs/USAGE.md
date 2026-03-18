@@ -256,6 +256,15 @@ python scripts/run_vbench.py \
 ```
 说明：脚本会自动按"维度"均分到可见 GPU（如 12 维 / 4 卡 => 每卡 3 维，全视频），最终由 CPU 聚合输出 `outputs/<experiment>/vbench_per_video.csv`。
 
+对于已经按 `configs/four-forcing-H200.yaml` 风格写好的 12 维配置，可直接这样运行：
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+python scripts/run_vbench.py \
+    --config configs/prompts128-60s.yaml \
+    --force
+```
+说明：这类 YAML 已经只保留 12 个 temporal 维度，不需要再额外传 `--skip color,object_class,multiple_objects,spatial_relationship`。
+
 4. 官方 VBench-Long 直跑 16 维度命令（可选）：
 ```bash
 cd third_party/VBench
