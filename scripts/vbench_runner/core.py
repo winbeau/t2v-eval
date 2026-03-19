@@ -57,6 +57,7 @@ try:
         use_vbench_long,
     )
     from .group_labels import build_group_alias_map, remap_group_column
+    from .group_runs import ensure_group_run_cache_writable, write_group_run_cache
     from .group_subset import (
         filter_records_to_groups,
         parse_skip_groups_arg,
@@ -120,6 +121,7 @@ except ImportError:
         use_vbench_long,
     )
     from vbench_runner.group_labels import build_group_alias_map, remap_group_column
+    from vbench_runner.group_runs import ensure_group_run_cache_writable, write_group_run_cache
     from vbench_runner.group_subset import (
         filter_records_to_groups,
         parse_skip_groups_arg,
@@ -1603,6 +1605,15 @@ def main():
             preprocess_workers,
             workers_source,
         )
+        try:
+            ensure_group_run_cache_writable(
+                config=config,
+                output_dir=output_dir,
+                target_groups=effective_group_names,
+                force=args.force,
+            )
+        except FileExistsError as exc:
+            parser.error(str(exc))
     if vbench_output.exists() and not args.force:
         if rank == 0:
             logger.info(f"VBench results already exist: {vbench_output}")
@@ -1973,7 +1984,6 @@ def main():
         )
         if not df_results.empty:
             df_results = df_results.merge(df_meta, on="video_id", how="left")
-            df_results = remap_group_column(df_results, group_alias_map)
         expected_count = len(video_records)
         coverage_rows: list[tuple[str, int, int]] = []
         for subtask in all_subtasks:
@@ -2028,14 +2038,30 @@ def main():
                         temporal_cols,
                     )
 
+        df_results_display = remap_group_column(df_results.copy(), group_alias_map)
+
+        written_group_cache_paths: list[Path] = []
+        if not df_results.empty:
+            written_group_cache_paths = write_group_run_cache(
+                df_results,
+                config=config,
+                output_dir=output_dir,
+                force=args.force,
+            )
+            if written_group_cache_paths:
+                logger.info(
+                    "Updated per-group VBench cache files: %s",
+                    [path.name for path in written_group_cache_paths],
+                )
+
         # Save results
-        df_results.to_csv(vbench_output, index=False)
+        df_results_display.to_csv(vbench_output, index=False)
         logger.info(f"VBench results saved to: {vbench_output}")
 
         # Print summary
-        if "vbench_temporal_score" in df_results.columns:
+        if "vbench_temporal_score" in df_results_display.columns:
             logger.info("\nVBench Temporal Score Summary by Group:")
-            summary = df_results.groupby("group")["vbench_temporal_score"].agg(["mean", "std"])
+            summary = df_results_display.groupby("group")["vbench_temporal_score"].agg(["mean", "std"])
             logger.info(f"\n{summary}")
 
         # Copy outputs to frontend/public/data

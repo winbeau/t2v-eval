@@ -391,6 +391,7 @@ def copy_outputs_to_frontend(
     vbench_output: Path,
     *,
     copy_configured_outputs: bool = True,
+    extra_csv_paths: list[Path] | None = None,
 ) -> bool:
     """Copy outputs to frontend/public/data and update manifest."""
     try:
@@ -404,6 +405,14 @@ def copy_outputs_to_frontend(
             shutil.copy2(vbench_output, dst)
             copied_files.append(vbench_output.name)
             logger.info(f"  Copied: {vbench_output.name}")
+
+        for extra_path in extra_csv_paths or []:
+            if not extra_path or not extra_path.exists():
+                continue
+            dst = frontend_data_dir / extra_path.name
+            shutil.copy2(extra_path, dst)
+            copied_files.append(extra_path.name)
+            logger.info(f"  Copied: {extra_path.name}")
 
         if copy_configured_outputs:
             for key, default_name in [
