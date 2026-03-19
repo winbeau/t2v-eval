@@ -179,6 +179,50 @@ def make_file_barrier(sync_dir: Path, rank: int, world_size: int) -> Callable[[]
     return _barrier
 
 
+def _build_auto_torchrun_command(
+    *,
+    args: argparse.Namespace,
+    worker_count: int,
+    entry_script: Path,
+) -> list[str]:
+    cmd = [
+        sys.executable,
+        "-m",
+        "torch.distributed.run",
+        "--standalone",
+        "--nproc_per_node",
+        str(worker_count),
+        str(entry_script),
+        "--config",
+        str(args.config),
+    ]
+    if args.force:
+        cmd.append("--force")
+    if args.skip_on_error:
+        cmd.append("--skip-on-error")
+    skip_arg = getattr(args, "skip", "") or ""
+    if skip_arg:
+        cmd.extend(["--skip", skip_arg])
+    skip_groups_arg = getattr(args, "skip_groups", "") or ""
+    if skip_groups_arg:
+        cmd.extend(["--skip-groups", skip_groups_arg])
+    vbench_output = getattr(args, "vbench_output", "") or ""
+    if vbench_output:
+        cmd.extend(["--vbench-output", vbench_output])
+    preprocess_workers = getattr(args, "preprocess_workers", None)
+    if preprocess_workers is not None:
+        cmd.extend(["--preprocess-workers", str(preprocess_workers)])
+    if getattr(args, "no_prefetch_assets", False):
+        cmd.append("--no-prefetch-assets")
+    if getattr(args, "no_verify_asset_sha256", False):
+        cmd.append("--no-verify-asset-sha256")
+    if getattr(args, "no_repair_corrupted_assets", False):
+        cmd.append("--no-repair-corrupted-assets")
+    if getattr(args, "no_auto_multi_gpu", False):
+        cmd.append("--no-auto-multi-gpu")
+    return cmd
+
+
 def maybe_auto_launch_multi_gpu(
     args: argparse.Namespace,
     config: dict,
@@ -238,35 +282,11 @@ def maybe_auto_launch_multi_gpu(
     )
 
     entry_script = PROJECT_ROOT / "scripts" / "run_vbench.py"
-    cmd = [
-        sys.executable,
-        "-m",
-        "torch.distributed.run",
-        "--standalone",
-        "--nproc_per_node",
-        str(worker_count),
-        str(entry_script),
-        "--config",
-        str(args.config),
-    ]
-    if args.force:
-        cmd.append("--force")
-    if args.skip_on_error:
-        cmd.append("--skip-on-error")
-    skip_arg = getattr(args, "skip", "") or ""
-    if skip_arg:
-        cmd.extend(["--skip", skip_arg])
-    preprocess_workers = getattr(args, "preprocess_workers", None)
-    if preprocess_workers is not None:
-        cmd.extend(["--preprocess-workers", str(preprocess_workers)])
-    if getattr(args, "no_prefetch_assets", False):
-        cmd.append("--no-prefetch-assets")
-    if getattr(args, "no_verify_asset_sha256", False):
-        cmd.append("--no-verify-asset-sha256")
-    if getattr(args, "no_repair_corrupted_assets", False):
-        cmd.append("--no-repair-corrupted-assets")
-    if getattr(args, "no_auto_multi_gpu", False):
-        cmd.append("--no-auto-multi-gpu")
+    cmd = _build_auto_torchrun_command(
+        args=args,
+        worker_count=worker_count,
+        entry_script=entry_script,
+    )
 
     env = os.environ.copy()
     env["VBENCH_AUTO_MULTI_GPU_LAUNCHED"] = "1"

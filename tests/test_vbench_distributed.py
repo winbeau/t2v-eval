@@ -9,14 +9,17 @@ Covers:
   - make_file_barrier()
 """
 
+import argparse
 import os
 import threading
+from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
 from scripts.vbench_runner.distributed import (
+    _build_auto_torchrun_command,
     _build_group_lookup_for_salvage,
     _parse_visible_devices,
     init_distributed_if_needed,
@@ -281,6 +284,63 @@ class TestBuildGroupLookupForSalvage:
         output_dir.mkdir(parents=True, exist_ok=True)
         lookup = _build_group_lookup_for_salvage(config={}, output_dir=output_dir)
         assert lookup == {}
+
+
+# ---------------------------------------------------------------------------
+# _build_auto_torchrun_command
+# ---------------------------------------------------------------------------
+class TestBuildAutoTorchrunCommand:
+    def test_forwards_group_subset_args(self):
+        args = argparse.Namespace(
+            config="configs/prompts128-30s.yaml",
+            force=True,
+            skip_on_error=False,
+            skip="",
+            skip_groups="pyramid-forcing-30s",
+            vbench_output="vbench_prompts128-30s_no_pyramid.csv",
+            preprocess_workers=None,
+            no_prefetch_assets=False,
+            no_verify_asset_sha256=False,
+            no_repair_corrupted_assets=False,
+            no_auto_multi_gpu=False,
+        )
+
+        cmd = _build_auto_torchrun_command(
+            args=args,
+            worker_count=4,
+            entry_script=Path("/tmp/run_vbench.py"),
+        )
+
+        assert "--skip-groups" in cmd
+        assert "pyramid-forcing-30s" in cmd
+        assert "--vbench-output" in cmd
+        assert "vbench_prompts128-30s_no_pyramid.csv" in cmd
+
+    def test_omits_optional_subset_args_when_empty(self):
+        args = argparse.Namespace(
+            config="configs/prompts128-30s.yaml",
+            force=False,
+            skip_on_error=True,
+            skip="dynamic_degree",
+            skip_groups="",
+            vbench_output="",
+            preprocess_workers=8,
+            no_prefetch_assets=True,
+            no_verify_asset_sha256=True,
+            no_repair_corrupted_assets=True,
+            no_auto_multi_gpu=True,
+        )
+
+        cmd = _build_auto_torchrun_command(
+            args=args,
+            worker_count=2,
+            entry_script=Path("/tmp/run_vbench.py"),
+        )
+
+        assert "--skip" in cmd
+        assert "dynamic_degree" in cmd
+        assert "--skip-groups" not in cmd
+        assert "--vbench-output" not in cmd
 
 
 # ---------------------------------------------------------------------------
