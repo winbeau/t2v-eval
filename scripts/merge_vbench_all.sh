@@ -9,8 +9,8 @@ force=0
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/merge_vbench_group_runs.sh --config CONFIG [--force]
-  scripts/merge_vbench_group_runs.sh --config CONFIG \
+  scripts/merge_vbench_all.sh --config CONFIG [--force]
+  scripts/merge_vbench_all.sh --config CONFIG \
     [--merged-output FILE.csv] \
     [--group-summary-output FILE.csv] \
     [--force]
@@ -52,7 +52,7 @@ done
 
 [[ -n "$config" ]] || { echo "--config is required" >&2; usage >&2; exit 2; }
 
-cmd=(uv run python scripts/merge_vbench_group_runs.py --config "$config")
+cmd=(env PYTHONPATH=scripts uv run python -m vbench_runner.group_runs --config "$config")
 
 if [[ -n "$merged_output" ]]; then
   cmd+=(--merged-output "$merged_output")

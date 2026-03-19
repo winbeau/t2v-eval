@@ -7,10 +7,10 @@ import pandas as pd
 import pytest
 import yaml
 
-from scripts.merge_vbench_group_runs import main as merge_group_runs_main
 from scripts.vbench_runner.group_runs import (
     build_group_run_file_map,
     load_group_run_cache,
+    main as merge_group_runs_main,
     write_group_run_cache,
 )
 
@@ -126,7 +126,7 @@ def test_merge_group_runs_main_creates_outputs_and_frontend_copy(group_run_confi
     monkeypatch.setattr(
         sys,
         "argv",
-        ["merge_vbench_group_runs.py", "--config", str(config_path), "--force"],
+        ["group_runs.py", "--config", str(config_path), "--force"],
     )
 
     rc = merge_group_runs_main()
@@ -145,7 +145,7 @@ def test_merge_group_runs_main_creates_outputs_and_frontend_copy(group_run_confi
 
 def test_merge_group_runs_shell_script_syntax():
     result = subprocess.run(
-        ["bash", "-n", "scripts/merge_vbench_group_runs.sh"],
+        ["bash", "-n", "scripts/merge_vbench_all.sh"],
         check=False,
         capture_output=True,
         text=True,
