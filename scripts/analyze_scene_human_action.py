@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -28,6 +29,24 @@ from vbench_runner.auxiliary import explain_scene_from_prompt
 from vbench_runner.compat import load_human_action_categories, match_human_action_prompt
 from vbench_runner.env import check_vbench_installation, setup_vbench_path
 from vbench_runner.results import resolve_video_id
+
+try:
+    from .summarize import cleanup_summary_column_names, compute_group_summary
+except ImportError:
+    from summarize import cleanup_summary_column_names, compute_group_summary
+
+
+IGNORED_EXPORT_COLUMNS = {
+    "video_id",
+    "group",
+    "prompt",
+    "video_path",
+    "run",
+    "duration",
+    "base_group",
+    "source_output_dir",
+}
+DEBUG_FILTER_CHOICES = ("debug1",)
 
 
 def _extract_items(raw_data: dict, subtask: str) -> list[dict]:
@@ -191,7 +210,9 @@ def parse_human_action_match_stats(output_dir: Path) -> dict[str, int] | None:
 
 
 def build_experiment_diagnostics(output_dir: Path, action_categories: list[str]) -> tuple[pd.DataFrame, dict]:
-    merged = load_vbench_per_video(output_dir).copy()
+    raw_vbench = load_vbench_per_video(output_dir).copy()
+    raw_columns = list(raw_vbench.columns)
+    merged = raw_vbench.copy()
     valid_video_ids = set(merged["video_id"].astype(str))
     scene_info = load_full_info_map(output_dir, "scene", valid_video_ids, action_categories)
     action_info = load_full_info_map(output_dir, "human_action", valid_video_ids, action_categories)
@@ -206,11 +227,13 @@ def build_experiment_diagnostics(output_dir: Path, action_categories: list[str])
     merged["run"] = output_dir.name
     merged["duration"] = infer_duration_tag(output_dir.name)
     merged["base_group"] = merged["group"].map(strip_duration_suffix)
+    merged["source_output_dir"] = str(output_dir)
     merged["scene"] = pd.to_numeric(merged["scene"], errors="coerce")
     merged["human_action"] = pd.to_numeric(merged["human_action"], errors="coerce")
 
     meta = {
         "output_dir": str(output_dir),
+        "raw_vbench_columns": raw_columns,
         "human_action_match_stats": parse_human_action_match_stats(output_dir),
     }
     return merged, meta
@@ -344,9 +367,146 @@ def build_suspicious_samples(df: pd.DataFrame, subtask: str, top_k: int = 20) ->
     return suspicious[keep].head(top_k).reset_index(drop=True)
 
 
+def build_variance_summary(df: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict] = []
+    metrics = ("scene", "human_action")
+    for (run, group), group_df in df.groupby(["run", "group"], dropna=False):
+        for metric in metrics:
+            values = pd.to_numeric(group_df[metric], errors="coerce").dropna()
+            if values.empty:
+                continue
+            rows.append(
+                {
+                    "run": run,
+                    "group": group,
+                    "metric": metric,
+                    "n_videos": len(values),
+                    "mean": float(values.mean()),
+                    "std": float(values.std()),
+                    "min": float(values.min()),
+                    "p10": float(values.quantile(0.10)),
+                    "p25": float(values.quantile(0.25)),
+                    "p50": float(values.quantile(0.50)),
+                    "p75": float(values.quantile(0.75)),
+                    "p90": float(values.quantile(0.90)),
+                    "max": float(values.max()),
+                    "zero_ratio": float((values == 0).mean()),
+                    "gte90_ratio": float((values >= 90).mean()),
+                    "gte95_ratio": float((values >= 95).mean()),
+                    "eq0_count": int((values == 0).sum()),
+                    "bin_0_20_count": int(((values > 0) & (values < 20)).sum()),
+                    "bin_20_80_count": int(((values >= 20) & (values < 80)).sum()),
+                    "bin_80_95_count": int(((values >= 80) & (values < 95)).sum()),
+                    "bin_95_100_count": int((values >= 95).sum()),
+                }
+            )
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values(["run", "group", "metric"]).reset_index(drop=True)
+
+
+def filter_debug_rows(df: pd.DataFrame, filter_name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if filter_name != "debug1":
+        raise ValueError(f"Unsupported debug filter: {filter_name}")
+
+    mask = df["human_action_mode"].eq("unmatched")
+    removed = df.loc[mask].copy()
+    removed["removed_reason"] = "human_action_unmatched"
+    kept = df.loc[~mask].copy()
+    return kept.reset_index(drop=True), removed.reset_index(drop=True)
+
+
+def build_group_summary_export(df: pd.DataFrame, raw_columns: list[str]) -> pd.DataFrame:
+    export_df = df[["video_id", "group", *[c for c in raw_columns if c not in {"video_id", "group"}]]].copy()
+    metric_cols: list[str] = []
+    for col in raw_columns:
+        if col in IGNORED_EXPORT_COLUMNS or col not in export_df.columns:
+            continue
+        numeric = pd.to_numeric(export_df[col], errors="coerce")
+        if numeric.notna().sum() == 0:
+            continue
+        export_df[col] = numeric
+        metric_cols.append(col)
+
+    summary_df = compute_group_summary(export_df, metric_cols)
+    summary_df = cleanup_summary_column_names(summary_df)
+    if "group" in summary_df.columns:
+        summary_df = summary_df.sort_values("group").reset_index(drop=True)
+    return summary_df
+
+
+def copy_files_to_frontend(files: list[Path], frontend_data_dir: Path) -> list[str]:
+    frontend_data_dir.mkdir(parents=True, exist_ok=True)
+    copied_files: list[str] = []
+    for path in files:
+        if not path.exists():
+            continue
+        shutil.copy2(path, frontend_data_dir / path.name)
+        copied_files.append(path.name)
+
+    manifest_path = frontend_data_dir / "manifest.json"
+    existing_files: set[str] = set()
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            existing_files = set(manifest.get("files", []))
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            existing_files = set()
+
+    manifest = {"files": sorted(existing_files.union(copied_files))}
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    return copied_files
+
+
+def export_debug_outputs(
+    df: pd.DataFrame,
+    run_meta: dict[str, dict],
+    filter_name: str,
+    copy_to_frontend: bool,
+    frontend_data_dir: Path,
+) -> list[Path]:
+    exported_paths: list[Path] = []
+    for run_name, meta in run_meta.items():
+        run_df = df[df["run"] == run_name].copy()
+        filtered_df, removed_df = filter_debug_rows(run_df, filter_name)
+        output_dir = Path(meta["output_dir"])
+        raw_columns = list(meta["raw_vbench_columns"])
+        per_video_columns = [c for c in raw_columns if c in filtered_df.columns]
+
+        per_video_path = output_dir / f"vbench_{run_name}-{filter_name}.csv"
+        summary_path = output_dir / f"{run_name}-{filter_name}.csv"
+        removed_path = output_dir / f"{run_name}-{filter_name}_removed.csv"
+
+        filtered_df[per_video_columns].to_csv(per_video_path, index=False)
+        build_group_summary_export(filtered_df, raw_columns).to_csv(summary_path, index=False)
+
+        removed_export_cols = [
+            c
+            for c in [
+                "video_id",
+                "group",
+                "scene",
+                "human_action",
+                "scene_mode",
+                "scene_label",
+                "human_action_mode",
+                "human_action_label",
+                "removed_reason",
+            ]
+            if c in removed_df.columns
+        ]
+        removed_df[removed_export_cols].to_csv(removed_path, index=False)
+        exported_paths.extend([per_video_path, summary_path, removed_path])
+
+    if copy_to_frontend:
+        copy_files_to_frontend(exported_paths, frontend_data_dir)
+    return exported_paths
+
+
 def build_report(
     df: pd.DataFrame,
     group_summary: pd.DataFrame,
+    variance_summary: pd.DataFrame,
     scene_modes: pd.DataFrame,
     human_modes: pd.DataFrame,
     scene_labels: pd.DataFrame,
@@ -377,6 +537,21 @@ def build_report(
             ),
         )
     _emit(lines, "")
+
+    if not variance_summary.empty:
+        _emit(lines, "## Variance Diagnostics")
+        for row in variance_summary.itertuples(index=False):
+            _emit(
+                lines,
+                (
+                    f"- {row.run} / {row.group} / {row.metric}: median={row.p50:.3f}, "
+                    f"zero_ratio={row.zero_ratio:.3f}, gte90_ratio={row.gte90_ratio:.3f}, "
+                    f"bins(eq0={row.eq0_count}, 0_20={row.bin_0_20_count}, "
+                    f"20_80={row.bin_20_80_count}, 80_95={row.bin_80_95_count}, "
+                    f"95_100={row.bin_95_100_count})"
+                ),
+            )
+        _emit(lines, "")
 
     _emit(lines, "## Human Action Match Modes")
     for run_name in sorted(df["run"].unique()):
@@ -456,6 +631,11 @@ def build_report(
         "- If high-scoring rows cluster in scene fallback/preposition modes or human_action unmatched mode, "
         "the scores are likely being driven more by prompt heuristics than by robust semantic grounding.",
     )
+    _emit(
+        lines,
+        "- High variance here usually means bimodality: many rows sit exactly at 0 while another block sits near 90-100, "
+        "instead of a single broad bell-shaped spread.",
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -476,6 +656,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--report-out",
         default=None,
         help="Optional explicit path for Markdown report (defaults to <artifacts-dir>/report.md)",
+    )
+    parser.add_argument(
+        "--emit-debug-filter",
+        choices=DEBUG_FILTER_CHOICES,
+        default=None,
+        help="Optional debug filter to export filtered per-video/group-summary CSVs.",
+    )
+    parser.add_argument(
+        "--copy-to-frontend",
+        action="store_true",
+        help="Copy generated debug CSVs into frontend/public/data and update manifest.json.",
+    )
+    parser.add_argument(
+        "--frontend-data-dir",
+        default="frontend/public/data",
+        help="Frontend data directory used when --copy-to-frontend is set.",
     )
     return parser.parse_args(argv)
 
@@ -500,6 +696,7 @@ def main(argv: list[str] | None = None) -> int:
 
     combined = pd.concat(all_rows, ignore_index=True)
     group_summary = build_group_summary(combined)
+    variance_summary = build_variance_summary(combined)
     scene_modes = build_mode_summary(combined, "scene")
     human_modes = build_mode_summary(combined, "human_action")
     scene_labels = build_label_frequency(combined, "scene")
@@ -510,6 +707,7 @@ def main(argv: list[str] | None = None) -> int:
 
     combined.to_csv(artifacts_dir / "per_video_diagnostics.csv", index=False)
     group_summary.to_csv(artifacts_dir / "group_dimension_summary.csv", index=False)
+    variance_summary.to_csv(artifacts_dir / "variance_distribution_summary.csv", index=False)
     scene_modes.to_csv(artifacts_dir / "scene_mode_summary.csv", index=False)
     human_modes.to_csv(artifacts_dir / "human_action_mode_summary.csv", index=False)
     scene_labels.to_csv(artifacts_dir / "scene_label_frequency.csv", index=False)
@@ -522,6 +720,7 @@ def main(argv: list[str] | None = None) -> int:
     report = build_report(
         combined,
         group_summary,
+        variance_summary,
         scene_modes,
         human_modes,
         scene_labels,
@@ -530,6 +729,17 @@ def main(argv: list[str] | None = None) -> int:
         run_meta,
     )
     report_out.write_text(report, encoding="utf-8")
+
+    if args.emit_debug_filter:
+        frontend_data_dir = Path(args.frontend_data_dir)
+        export_debug_outputs(
+            combined,
+            run_meta,
+            args.emit_debug_filter,
+            copy_to_frontend=args.copy_to_frontend,
+            frontend_data_dir=frontend_data_dir,
+        )
+
     print(f"Saved report to {report_out}")
     return 0
 

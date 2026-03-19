@@ -11,8 +11,9 @@
 ## Build, Test, and Development Commands
 - `uv venv --python 3.10` and `uv pip install -e .`: create env and install Python deps.
 - `uv pip install -r third_party/VBench/requirements.txt`: VBench extras after submodules.
-- `python scripts/run_all.py --config configs/<exp>.yaml`: run full evaluation.
-- `python scripts/run_all.py --config configs/<exp>.yaml --skip-vbench`: skip a metric.
+- Prefer `uv run python ...` for repo Python commands instead of invoking bare `python`.
+- `uv run python scripts/run_all.py --config configs/<exp>.yaml`: run full evaluation.
+- `uv run python scripts/run_all.py --config configs/<exp>.yaml --skip-vbench`: skip a metric.
 - `cd frontend && pnpm install && pnpm dev`: run the LaTeX table UI.
 - `cd frontend && pnpm build`: build frontend for preview/distribution.
 
