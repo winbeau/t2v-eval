@@ -138,191 +138,47 @@ Core 预处理相关 CLI 参数（`run_all.py` / `run_eval_core.py`）：
 
 > 建议：大机器上优先使用 `--preprocess-workers 48 --ffmpeg-threads 1`，避免总线程数过高导致争用。
 
-3. 运行 VBench-Long 评测（**推荐 12 维，跳过 4 个 GrIT 慢维度**）：
-`run_vbench.py` 会在本地视频模式下自动做一次 `split_clip` 预处理（仅 rank0），后续维度复用缓存。
-同时会在评测前自动预取并校验 CLIP 权重（`ViT-B-32.pt` / `ViT-L-14.pt`），若检测到损坏会自动修复，避免 `invalid load key` 类报错。
-`configs/Exp-C_OscHead_RadicalKV_vbench.yaml` 已内置：
-```yaml
-metrics:
-  vbench:
-    preprocess_workers: 48
-```
-若 `use_semantic_splitting: true`，当前会回退到 VBench 原生预处理流程。
+3. 运行 VBench（`-H200` 12 维 YAML）
 
-直接运行（不改你原命令）：
-```bash
-uv run python scripts/run_vbench.py \
-    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
-    --skip-on-error \
-    --skip color,object_class,multiple_objects,spatial_relationship \
-    --force
-```
+常用规则：
+- `-H200` 这类 12 维 YAML 已经只保留 temporal 维度，不需要再手动 `--skip color,object_class,multiple_objects,spatial_relationship`
+- 4 卡运行时直接设置 `CUDA_VISIBLE_DEVICES=0,1,2,3`
+- 子集运行后会同时写：
+  - 本次子集总 CSV
+  - `outputs/<exp>/vbench_group_runs/` 下的小组级 CSV
+- 最终合并时只认小组级 CSV，并严格检查是否全覆盖 YAML 中的全部组
 
-如需临时覆盖并发度（CLI 优先级高于 YAML）：
-```bash
-uv run python scripts/run_vbench.py \
-    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
-    --preprocess-workers 48 \
-    --skip-on-error \
-    --skip color,object_class,multiple_objects,spatial_relationship \
-    --force
-```
-
-> **说明**：`color`、`object_class`、`multiple_objects`、`spatial_relationship` 依赖 GrIT 密集描述模型（每帧 beam search 文本生成约 6s），这 4 维占总时间 80% 以上。跳过后 4 卡约 20 分钟完成，其余 12 维不受影响。
-
-可选资产预取参数（默认均开启）：
-```yaml
-metrics:
-  vbench:
-    prefetch_assets: true
-    verify_asset_sha256: true
-    repair_corrupted_assets: true
-    # run_vbench 输出口径：默认仅将 0-1 维度转为 0-100
-    output_percent_scale: true
-    output_percent_mode: "auto_01_only"   # 可选: "explicit_list"
-    # output_percent_columns: ["dynamic_degree", "motion_smoothness"]  # explicit_list 时生效
-    # 可选：多卡聚合时等待各 rank partial 的超时与轮询间隔
-    partial_collect_timeout_sec: 43200
-    partial_collect_poll_sec: 2.0
-    # 可选：论文对齐口径（Deep-Forcing 8维）
-    comparison_profile: "deep_forcing_8d"
-    # 0-1 指标转百分制（x100）；imaging_quality 保持原量纲
-    scale_to_percent:
-      - "dynamic_degree"
-      - "motion_smoothness"
-      - "overall_consistency"
-      - "aesthetic_quality"
-      - "subject_consistency"
-      - "background_consistency"
-    # 额外导出 profile 摘要（不影响主 group_summary.csv）
-    profile_output: "group_summary_deep_forcing_8d.csv"
-```
-说明：`auto_01_only` 会自动把 `dynamic_degree` / `subject_consistency` 等 0-1 维度转成百分制，
-`imaging_quality` 这类原本非 0-1 量纲的维度保持原值，不会被误乘 100。
-也可用 CLI 临时关闭：
-`--no-prefetch-assets` / `--no-verify-asset-sha256` / `--no-repair-corrupted-assets`
-
-如需运行全部 16 维（极慢，4×L40 约数小时）：
-```bash
-uv run python scripts/run_vbench.py \
-    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
-    --skip-on-error \
-    --force
-```
-
-运行结束后会自动把结果同步到 `frontend/public/data/`（并更新 `manifest.json`）。
-脚本会在开始时只做一次切片预处理，后续维度复用 `split_clip`，不再重复预处理。
-
-诊断“实现问题 vs 口径问题”（只读）：
-```bash
-uv run python scripts/diagnose_vbench_alignment.py \
-    --output-dir outputs/Exp-K_StaOscCompression \
-    --config configs/Exp-K_StaOscCompression.yaml \
-    --pair overall_consistency,temporal_style \
-    --report-out outputs/Exp-K_StaOscCompression/alignment_report.md
-```
-该脚本会同时检查：
-1) `vbench_*.csv` 聚合后的统计；
-2) `vbench_results/*_eval_results.json` 原始子任务输出；
-3) `overall_consistency` 与 `temporal_style` 的逐样本一致度；
-4) `*_full_info.json` 输入（`prompt_en`/`video_list`）是否一致；
-5) `third_party/VBench/vbench` 中两个维度实现的源码相似度。
-
-若出现 `overall_consistency` 显著偏低，同时日志显示大量 `fallback_video_id`，
-优先检查 `dataset.prompt_files_by_group` 是否覆盖所有组并指向各组 `prompts.csv`。
-
-### CLI 参数说明
-
-| 参数 | 说明 |
-|------|------|
-| `--config` | YAML 配置文件路径 |
-| `--force` | 覆盖已有结果，强制重新计算 |
-| `--skip-on-error` | 某个维度失败时跳过而非终止，聚合已成功的部分结果 |
-| `--skip <dims>` | 跳过指定维度（逗号分隔），如 `--skip color,object_class` |
-| `--skip-groups <groups>` | 跳过指定 YAML 组名（逗号分隔，只接受 `groups[].name` 精确匹配） |
-| `--vbench-output <file.csv>` | 自定义 VBench 输出文件名；使用 `--skip-groups` 时必填 |
-| `--preprocess-workers` | VBench-Long 一次性切片预处理进程数（CLI 覆盖 `metrics.vbench.preprocess_workers`） |
-| `--no-prefetch-assets` | 关闭评测前 CLIP 权重预取与校验 |
-| `--no-verify-asset-sha256` | 关闭 CLIP 权重 SHA256 校验 |
-| `--no-repair-corrupted-assets` | 检测到损坏权重时不自动修复（直接报错） |
-| `--no-auto-multi-gpu` | 禁用自动多卡并行 |
-
-多卡并行（例如 4×L40）：
+1. 4 卡运行全部：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
 uv run python scripts/run_vbench.py \
-    --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
-    --skip-on-error \
-    --skip color,object_class,multiple_objects,spatial_relationship \
+    --config configs/Exp_pyramid_forcing_groups-H200.yaml \
     --force
 ```
-说明：脚本会自动按"维度"均分到可见 GPU（如 12 维 / 4 卡 => 每卡 3 维，全视频），最终由 CPU 聚合输出 `outputs/<experiment>/vbench_per_video.csv`。
 
-对于已经按 `configs/four-forcing-H200.yaml` 风格写好的 12 维配置，可直接这样运行：
+2. 4 卡运行子集：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
 uv run python scripts/run_vbench.py \
-    --config configs/prompts128-60s.yaml \
+    --config configs/Exp_pyramid_forcing_groups-H200.yaml \
+    --skip-groups g3,g4,g5,g6 \
+    --vbench-output vbench_Exp_pyramid_forcing_groups-H200_g1_g2.csv \
     --force
 ```
-说明：这类 YAML 已经只保留 12 个 temporal 维度，不需要再额外传 `--skip color,object_class,multiple_objects,spatial_relationship`。
 
-按组子集运行（单个大 YAML，只跑部分组）：
+3. 合并所有子小组：
 ```bash
-CUDA_VISIBLE_DEVICES=0,1,2,3 \
-uv run python scripts/run_vbench.py \
-    --config configs/prompts128-60s.yaml \
-    --skip-groups rolling-forcing-60s,self-forcing-60s,pyramid-forcing-60s \
-    --vbench-output vbench_prompts128-60s_deep_only.csv \
+scripts/merge_vbench_all.sh \
+    --config configs/Exp_pyramid_forcing_groups-H200.yaml \
     --force
 ```
+
 说明：
 - `--skip-groups` 只接受 YAML 中 `groups[].name` 的精确名称
 - 子集模式下必须显式传 `--vbench-output`
-- 不会自动猜组名，也不会自动生成子集文件名
-- 子集 `run_vbench` 只会复制本次 `vbench` CSV 到前端，不会顺手复制旧的全量 summary
-
-## 汇总结果
-
-全量汇总：
-```bash
-uv run python scripts/summarize.py \
-    --config configs/prompts128-60s.yaml \
-    --force
-```
-
-子集汇总：
-```bash
-uv run python scripts/summarize.py \
-    --config configs/prompts128-60s.yaml \
-    --skip-groups rolling-forcing-60s,self-forcing-60s,pyramid-forcing-60s \
-    --vbench-input vbench_prompts128-60s_deep_only.csv \
-    --per-video-output per_video_prompts128-60s_deep_only.csv \
-    --group-summary-output group_summary_prompts128-60s_deep_only.csv \
-    --experiment-output prompts128-60s_deep_only.csv \
-    --profile-output group_summary_prompts128-60s_deep_only_profile.csv \
-    --force
-```
-
-包装脚本写法：
-```bash
-scripts/summarize_vbench_groups.sh \
-    --config configs/prompts128-60s.yaml \
-    --skip-groups rolling-forcing-60s,self-forcing-60s,pyramid-forcing-60s \
-    --vbench-input vbench_prompts128-60s_deep_only.csv \
-    --per-video-output per_video_prompts128-60s_deep_only.csv \
-    --group-summary-output group_summary_prompts128-60s_deep_only.csv \
-    --experiment-output prompts128-60s_deep_only.csv \
-    --profile-output group_summary_prompts128-60s_deep_only_profile.csv \
-    --force
-```
-
-汇总规则：
-- 全量模式：输出文件名由 YAML 决定
-- 子集模式：不允许 fallback，必须显式给出子集输出文件名
-- 若输出目录下存在多个 `vbench_*.csv`，必须用 `--vbench-input` 明确指定
-- `--skip-groups` 同样只接受 YAML `groups[].name` 的精确名称
-- 若 YAML 配置了 comparison profile，子集模式下必须显式传 `--profile-output`
+- 若某个小组缓存已经存在而未传 `--force`，脚本会直接报错，避免覆盖旧结果
+- `merge_vbench_all.sh` 会严格检查小组缓存是否全覆盖；缺组、重复组、额外脏 CSV 都会直接失败
+- 合并完成后会自动复制最终 VBench CSV 和 group summary 到 `frontend/public/data/`
 
 4. 官方 VBench-Long 直跑 16 维度命令（可选）：
 ```bash
