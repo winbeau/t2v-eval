@@ -64,17 +64,34 @@ def infer_duration_tag(name: str) -> str:
 
 
 def load_vbench_per_video(output_dir: Path) -> pd.DataFrame:
-    path = output_dir / "vbench_per_video.csv"
-    if not path.exists():
-        raise FileNotFoundError(f"Missing vbench_per_video.csv under {output_dir}")
-    df = pd.read_csv(path)
+    candidates: list[Path] = []
+    primary = output_dir / "vbench_per_video.csv"
+    if primary.exists():
+        candidates.append(primary)
+    candidates.extend(sorted(output_dir.glob("vbench_*.csv")))
+
+    seen: set[Path] = set()
     required = {"video_id", "group", "scene", "human_action"}
-    missing = sorted(required - set(df.columns))
-    if missing:
-        raise ValueError(f"{path} missing required columns: {missing}")
-    df["video_id"] = df["video_id"].astype(str)
-    df["group"] = df["group"].astype(str)
-    return df
+    for path in candidates:
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        try:
+            df = pd.read_csv(path)
+        except Exception:
+            continue
+        missing = sorted(required - set(df.columns))
+        if missing:
+            continue
+        df["video_id"] = df["video_id"].astype(str)
+        df["group"] = df["group"].astype(str)
+        return df
+
+    raise FileNotFoundError(
+        f"Missing usable VBench CSV under {output_dir}. Expected vbench_per_video.csv "
+        "or vbench_*.csv with columns video_id, group, scene, human_action."
+    )
 
 
 def load_full_info_map(

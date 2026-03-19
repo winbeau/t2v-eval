@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from scripts.analyze_scene_human_action import main
+from scripts.analyze_scene_human_action import load_vbench_per_video, main
 from scripts.vbench_runner.auxiliary import explain_scene_from_prompt
 from scripts.vbench_runner.compat import match_human_action_prompt
 
@@ -172,3 +172,22 @@ def test_main_generates_report_and_csvs(tmp_path, monkeypatch) -> None:
         diag_df.columns
     )
     assert set(diag_df["human_action_mode"]) == {"exact", "unmatched"}
+
+
+def test_load_vbench_per_video_falls_back_to_named_csv(tmp_path) -> None:
+    output_dir = tmp_path / "outputs" / "prompts128-30s"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        [
+            {
+                "video_id": "g1_video_000",
+                "group": "deep-forcing-30s",
+                "scene": 80.0,
+                "human_action": 90.0,
+            }
+        ]
+    ).to_csv(output_dir / "vbench_prompts128-30s.csv", index=False)
+
+    df = load_vbench_per_video(output_dir)
+
+    assert list(df["video_id"]) == ["g1_video_000"]
