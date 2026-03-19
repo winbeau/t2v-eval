@@ -673,6 +673,37 @@ def infer_auxiliary_from_prompt(dimension: str, prompt_text: str) -> dict | None
     return None
 
 
+def explain_scene_from_prompt(prompt_text: str) -> dict[str, str]:
+    """
+    Explain how the current `scene` auxiliary payload would be inferred.
+
+    Returns:
+      {
+        "label": <scene label>,
+        "mode": "keyword" | "preposition" | "fallback",
+      }
+    """
+    prompt_simple = simplify_prompt_text(str(prompt_text or ""))
+    tokens = tokenize_prompt_words(prompt_simple)
+
+    for token in tokens:
+        if token in SCENE_KEYWORDS:
+            return {"label": token, "mode": "keyword"}
+
+    loc_match = re.search(
+        r"(?:in|on|at|near|through|across|along|beside|under|over)\s+"
+        r"(?:a|an|the|)\s*([a-z]+)",
+        prompt_simple,
+    )
+    if loc_match:
+        candidate = loc_match.group(1).strip()
+        if candidate not in PROMPT_STOPWORDS and candidate not in COLOR_WORDS:
+            return {"label": candidate, "mode": "preposition"}
+
+    first_clause = re.split(r"[,.;]", prompt_simple, maxsplit=1)[0]
+    return {"label": extract_object_token(first_clause, default="outdoor"), "mode": "fallback"}
+
+
 # =============================================================================
 # Auxiliary lookup from official VBench full-info
 # =============================================================================

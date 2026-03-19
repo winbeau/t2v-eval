@@ -28,6 +28,91 @@ except ImportError:
     from vbench_runner.env import logger
 
 
+HUMAN_ACTION_STOPWORDS = {
+    "a",
+    "an",
+    "the",
+    "of",
+    "in",
+    "on",
+    "at",
+    "to",
+    "with",
+    "for",
+    "and",
+    "or",
+    "from",
+    "by",
+    "not",
+    "is",
+    "are",
+    "was",
+    "were",
+}
+
+
+def load_human_action_categories() -> list[str]:
+    """Load Kinetics-400 category names sorted longest-first for greedy matching."""
+    from vbench import human_action as _ha
+
+    return sorted(_ha.build_dict().values(), key=len, reverse=True)
+
+
+def _human_action_content_words(text: str) -> set[str]:
+    """Extract lowercase content words from text, filtering stopwords."""
+    import re
+
+    return {w for w in re.findall(r"[a-z]+", text.lower()) if w not in HUMAN_ACTION_STOPWORDS}
+
+
+def match_human_action_prompt(
+    prompt_text: str,
+    *,
+    categories: list[str] | None = None,
+) -> dict[str, object]:
+    """
+    Match prompt text to a Kinetics-400 action category.
+
+    Returns:
+      {
+        "label": <matched category or None>,
+        "mode": "exact" | "keyword" | "unmatched",
+        "overlap": <int>,
+        "ratio": <float>,
+      }
+    """
+    prompt_text = str(prompt_text or "")
+    prompt_lower = prompt_text.lower()
+    k400_cats = categories or load_human_action_categories()
+    k400_content_words = {cat: _human_action_content_words(cat) for cat in k400_cats}
+
+    for cat in k400_cats:
+        if cat in prompt_lower:
+            return {"label": cat, "mode": "exact", "overlap": len(k400_content_words[cat]), "ratio": 1.0}
+
+    prompt_words = _human_action_content_words(prompt_text)
+    if not prompt_words:
+        return {"label": None, "mode": "unmatched", "overlap": 0, "ratio": 0.0}
+
+    best_cat = None
+    best_overlap = 0
+    best_ratio = 0.0
+    for cat, cat_words in k400_content_words.items():
+        if not cat_words:
+            continue
+        overlap = len(prompt_words & cat_words)
+        ratio = overlap / len(cat_words)
+        if overlap > 0 and ratio >= 0.5:
+            if (overlap, ratio, len(cat)) > (best_overlap, best_ratio, len(best_cat or "")):
+                best_cat = cat
+                best_overlap = overlap
+                best_ratio = ratio
+
+    if best_cat is None:
+        return {"label": None, "mode": "unmatched", "overlap": 0, "ratio": 0.0}
+    return {"label": best_cat, "mode": "keyword", "overlap": best_overlap, "ratio": best_ratio}
+
+
 def patch_transformers_compat() -> None:
     """
     Inject missing functions into transformers.modeling_utils.
@@ -1105,8 +1190,6 @@ def patch_human_action_prompt_matching() -> None:
       3. If no match, the predicted top-5 categories are accepted unconditionally
          (score = 1 if any prediction has confidence >= threshold).
     """
-    import re
-
     try:
         from vbench import human_action as _ha
         from vbench.utils import load_dimension_info
@@ -1116,72 +1199,7 @@ def patch_human_action_prompt_matching() -> None:
     if getattr(_ha, "_patched_prompt_matching", False):
         return
 
-    # Build K-400 category list sorted longest-first for greedy matching
-    _k400_cats = sorted(_ha.build_dict().values(), key=len, reverse=True)
-
-    action_stopwords = {
-        "a",
-        "an",
-        "the",
-        "of",
-        "in",
-        "on",
-        "at",
-        "to",
-        "with",
-        "for",
-        "and",
-        "or",
-        "from",
-        "by",
-        "not",
-        "is",
-        "are",
-        "was",
-        "were",
-    }
-
-    def _content_words(text: str) -> set[str]:
-        """Extract lowercase content words from text, filtering stopwords."""
-        return {w for w in re.findall(r"[a-z]+", text.lower()) if w not in action_stopwords}
-
-    _k400_content_words = {cat: _content_words(cat) for cat in _k400_cats}
-
-    def _match_k400(prompt_text: str) -> str | None:
-        """
-        Match prompt text to a K-400 category.
-
-        Tier 1: exact substring (longest match wins).
-        Tier 2: keyword overlap — find category with most overlapping content words.
-                 Require ≥50% of category words to match and at least 1 word.
-        """
-        prompt_lower = prompt_text.lower()
-
-        # Tier 1: exact substring
-        for cat in _k400_cats:
-            if cat in prompt_lower:
-                return cat
-
-        # Tier 2: keyword overlap
-        prompt_words = _content_words(prompt_text)
-        if not prompt_words:
-            return None
-
-        best_cat = None
-        best_overlap = 0
-        best_ratio = 0.0
-        for cat, cat_words in _k400_content_words.items():
-            if not cat_words:
-                continue
-            overlap = len(prompt_words & cat_words)
-            ratio = overlap / len(cat_words)
-            if overlap > 0 and ratio >= 0.5:
-                if (overlap, ratio, len(cat)) > (best_overlap, best_ratio, len(best_cat or "")):
-                    best_cat = cat
-                    best_overlap = overlap
-                    best_ratio = ratio
-
-        return best_cat
+    k400_categories = load_human_action_categories()
 
     _orig_compute = _ha.compute_human_action
 
@@ -1202,10 +1220,10 @@ def patch_human_action_prompt_matching() -> None:
         match_stats = {"exact": 0, "keyword": 0, "none": 0}
         for info in prompt_dict_ls:
             prompt_text = info.get("prompt", "")
-            label = _match_k400(prompt_text)
+            match = match_human_action_prompt(prompt_text, categories=k400_categories)
+            label = match["label"]
             if label is not None:
-                # Distinguish exact vs keyword for logging
-                if label in prompt_text.lower():
+                if match["mode"] == "exact":
                     match_stats["exact"] += 1
                 else:
                     match_stats["keyword"] += 1
