@@ -23,8 +23,20 @@ import yaml
 
 try:
     from .vbench_runner.group_labels import build_group_alias_map, remap_group_column
+    from .vbench_runner.group_subset import (
+        filter_df_to_groups,
+        parse_skip_groups_arg,
+        resolve_effective_group_subset,
+        validate_output_file_name,
+    )
 except ImportError:
     from vbench_runner.group_labels import build_group_alias_map, remap_group_column
+    from vbench_runner.group_subset import (
+        filter_df_to_groups,
+        parse_skip_groups_arg,
+        resolve_effective_group_subset,
+        validate_output_file_name,
+    )
 
 logging.basicConfig(
     level=logging.INFO,
@@ -227,14 +239,18 @@ def cleanup_summary_column_names(summary_df: pd.DataFrame) -> pd.DataFrame:
     return summary_df
 
 
-def load_base_metadata_for_summary(output_dir: Path, paths_config: dict) -> pd.DataFrame | None:
+def load_base_metadata_for_summary(
+    output_dir: Path,
+    paths_config: dict,
+    *,
+    fallback_vbench_csv: Path | None = None,
+) -> pd.DataFrame | None:
     """
     Load base metadata for summary merge.
 
     Priority:
       1) processed_metadata.csv (full pipeline output)
-      2) vbench_per_video.csv
-      3) first vbench_*.csv with video_id/group columns
+      2) resolved fallback VBench CSV
     """
     processed_metadata = output_dir / paths_config["processed_metadata"]
     if processed_metadata.exists():
@@ -247,44 +263,59 @@ def load_base_metadata_for_summary(output_dir: Path, paths_config: dict) -> pd.D
         processed_metadata,
     )
 
-    fallback_candidates: list[Path] = []
-    vbench_per_video = output_dir / "vbench_per_video.csv"
-    if vbench_per_video.exists():
-        fallback_candidates.append(vbench_per_video)
-    fallback_candidates.extend(sorted(output_dir.glob("vbench_*.csv")))
-
-    seen: set[Path] = set()
-    deduped_candidates: list[Path] = []
-    for path in fallback_candidates:
-        resolved = path.resolve()
-        if resolved in seen:
-            continue
-        seen.add(resolved)
-        deduped_candidates.append(path)
-
-    for candidate in deduped_candidates:
+    if fallback_vbench_csv is not None:
         try:
-            df = pd.read_csv(candidate)
+            df = pd.read_csv(fallback_vbench_csv)
         except Exception as exc:
-            logger.warning("Failed to read fallback base from %s: %s", candidate, exc)
-            continue
+            logger.warning("Failed to read fallback base from %s: %s", fallback_vbench_csv, exc)
+            return None
 
         required = {"video_id", "group"}
         if not required.issubset(df.columns):
             logger.warning(
                 "Skip fallback base %s because missing required columns: %s",
-                candidate,
+                fallback_vbench_csv,
                 sorted(required - set(df.columns)),
             )
-            continue
+            return None
 
-        logger.info("Using fallback base metadata from %s", candidate)
+        logger.info("Using fallback base metadata from %s", fallback_vbench_csv)
         return df
 
     logger.error(
         "No usable base metadata found. Need either %s or VBench CSV with video_id/group.",
         processed_metadata,
     )
+    return None
+
+
+def resolve_vbench_metric_csv(
+    output_dir: Path,
+    *,
+    config_stem: str,
+    explicit_name: str | None = None,
+) -> Path | None:
+    if explicit_name:
+        candidate = output_dir / validate_output_file_name(explicit_name, arg_name="--vbench-input")
+        if not candidate.exists():
+            raise FileNotFoundError(f"Requested --vbench-input not found: {candidate}")
+        return candidate
+
+    preferred = [
+        output_dir / "vbench_per_video.csv",
+        output_dir / f"vbench_{config_stem}.csv",
+    ]
+    for candidate in preferred:
+        if candidate.exists():
+            return candidate
+
+    candidates = sorted(output_dir.glob("vbench_*.csv"))
+    if len(candidates) == 1:
+        return candidates[0]
+    if len(candidates) > 1:
+        raise FileNotFoundError(
+            f"Multiple VBench CSVs found under {output_dir}; use --vbench-input to choose one."
+        )
     return None
 
 
@@ -333,23 +364,82 @@ def main():
         "--config", type=str, default="configs/eval.yaml", help="Path to config file"
     )
     parser.add_argument("--force", action="store_true", help="Overwrite existing results")
+    parser.add_argument(
+        "--skip-groups",
+        type=str,
+        default="",
+        help="Comma-separated list of YAML group names to exclude from summary.",
+    )
+    parser.add_argument(
+        "--vbench-input",
+        type=str,
+        default="",
+        help="Optional VBench CSV file name under paths.output_dir to summarize.",
+    )
+    parser.add_argument(
+        "--per-video-output",
+        type=str,
+        default="",
+        help="Optional per-video summary CSV output file name under paths.output_dir.",
+    )
+    parser.add_argument(
+        "--group-summary-output",
+        type=str,
+        default="",
+        help="Optional group summary CSV output file name under paths.output_dir.",
+    )
+    parser.add_argument(
+        "--experiment-output",
+        type=str,
+        default="",
+        help="Optional experiment output CSV file name under paths.output_dir.",
+    )
+    parser.add_argument(
+        "--profile-output",
+        type=str,
+        default="",
+        help="Optional profile summary CSV output file name under paths.output_dir.",
+    )
     args = parser.parse_args()
 
     # Load configuration
     config = load_config(args.config)
+    config_stem = Path(args.config).stem
+    requested_skip_groups = parse_skip_groups_arg(args.skip_groups)
+    effective_group_names, effective_config = resolve_effective_group_subset(config, args.skip_groups)
+    subset_groups_active = bool(requested_skip_groups)
+    if subset_groups_active and not args.per_video_output:
+        parser.error("--skip-groups requires --per-video-output to avoid overwriting full-run per-video metrics.")
+    if subset_groups_active and not args.group_summary_output:
+        parser.error("--skip-groups requires --group-summary-output to avoid overwriting full-run summaries.")
     paths_config = config["paths"]
-    group_alias_map = build_group_alias_map(config)
+    group_alias_map = build_group_alias_map(effective_config)
 
     output_dir = Path(paths_config["output_dir"])
 
     # Output paths
-    per_video_output = output_dir / paths_config["per_video_metrics"]
-    group_summary_output = output_dir / paths_config["group_summary"]
+    per_video_name = (
+        validate_output_file_name(args.per_video_output, arg_name="--per-video-output")
+        if args.per_video_output
+        else paths_config["per_video_metrics"]
+    )
+    group_summary_name = (
+        validate_output_file_name(args.group_summary_output, arg_name="--group-summary-output")
+        if args.group_summary_output
+        else paths_config["group_summary"]
+    )
+    per_video_output = output_dir / per_video_name
+    group_summary_output = output_dir / group_summary_name
 
     # Custom experiment output filename (if configured)
-    experiment_output = paths_config.get("experiment_output")
+    experiment_output = args.experiment_output or paths_config.get("experiment_output")
+    if subset_groups_active and paths_config.get("experiment_output") and not args.experiment_output:
+        parser.error("--skip-groups requires --experiment-output when YAML defines paths.experiment_output.")
     if experiment_output:
-        experiment_output_path = output_dir / experiment_output
+        experiment_output_path = output_dir / validate_output_file_name(
+            experiment_output,
+            arg_name="--experiment-output" if args.experiment_output else "paths.experiment_output",
+        )
     else:
         experiment_output_path = None
 
@@ -360,8 +450,18 @@ def main():
     elif (per_video_output.exists() or group_summary_output.exists()) and args.force:
         logger.info("Force regenerating summary files")
 
+    vbench_metric_path = resolve_vbench_metric_csv(
+        output_dir,
+        config_stem=config_stem,
+        explicit_name=args.vbench_input or None,
+    )
+
     # Load base metadata (supports both full-pipeline and vbench-only outputs)
-    base_df = load_base_metadata_for_summary(output_dir, paths_config)
+    base_df = load_base_metadata_for_summary(
+        output_dir,
+        paths_config,
+        fallback_vbench_csv=vbench_metric_path,
+    )
     if base_df is None:
         return
 
@@ -369,12 +469,14 @@ def main():
     base_cols = ["video_id", "group", "prompt", "num_frames", "duration_sec"]
     base_cols = [c for c in base_cols if c in base_df.columns]
     base_df = base_df[base_cols].drop_duplicates(subset=["video_id"])
+    if subset_groups_active:
+        base_df = filter_df_to_groups(base_df, effective_group_names)
     base_df = remap_group_column(base_df, group_alias_map)
 
     # Load all metric CSVs
     metric_dfs = {
         "clipvqa": load_metric_csv(output_dir / "clipvqa_per_video.csv", "CLIP/VQA"),
-        "vbench": load_metric_csv(output_dir / "vbench_per_video.csv", "VBench"),
+        "vbench": load_metric_csv(vbench_metric_path, "VBench") if vbench_metric_path else None,
         "flicker": load_metric_csv(output_dir / "flicker_per_video.csv", "Flicker"),
         "niqe": load_metric_csv(output_dir / "niqe_per_video.csv", "NIQE"),
     }
@@ -406,8 +508,10 @@ def main():
         logger.info(f"Score column renamed: clip_or_vqa_score -> {explicit_score_name}")
 
     # Optional VBench comparison profile + scale alignment
-    vbench_config = config.get("metrics", {}).get("vbench", {})
+    vbench_config = effective_config.get("metrics", {}).get("vbench", {})
     comparison_profile = resolve_comparison_profile(vbench_config)
+    if subset_groups_active and comparison_profile and not args.profile_output:
+        parser.error("--skip-groups requires --profile-output when a VBench comparison profile is active.")
     scale_to_percent = resolve_scale_to_percent(vbench_config, comparison_profile)
     if scale_to_percent:
         scaled_cols = apply_percent_scaling(merged_df, scale_to_percent)
@@ -435,7 +539,7 @@ def main():
     ]
 
     # Add configured VBench subtask columns
-    configured_subtasks = config.get("metrics", {}).get("vbench", {}).get("subtasks", [])
+    configured_subtasks = effective_config.get("metrics", {}).get("vbench", {}).get("subtasks", [])
     metric_cols.extend(configured_subtasks)
 
     # Also include any additional VBench columns found in vbench_per_video.csv
@@ -484,7 +588,9 @@ def main():
             profile_summary_df = cleanup_summary_column_names(profile_summary_df)
             profile_summary_df = profile_summary_df.sort_values("group").reset_index(drop=True)
             profile_output_name = str(
-                vbench_config.get("profile_output", f"group_summary_{comparison_profile}.csv")
+                validate_output_file_name(args.profile_output, arg_name="--profile-output")
+                if args.profile_output
+                else str(vbench_config.get("profile_output", f"group_summary_{comparison_profile}.csv"))
             )
             profile_output_path = output_dir / profile_output_name
             profile_summary_df.to_csv(profile_output_path, index=False)

@@ -79,7 +79,7 @@ huggingface-cli login
 ## 本地下载 HF 数据集（推荐）
 使用脚本按子目录下载数据，避免每次跑都拉取网络数据。
 ```bash
-python scripts/download_hf_subdir.py \
+uv run python scripts/download_hf_subdir.py \
   --repo-id kv-compression/AdaHead \
   --subdir Exp_OscStable_Head_Window \
   --output-dir hf/AdaHead/Exp_OscStable_Head_Window
@@ -106,7 +106,7 @@ groups:
 说明：`groups[].alias` 仅影响输出 CSV 的 `group` 展示名；未配置 alias 时默认使用原组名（本地模式下通常就是文件夹名）。
 2. 运行核心评测流程（含导出/预处理/CLIP(or VQA)/Flicker/NIQE）并开启并行预处理：
 ```bash
-python scripts/run_all.py \
+uv run python scripts/run_all.py \
     --config configs/Exp-K_StaOscCompression.yaml \
     --preprocess-workers 48 \
     --ffmpeg-threads 1
@@ -114,7 +114,7 @@ python scripts/run_all.py \
 
 等价推荐入口（非别名）：
 ```bash
-python scripts/run_eval_core.py \
+uv run python scripts/run_eval_core.py \
     --config configs/Exp-K_StaOscCompression.yaml \
     --preprocess-workers 48 \
     --ffmpeg-threads 1
@@ -122,7 +122,7 @@ python scripts/run_eval_core.py \
 
 仅运行预处理（便于单独压测）：
 ```bash
-python scripts/preprocess_videos.py \
+uv run python scripts/preprocess_videos.py \
     --config configs/Exp-K_StaOscCompression.yaml \
     --preprocess-workers 48 \
     --ffmpeg-threads 1 \
@@ -151,7 +151,7 @@ metrics:
 
 直接运行（不改你原命令）：
 ```bash
-python scripts/run_vbench.py \
+uv run python scripts/run_vbench.py \
     --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
     --skip-on-error \
     --skip color,object_class,multiple_objects,spatial_relationship \
@@ -160,7 +160,7 @@ python scripts/run_vbench.py \
 
 如需临时覆盖并发度（CLI 优先级高于 YAML）：
 ```bash
-python scripts/run_vbench.py \
+uv run python scripts/run_vbench.py \
     --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
     --preprocess-workers 48 \
     --skip-on-error \
@@ -204,7 +204,7 @@ metrics:
 
 如需运行全部 16 维（极慢，4×L40 约数小时）：
 ```bash
-python scripts/run_vbench.py \
+uv run python scripts/run_vbench.py \
     --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
     --skip-on-error \
     --force
@@ -215,7 +215,7 @@ python scripts/run_vbench.py \
 
 诊断“实现问题 vs 口径问题”（只读）：
 ```bash
-python scripts/diagnose_vbench_alignment.py \
+uv run python scripts/diagnose_vbench_alignment.py \
     --output-dir outputs/Exp-K_StaOscCompression \
     --config configs/Exp-K_StaOscCompression.yaml \
     --pair overall_consistency,temporal_style \
@@ -239,6 +239,8 @@ python scripts/diagnose_vbench_alignment.py \
 | `--force` | 覆盖已有结果，强制重新计算 |
 | `--skip-on-error` | 某个维度失败时跳过而非终止，聚合已成功的部分结果 |
 | `--skip <dims>` | 跳过指定维度（逗号分隔），如 `--skip color,object_class` |
+| `--skip-groups <groups>` | 跳过指定 YAML 组名（逗号分隔，只接受 `groups[].name` 精确匹配） |
+| `--vbench-output <file.csv>` | 自定义 VBench 输出文件名；使用 `--skip-groups` 时必填 |
 | `--preprocess-workers` | VBench-Long 一次性切片预处理进程数（CLI 覆盖 `metrics.vbench.preprocess_workers`） |
 | `--no-prefetch-assets` | 关闭评测前 CLIP 权重预取与校验 |
 | `--no-verify-asset-sha256` | 关闭 CLIP 权重 SHA256 校验 |
@@ -248,7 +250,7 @@ python scripts/diagnose_vbench_alignment.py \
 多卡并行（例如 4×L40）：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
-python scripts/run_vbench.py \
+uv run python scripts/run_vbench.py \
     --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
     --skip-on-error \
     --skip color,object_class,multiple_objects,spatial_relationship \
@@ -259,16 +261,73 @@ python scripts/run_vbench.py \
 对于已经按 `configs/four-forcing-H200.yaml` 风格写好的 12 维配置，可直接这样运行：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
-python scripts/run_vbench.py \
+uv run python scripts/run_vbench.py \
     --config configs/prompts128-60s.yaml \
     --force
 ```
 说明：这类 YAML 已经只保留 12 个 temporal 维度，不需要再额外传 `--skip color,object_class,multiple_objects,spatial_relationship`。
 
+按组子集运行（单个大 YAML，只跑部分组）：
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+uv run python scripts/run_vbench.py \
+    --config configs/prompts128-60s.yaml \
+    --skip-groups rolling-forcing-60s,self-forcing-60s,pyramid-forcing-60s \
+    --vbench-output vbench_prompts128-60s_deep_only.csv \
+    --force
+```
+说明：
+- `--skip-groups` 只接受 YAML 中 `groups[].name` 的精确名称
+- 子集模式下必须显式传 `--vbench-output`
+- 不会自动猜组名，也不会自动生成子集文件名
+- 子集 `run_vbench` 只会复制本次 `vbench` CSV 到前端，不会顺手复制旧的全量 summary
+
+## 汇总结果
+
+全量汇总：
+```bash
+uv run python scripts/summarize.py \
+    --config configs/prompts128-60s.yaml \
+    --force
+```
+
+子集汇总：
+```bash
+uv run python scripts/summarize.py \
+    --config configs/prompts128-60s.yaml \
+    --skip-groups rolling-forcing-60s,self-forcing-60s,pyramid-forcing-60s \
+    --vbench-input vbench_prompts128-60s_deep_only.csv \
+    --per-video-output per_video_prompts128-60s_deep_only.csv \
+    --group-summary-output group_summary_prompts128-60s_deep_only.csv \
+    --experiment-output prompts128-60s_deep_only.csv \
+    --profile-output group_summary_prompts128-60s_deep_only_profile.csv \
+    --force
+```
+
+包装脚本写法：
+```bash
+scripts/summarize_vbench_groups.sh \
+    --config configs/prompts128-60s.yaml \
+    --skip-groups rolling-forcing-60s,self-forcing-60s,pyramid-forcing-60s \
+    --vbench-input vbench_prompts128-60s_deep_only.csv \
+    --per-video-output per_video_prompts128-60s_deep_only.csv \
+    --group-summary-output group_summary_prompts128-60s_deep_only.csv \
+    --experiment-output prompts128-60s_deep_only.csv \
+    --profile-output group_summary_prompts128-60s_deep_only_profile.csv \
+    --force
+```
+
+汇总规则：
+- 全量模式：输出文件名由 YAML 决定
+- 子集模式：不允许 fallback，必须显式给出子集输出文件名
+- 若输出目录下存在多个 `vbench_*.csv`，必须用 `--vbench-input` 明确指定
+- `--skip-groups` 同样只接受 YAML `groups[].name` 的精确名称
+- 若 YAML 配置了 comparison profile，子集模式下必须显式传 `--profile-output`
+
 4. 官方 VBench-Long 直跑 16 维度命令（可选）：
 ```bash
 cd third_party/VBench
-python vbench2_beta_long/eval_long.py \
+uv run python vbench2_beta_long/eval_long.py \
   --videos_path <VIDEO_DIR> \
   --dimension subject_consistency background_consistency temporal_flickering motion_smoothness temporal_style appearance_style scene object_class multiple_objects spatial_relationship human_action color overall_consistency dynamic_degree imaging_quality aesthetic_quality \
   --mode long_custom_input \
@@ -289,7 +348,7 @@ pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort
 - 若提示缺少依赖（如 `pandas`/`pyyaml`），在虚拟环境中补装：`uv pip install pandas PyYAML`。
 - VBench 现为独立步骤，推荐用法：
   ```bash
-  python scripts/run_vbench.py \
+  uv run python scripts/run_vbench.py \
       --config configs/Exp-C_OscHead_RadicalKV_vbench.yaml \
       --skip-on-error \
       --skip color,object_class,multiple_objects,spatial_relationship \

@@ -385,7 +385,13 @@ def ensure_unique_video_ids(video_records: list[dict], config: dict) -> list[dic
 # =============================================================================
 # Frontend output
 # =============================================================================
-def copy_outputs_to_frontend(output_dir: Path, paths_config: dict, vbench_output: Path) -> bool:
+def copy_outputs_to_frontend(
+    output_dir: Path,
+    paths_config: dict,
+    vbench_output: Path,
+    *,
+    copy_configured_outputs: bool = True,
+) -> bool:
     """Copy outputs to frontend/public/data and update manifest."""
     try:
         frontend_data_dir = PROJECT_ROOT / "frontend" / "public" / "data"
@@ -399,20 +405,21 @@ def copy_outputs_to_frontend(output_dir: Path, paths_config: dict, vbench_output
             copied_files.append(vbench_output.name)
             logger.info(f"  Copied: {vbench_output.name}")
 
-        for key, default_name in [
-            ("group_summary", "group_summary.csv"),
-            ("per_video_metrics", "per_video_metrics.csv"),
-            ("experiment_output", None),
-        ]:
-            file_name = paths_config.get(key, default_name)
-            if not file_name:
-                continue
-            src = output_dir / file_name
-            if src.exists():
-                dst = frontend_data_dir / src.name
-                shutil.copy2(src, dst)
-                copied_files.append(src.name)
-                logger.info(f"  Copied: {src.name}")
+        if copy_configured_outputs:
+            for key, default_name in [
+                ("group_summary", "group_summary.csv"),
+                ("per_video_metrics", "per_video_metrics.csv"),
+                ("experiment_output", None),
+            ]:
+                file_name = paths_config.get(key, default_name)
+                if not file_name:
+                    continue
+                src = output_dir / file_name
+                if src.exists():
+                    dst = frontend_data_dir / src.name
+                    shutil.copy2(src, dst)
+                    copied_files.append(src.name)
+                    logger.info(f"  Copied: {src.name}")
 
         manifest_path = frontend_data_dir / "manifest.json"
         existing_files = set()

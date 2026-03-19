@@ -57,6 +57,12 @@ try:
         use_vbench_long,
     )
     from .group_labels import build_group_alias_map, remap_group_column
+    from .group_subset import (
+        filter_records_to_groups,
+        parse_skip_groups_arg,
+        resolve_effective_group_subset,
+        validate_output_file_name,
+    )
     from .preprocess_long import parallel_split_long_clips
     from .progress import (
         MultiGpuProgressBoard,
@@ -114,6 +120,12 @@ except ImportError:
         use_vbench_long,
     )
     from vbench_runner.group_labels import build_group_alias_map, remap_group_column
+    from vbench_runner.group_subset import (
+        filter_records_to_groups,
+        parse_skip_groups_arg,
+        resolve_effective_group_subset,
+        validate_output_file_name,
+    )
     from vbench_runner.preprocess_long import parallel_split_long_clips
     from vbench_runner.progress import (
         MultiGpuProgressBoard,
@@ -144,6 +156,23 @@ _RED = "\033[31m"
 _YELLOW = "\033[33m"
 _RESET = "\033[0m"
 _BOLD = "\033[1m"
+
+
+def _resolve_vbench_output_path(
+    *,
+    args: argparse.Namespace,
+    parser: argparse.ArgumentParser,
+    output_dir: Path,
+    config_stem: str,
+    subset_active: bool,
+) -> Path:
+    explicit_output = getattr(args, "vbench_output", None)
+    if explicit_output:
+        file_name = validate_output_file_name(explicit_output, arg_name="--vbench-output")
+        return output_dir / file_name
+    if subset_active:
+        parser.error("--skip-groups requires --vbench-output to avoid overwriting full-run VBench CSVs.")
+    return output_dir / f"vbench_{config_stem}.csv"
 
 
 def _log_subtask_summary(subtask_status: dict[str, tuple[bool, str]], rank: int) -> None:
@@ -1436,6 +1465,18 @@ def main():
         help="Comma-separated list of dimensions to skip (e.g. --skip color,object_class)",
     )
     parser.add_argument(
+        "--skip-groups",
+        type=str,
+        default="",
+        help="Comma-separated list of YAML group names to exclude from this VBench run.",
+    )
+    parser.add_argument(
+        "--vbench-output",
+        type=str,
+        default="",
+        help="Output CSV file name under paths.output_dir. Required when --skip-groups is used.",
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Overwrite existing results",
@@ -1485,10 +1526,16 @@ def main():
     # Load configuration
     config = load_config(args.config)
     paths_config = config["paths"]
-    group_alias_map = build_group_alias_map(config)
     runtime_config = config.get("runtime", {})
     rank, world_size, barrier_fn = init_distributed_if_needed()
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+    requested_skip_groups = parse_skip_groups_arg(args.skip_groups)
+    effective_group_names, effective_config = resolve_effective_group_subset(
+        config,
+        args.skip_groups,
+    )
+    subset_groups_active = bool(requested_skip_groups)
+    group_alias_map = build_group_alias_map(effective_config)
 
     configured_log = os.environ.get("VBENCH_LOG_FILE") or paths_config.get("log_file")
     log_file_path: Path | None = None
@@ -1533,8 +1580,14 @@ def main():
         )
 
     config_stem = Path(args.config).stem
-    vbench_output = output_dir / f"vbench_{config_stem}.csv"
-    vbench_config = config.get("metrics", {}).get("vbench", {})
+    vbench_output = _resolve_vbench_output_path(
+        args=args,
+        parser=parser,
+        output_dir=output_dir,
+        config_stem=config_stem,
+        subset_active=subset_groups_active,
+    )
+    vbench_config = effective_config.get("metrics", {}).get("vbench", {})
     strict_integrity = _resolve_bool_option(
         vbench_config=vbench_config,
         key="strict_integrity",
@@ -1575,6 +1628,12 @@ def main():
             output_dir=output_dir,
             paths_config=paths_config,
         )
+        if subset_groups_active:
+            if rank == 0:
+                logger.info("Applying group subset filter, keeping groups: %s", effective_group_names)
+            video_records = filter_records_to_groups(video_records, effective_group_names)
+        config = effective_config
+        group_alias_map = build_group_alias_map(config)
         video_records = ensure_unique_video_ids(video_records, config)
     except Exception as e:
         logger.error(f"Failed to prepare video records: {e}")
@@ -1586,7 +1645,7 @@ def main():
             sys.exit(0)
         sys.exit(1)
 
-    record_diagnostics = _analyze_video_record_diagnostics(video_records, config)
+    record_diagnostics = _analyze_video_record_diagnostics(video_records, effective_config)
     group_mismatch_warn_only = _resolve_bool_option(
         vbench_config=vbench_config,
         key="group_mismatch_warn_only",
@@ -1985,6 +2044,7 @@ def main():
             output_dir=output_dir,
             paths_config=paths_config,
             vbench_output=vbench_output,
+            copy_configured_outputs=not subset_groups_active,
         )
 
         # Clean up intermediate files (partials, sync, progress, worker logs)

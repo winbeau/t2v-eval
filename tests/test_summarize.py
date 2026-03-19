@@ -8,6 +8,8 @@ Covers:
 """
 
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -19,10 +21,12 @@ from scripts.summarize import (
     compute_group_summary,
     load_base_metadata_for_summary,
     load_metric_csv,
+    main,
     merge_metrics,
     resolve_comparison_profile,
     resolve_profile_metric_cols,
     resolve_scale_to_percent,
+    resolve_vbench_metric_csv,
 )
 
 
@@ -233,24 +237,27 @@ class TestLoadBaseMetadataForSummary:
         result = load_base_metadata_for_summary(
             output_dir=output_dir,
             paths_config={"processed_metadata": "processed_metadata.csv"},
+            fallback_vbench_csv=output_dir / "vbench_per_video.csv",
         )
         assert result is not None
         assert {"video_id", "group"}.issubset(result.columns)
         assert len(result) == 2
 
-    def test_fallback_to_vbench_named_csv(self, tmp_path):
+    def test_fallback_to_explicit_vbench_named_csv(self, tmp_path):
         output_dir = tmp_path / "outputs"
         output_dir.mkdir(parents=True, exist_ok=True)
+        fallback_csv = output_dir / "vbench_Exp-K_StaOscCompression.csv"
         pd.DataFrame(
             {
                 "video_id": ["v1"],
                 "group": ["g1"],
             }
-        ).to_csv(output_dir / "vbench_Exp-K_StaOscCompression.csv", index=False)
+        ).to_csv(fallback_csv, index=False)
 
         result = load_base_metadata_for_summary(
             output_dir=output_dir,
             paths_config={"processed_metadata": "processed_metadata.csv"},
+            fallback_vbench_csv=fallback_csv,
         )
         assert result is not None
         assert list(result["video_id"]) == ["v1"]
@@ -265,6 +272,124 @@ class TestLoadBaseMetadataForSummary:
             paths_config={"processed_metadata": "processed_metadata.csv"},
         )
         assert result is None
+
+
+class TestResolveVbenchMetricCsv:
+    def test_prefers_vbench_per_video(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir()
+        preferred = output_dir / "vbench_per_video.csv"
+        preferred.write_text("video_id,group\nv1,g1\n")
+        (output_dir / "vbench_example.csv").write_text("video_id,group\nv2,g2\n")
+
+        result = resolve_vbench_metric_csv(output_dir, config_stem="example")
+        assert result == preferred
+
+    def test_uses_config_stem_named_csv(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir()
+        named = output_dir / "vbench_example.csv"
+        named.write_text("video_id,group\nv1,g1\n")
+
+        result = resolve_vbench_metric_csv(output_dir, config_stem="example")
+        assert result == named
+
+    def test_rejects_ambiguous_vbench_csvs(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir()
+        (output_dir / "vbench_a.csv").write_text("video_id,group\nv1,g1\n")
+        (output_dir / "vbench_b.csv").write_text("video_id,group\nv2,g2\n")
+
+        with pytest.raises(FileNotFoundError, match="Multiple VBench CSVs found"):
+            resolve_vbench_metric_csv(output_dir, config_stem="missing")
+
+    def test_honors_explicit_vbench_input(self, tmp_path):
+        output_dir = tmp_path / "outputs"
+        output_dir.mkdir()
+        named = output_dir / "vbench_subset.csv"
+        named.write_text("video_id,group\nv1,g1\n")
+
+        result = resolve_vbench_metric_csv(
+            output_dir,
+            config_stem="missing",
+            explicit_name="vbench_subset.csv",
+        )
+        assert result == named
+
+
+class TestSummarizeSubsetCli:
+    def test_subset_requires_explicit_outputs(self, sample_config, monkeypatch):
+        _, config_path = sample_config
+        monkeypatch.setattr(
+            "sys.argv",
+            ["summarize.py", "--config", str(config_path), "--skip-groups", "group_b"],
+        )
+        with pytest.raises(SystemExit, match="2"):
+            main()
+
+    def test_subset_generates_filtered_outputs(self, sample_config, monkeypatch):
+        config, config_path = sample_config
+        output_dir = Path(config["paths"]["output_dir"])
+        processed = output_dir / config["paths"]["processed_metadata"]
+        vbench_csv = output_dir / "vbench_subset.csv"
+        clip_csv = output_dir / "clipvqa_per_video.csv"
+
+        pd.DataFrame(
+            {
+                "video_id": ["vid_001", "vid_002", "vid_003", "vid_004"],
+                "group": ["group_a", "group_a", "group_b", "group_b"],
+                "prompt": ["p1", "p2", "p3", "p4"],
+                "num_frames": [16, 16, 16, 16],
+                "duration_sec": [2.0, 2.0, 2.0, 2.0],
+            }
+        ).to_csv(processed, index=False)
+        pd.DataFrame(
+            {
+                "video_id": ["vid_001", "vid_002", "vid_003", "vid_004"],
+                "group": ["group_a", "group_a", "group_b", "group_b"],
+                "vbench_temporal_score": [81.0, 83.0, 71.0, 73.0],
+                "subject_consistency": [90.0, 92.0, 80.0, 82.0],
+            }
+        ).to_csv(vbench_csv, index=False)
+        pd.DataFrame(
+            {
+                "video_id": ["vid_001", "vid_002", "vid_003", "vid_004"],
+                "group": ["group_a", "group_a", "group_b", "group_b"],
+                "clip_or_vqa_score": [0.25, 0.35, 0.45, 0.55],
+                "score_type": ["clip", "clip", "clip", "clip"],
+            }
+        ).to_csv(clip_csv, index=False)
+
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "summarize.py",
+                "--config",
+                str(config_path),
+                "--skip-groups",
+                "group_b",
+                "--vbench-input",
+                "vbench_subset.csv",
+                "--per-video-output",
+                "per_video_subset.csv",
+                "--group-summary-output",
+                "group_summary_subset.csv",
+                "--experiment-output",
+                "experiment_subset.csv",
+                "--force",
+            ],
+        )
+        main()
+
+        per_video_df = pd.read_csv(output_dir / "per_video_subset.csv")
+        summary_df = pd.read_csv(output_dir / "group_summary_subset.csv")
+        experiment_df = pd.read_csv(output_dir / "experiment_subset.csv")
+
+        assert set(per_video_df["group"]) == {"group_a"}
+        assert set(summary_df["group"]) == {"group_a"}
+        assert set(experiment_df["group"]) == {"group_a"}
+        assert len(per_video_df) == 2
+        assert int(summary_df.iloc[0]["n_videos"]) == 2
 
 
 # ---------------------------------------------------------------------------
