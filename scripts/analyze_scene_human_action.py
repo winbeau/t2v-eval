@@ -26,6 +26,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from vbench_runner.auxiliary import explain_scene_from_prompt
 from vbench_runner.compat import load_human_action_categories, match_human_action_prompt
+from vbench_runner.env import check_vbench_installation, setup_vbench_path
 from vbench_runner.results import resolve_video_id
 
 
@@ -464,6 +465,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if not check_vbench_installation():
+        return 2
+    setup_vbench_path()
     artifacts_dir = Path(args.artifacts_dir)
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     report_out = Path(args.report_out) if args.report_out else artifacts_dir / "report.md"
