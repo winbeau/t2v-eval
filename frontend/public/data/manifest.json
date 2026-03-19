@@ -14,6 +14,7 @@
     "vbench_Exp_pyramid_forcing_groups.csv",
     "vbench_four-forcing-H200.csv",
     "vbench_per_video.csv",
+    "vbench_prompts128-30s.csv",
     "vbench_prompts128-60s.csv",
     "vbench_pyramid-forcing-compression.csv",
     "vbench_pyramid-forcing-sweep.csv"
