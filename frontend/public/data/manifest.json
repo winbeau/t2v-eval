@@ -20,6 +20,7 @@
     "vbench_per_video.csv",
     "vbench_prompts128-30s-debug1.csv",
     "vbench_prompts128-30s.csv",
+    "vbench_prompts128-30s_no_pyramid.csv",
     "vbench_prompts128-60s-debug1.csv",
     "vbench_prompts128-60s.csv",
     "vbench_pyramid-forcing-compression.csv",
