@@ -63,13 +63,76 @@ have_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+hf_cli_cmd() {
+  if have_cmd hf; then
+    echo "hf"
+    return 0
+  fi
+  if have_cmd huggingface-cli; then
+    echo "huggingface-cli"
+    return 0
+  fi
+  return 1
+}
+
+is_hf_resolve_url() {
+  local url="$1"
+  [[ "$url" =~ ^https://huggingface\.co/ ]]
+}
+
+download_hf_file() {
+  local url="$1"
+  local dest="$2"
+  local dest_dir repo_id revision filename repo_type cli
+
+  if ! cli="$(hf_cli_cmd)"; then
+    return 1
+  fi
+
+  dest_dir="$(dirname "$dest")"
+  if [[ "$url" =~ ^https://huggingface\.co/spaces/([^/]+/[^/]+)/resolve/([^/]+)/(.+)$ ]]; then
+    repo_type="space"
+    repo_id="${BASH_REMATCH[1]}"
+    revision="${BASH_REMATCH[2]}"
+    filename="${BASH_REMATCH[3]}"
+  elif [[ "$url" =~ ^https://huggingface\.co/datasets/([^/]+/[^/]+)/resolve/([^/]+)/(.+)$ ]]; then
+    repo_type="dataset"
+    repo_id="${BASH_REMATCH[1]}"
+    revision="${BASH_REMATCH[2]}"
+    filename="${BASH_REMATCH[3]}"
+  elif [[ "$url" =~ ^https://huggingface\.co/([^/]+/[^/]+)/resolve/([^/]+)/(.+)$ ]]; then
+    repo_type="model"
+    repo_id="${BASH_REMATCH[1]}"
+    revision="${BASH_REMATCH[2]}"
+    filename="${BASH_REMATCH[3]}"
+  else
+    return 1
+  fi
+
+  echo "[hf] $repo_type:$repo_id@$revision $filename -> $dest"
+  if [[ $dry_run -eq 1 ]]; then
+    return 0
+  fi
+
+  mkdir -p "$dest_dir"
+  "$cli" download \
+    --repo-type "$repo_type" \
+    --revision "$revision" \
+    --local-dir "$dest_dir" \
+    "$repo_id" \
+    "$filename"
+
+  if [[ ! -f "$dest" ]]; then
+    echo "HF download finished but expected file is missing: $dest" >&2
+    exit 1
+  fi
+}
+
 download_file() {
   local url="$1"
   local dest="$2"
   local dest_dir
   dest_dir="$(dirname "$dest")"
-
-  mkdir -p "$dest_dir"
 
   if [[ -f "$dest" ]]; then
     echo "[skip] $dest"
@@ -81,10 +144,17 @@ download_file() {
     return 0
   fi
 
+  mkdir -p "$dest_dir"
+  if is_hf_resolve_url "$url"; then
+    if download_hf_file "$url" "$dest"; then
+      return 0
+    fi
+  fi
+
   if have_cmd wget; then
-    wget -O "$dest" "$url"
+    wget -c -O "$dest" "$url"
   elif have_cmd curl; then
-    curl -L "$url" -o "$dest"
+    curl -L -C - "$url" -o "$dest"
   else
     echo "Need either wget or curl to download assets." >&2
     exit 1
@@ -129,17 +199,17 @@ ensure_raft_model() {
     return 0
   fi
 
-  mkdir -p "$cache_dir/raft_model"
   echo "[download] RAFT archive -> $zip_path"
   echo "[extract] $zip_path -> $cache_dir/raft_model"
   if [[ $dry_run -eq 1 ]]; then
     return 0
   fi
 
+  mkdir -p "$cache_dir/raft_model"
   if have_cmd wget; then
-    wget -O "$zip_path" "https://dl.dropboxusercontent.com/s/4j4z58wuv8o0mfz/models.zip"
+    wget -c -O "$zip_path" "https://dl.dropboxusercontent.com/s/4j4z58wuv8o0mfz/models.zip"
   elif have_cmd curl; then
-    curl -L "https://dl.dropboxusercontent.com/s/4j4z58wuv8o0mfz/models.zip" -o "$zip_path"
+    curl -L -C - "https://dl.dropboxusercontent.com/s/4j4z58wuv8o0mfz/models.zip" -o "$zip_path"
   else
     echo "Need either wget or curl to download RAFT assets." >&2
     exit 1
