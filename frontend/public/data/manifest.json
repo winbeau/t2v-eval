@@ -32,6 +32,7 @@
     "vbench_prompts128-60s-v2.csv",
     "vbench_prompts128-60s.csv",
     "vbench_pyramid-forcing-compression.csv",
-    "vbench_pyramid-forcing-sweep.csv"
+    "vbench_pyramid-forcing-sweep.csv",
+    "vbench_strategy-ablation.csv"
   ]
 }
