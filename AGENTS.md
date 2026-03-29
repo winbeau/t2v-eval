@@ -13,6 +13,7 @@
 - `uv pip install -r third_party/VBench/requirements.txt`: VBench extras after submodules.
 - Prefer `uv run python ...` for repo Python commands instead of invoking bare `python`.
 - `uv run python scripts/run_all.py --config configs/<exp>.yaml`: run full evaluation.
+- `uv run python scripts/run_vbench.py --config configs/<exp>.yaml`: run standalone VBench / VBench-Long evaluation.
 - `uv run python scripts/run_all.py --config configs/<exp>.yaml --skip-vbench`: skip a metric.
 - `cd frontend && pnpm install && pnpm dev`: run the LaTeX table UI.
 - `cd frontend && pnpm build`: build frontend for preview/distribution.
@@ -48,6 +49,10 @@
   - 推荐保持 `metrics.enabled` 与实际子块一致（虽然脚本主要由 CLI `--skip-*` 控制）。
   - `clip_or_vqa.num_frames_for_score` 与 `niqe.num_frames_for_niqe` 应与 `protocol.num_frames` 对齐。
   - VBench-Long 推荐显式设置 `metrics.vbench.backend: "vbench_long"` 或 `use_long: true`；16 维建议配 `dimension_profile: "long_16"` 并明确 `subtasks`。
+- 创建 YAML 时的默认交付：
+  - 以后为用户创建 `configs/*.yaml` 时，若用户未明确要求全流程，默认按 VBench-only 配置生成。
+  - 回复中默认附上运行命令：`uv run python scripts/run_vbench.py --config configs/<exp>.yaml`。
+  - 若该 YAML 不是 VBench-only，再额外视情况给出 `scripts/run_all.py` 命令。
 - `paths` / `logging` 约定：
   - `paths.output_dir` 使用实验专属目录，避免覆盖其他实验结果。
   - `experiment_output` 使用唯一文件名（通常与配置名对应）。
