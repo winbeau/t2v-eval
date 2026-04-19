@@ -21,6 +21,7 @@
     "vbench_ablation-method3.csv",
     "vbench_causal-forcing-30s.csv",
     "vbench_causal-forcing-60s.csv",
+    "vbench_causal-forcing-rerun.csv",
     "vbench_four-forcing-H200.csv",
     "vbench_framework-ablation.csv",
     "vbench_per_video.csv",
