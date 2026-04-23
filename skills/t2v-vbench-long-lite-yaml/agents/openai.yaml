@@ -1,0 +1,4 @@
+interface:
+  display_name: "T2V VBench-Long Lite YAML"
+  short_description: "Generate VBench-Long Lite t2v-eval YAML from directory trees"
+  default_prompt: "Generate a VBench-Long Lite t2v-eval YAML from this directory tree."

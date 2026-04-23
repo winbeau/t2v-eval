@@ -1,0 +1,109 @@
+# =============================================================================
+# T2V-Eval Configuration - addition-30s
+# 2 groups (CausVid-30s, longlive-30s)
+# 12D VBench-Long Lite profile
+# 123 latent frames x VAE 4 = 492 actual frames, sampled at 60% = 295 frames
+# =============================================================================
+
+dataset:
+  repo_id: "kv-compression/AdaHead"
+  split: "train"
+  use_local_videos: true
+  local_video_dir: "local/addition-30s"
+  prompt_files_by_group:
+    "CausVid-30s": "local/addition-30s/CausVid-30s/prompts.csv"
+    "longlive-30s": "local/addition-30s/longlive-30s/prompts.csv"
+  # Current pipeline accepts one fallback prompt_file.
+  prompt_file: "local/addition-30s/CausVid-30s/prompts.csv"
+  video_dir: "videos/addition-30s"
+
+groups:
+  - name: "CausVid-30s"
+    description: "CausVid 30s"
+    latent_frames: 123
+    actual_frames: 492
+  - name: "longlive-30s"
+    description: "LongLive 30s"
+    latent_frames: 123
+    actual_frames: 492
+
+protocol:
+  fps_eval: 8
+  num_frames: 295
+  resize: 256
+  frame_sampling: "uniform"
+  frame_padding: "loop"
+
+metrics:
+  enabled:
+    - "vbench_temporal"
+
+  vbench:
+    enabled: true
+    backend: "vbench_long"
+    use_long: true
+    strict_integrity: true
+    require_full_coverage: true
+    group_mismatch_warn_only: false
+    preprocess_workers: 48
+    slow_dims_fused: true
+    slow_dims_decode_total_workers: 48
+    slow_dims_decode_prefetch: 24
+    slow_dims_decode_backend: "decord"
+    slow_dims_shard_mode: "clip"
+    slow_dims_perf_window_clips: 5
+    slow_dims_stage_profile: true
+    grit_batch_parallel_enable: false
+    grit_batch_size: 1
+    grit_batch_adaptive_fallback_enable: false
+    appearance_style_batch_enable: true
+    appearance_style_batch_size: 16
+    dynamic_degree_batch_enable: true
+    dynamic_degree_pair_batch_size: 8
+    batch_accel_fp16_enable: false
+    batch_accel_strict_fp32: true
+    scale_to_percent: []
+    profile_output: "group_summary_lite12d.csv"
+    dimension_profile: "long_12"
+    mode: "long_custom_input"
+    use_semantic_splitting: false
+    clip_length_config: "clip_length_mix.yaml"
+    static_filter_flag: false
+    scene_threshold: 35.0
+    sb_clip2clip_feat_extractor: "dino"
+    bg_clip2clip_feat_extractor: "clip"
+    subtasks:
+      - "subject_consistency"
+      - "background_consistency"
+      - "temporal_flickering"
+      - "motion_smoothness"
+      - "temporal_style"
+      - "appearance_style"
+      - "scene"
+      - "human_action"
+      - "overall_consistency"
+      - "dynamic_degree"
+      - "imaging_quality"
+      - "aesthetic_quality"
+
+runtime:
+  device: "cuda"
+  batch_size: 1
+  num_workers: 4
+  seed: 42
+
+paths:
+  cache_dir: "./eval_cache"
+  output_dir: "./outputs/addition-30s"
+  metadata_file: "metadata.csv"
+  processed_metadata: "processed_metadata.csv"
+  per_video_metrics: "per_video_metrics.csv"
+  group_summary: "group_summary.csv"
+  runtime_csv: "runtime.csv"
+  figures_dir: "./outputs/addition-30s/figs"
+  experiment_output: "addition-30s.csv"
+
+logging:
+  level: "INFO"
+  log_file: "./outputs/addition-30s/eval.log"
+  console: true
