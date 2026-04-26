@@ -28,6 +28,7 @@
     "vbench_causal-forcing-rerun.csv",
     "vbench_four-forcing-H200.csv",
     "vbench_framework-ablation.csv",
+    "vbench_fullkv-30s.csv",
     "vbench_per_video.csv",
     "vbench_prompts128-30s-debug1.csv",
     "vbench_prompts128-30s-v2.csv",
