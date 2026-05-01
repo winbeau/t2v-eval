@@ -11,22 +11,26 @@ dataset:
   use_local_videos: true
   local_video_dir: "local/classify-ablation"
   prompt_files_by_group:
+    diff_thp_10thp_90ths: "local/classify-ablation/diff_thp_10thp_90ths/prompts.csv"
     diff_thp_20thp_90ths: "local/classify-ablation/diff_thp_20thp_90ths/prompts.csv"
     diff_thp_25thp_90ths: "local/classify-ablation/diff_thp_25thp_90ths/prompts.csv"
     diff_thp_30thp_90ths: "local/classify-ablation/diff_thp_30thp_90ths/prompts.csv"
     diff_thp_35thp_90ths: "local/classify-ablation/diff_thp_35thp_90ths/prompts.csv"
     diff_thp_40thp_90ths: "local/classify-ablation/diff_thp_40thp_90ths/prompts.csv"
-    diff_ths_35thp_100ths: "local/classify-ablation/diff_ths_35thp_100ths/prompts.csv"
     diff_ths_35thp_70ths: "local/classify-ablation/diff_ths_35thp_70ths/prompts.csv"
     diff_ths_35thp_80ths: "local/classify-ablation/diff_ths_35thp_80ths/prompts.csv"
     diff_ths_35thp_90ths: "local/classify-ablation/diff_ths_35thp_90ths/prompts.csv"
   # Current pipeline accepts one fallback prompt_file.
   # Assume all groups share the same prompt schema keyed by video_id.
   # If prompts differ by group, merge them first and then update prompt_file.
-  prompt_file: "local/classify-ablation/diff_thp_20thp_90ths/prompts.csv"
+  prompt_file: "local/classify-ablation/diff_thp_10thp_90ths/prompts.csv"
   video_dir: "videos/classify-ablation"
 
 groups:
+  - name: "diff_thp_10thp_90ths"
+    description: "Diff thp 10, ths 90"
+    latent_frames: 123
+    actual_frames: 492
   - name: "diff_thp_20thp_90ths"
     description: "Diff thp 20, ths 90"
     latent_frames: 123
@@ -47,10 +51,6 @@ groups:
     description: "Diff thp 40, ths 90"
     latent_frames: 123
     actual_frames: 492
-  - name: "diff_ths_35thp_100ths"
-    description: "Diff thp 35, ths 100"
-    latent_frames: 123
-    actual_frames: 492
   - name: "diff_ths_35thp_70ths"
     description: "Diff thp 35, ths 70"
     latent_frames: 123
@@ -67,6 +67,7 @@ groups:
 group_categories:
   by_sweep:
     thp_sweep:
+      - "diff_thp_10thp_90ths"
       - "diff_thp_20thp_90ths"
       - "diff_thp_25thp_90ths"
       - "diff_thp_30thp_90ths"
@@ -76,7 +77,6 @@ group_categories:
       - "diff_ths_35thp_70ths"
       - "diff_ths_35thp_80ths"
       - "diff_ths_35thp_90ths"
-      - "diff_ths_35thp_100ths"
 
 protocol:
   fps_eval: 8
