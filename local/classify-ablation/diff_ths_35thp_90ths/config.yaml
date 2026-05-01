@@ -52,8 +52,8 @@ model_kwargs:
   timestep_shift: 5.0
 use_headkv: true
 use_adaptive_headkv: true
-headkv_config_path: configs/head_configs/ablation-method1/diff_ths/35thp_90ths.csv
-headkv_policy_csv_path: configs/head_configs/ablation-method1/diff_ths/35thp_90ths.csv
+headkv_config_path: configs/head_configs/ablation-method1/diff_ths/256prompt_72frame_35thp_90ths.csv
+headkv_policy_csv_path: configs/head_configs/ablation-method1/diff_ths/256prompt_72frame_35thp_90ths.csv
 headkv_default_capacity: 32760
 headkv_frame_seq_length: 1560
 headkv_code_map:
