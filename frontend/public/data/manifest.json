@@ -26,6 +26,7 @@
     "vbench_causal-forcing-rerun-30s.csv",
     "vbench_causal-forcing-rerun-60s.csv",
     "vbench_causal-forcing-rerun.csv",
+    "vbench_classify-ablation-thpx80.csv",
     "vbench_classify-ablation.csv",
     "vbench_four-forcing-H200.csv",
     "vbench_framework-ablation.csv",
