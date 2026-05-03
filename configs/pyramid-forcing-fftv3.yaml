@@ -11,26 +11,26 @@ dataset:
   repo_id: "kv-compression/AdaHead"
   split: "train"
   use_local_videos: true
-  local_video_dir: "pyramid-forcing-fftv3"
+  local_video_dir: "local/pyramid-forcing-fftv3"
   prompt_files_by_group:
-    diff_thp_256prompt_72frame_10.0thp_80ths: "pyramid-forcing-fftv3/diff_thp_256prompt_72frame_10.0thp_80ths/prompts.csv"
-    diff_thp_256prompt_72frame_6.5thp_80ths: "pyramid-forcing-fftv3/diff_thp_256prompt_72frame_6.5thp_80ths/prompts.csv"
-    diff_thp_256prompt_72frame_7.0thp_80ths: "pyramid-forcing-fftv3/diff_thp_256prompt_72frame_7.0thp_80ths/prompts.csv"
-    diff_thp_256prompt_72frame_8.0thp_80ths: "pyramid-forcing-fftv3/diff_thp_256prompt_72frame_8.0thp_80ths/prompts.csv"
-    diff_thp_256prompt_72frame_9.0thp_80ths: "pyramid-forcing-fftv3/diff_thp_256prompt_72frame_9.0thp_80ths/prompts.csv"
-    diff_ths_256prompt_72frame_10.0thp_70ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_10.0thp_70ths/prompts.csv"
-    diff_ths_256prompt_72frame_10.0thp_80ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_10.0thp_80ths/prompts.csv"
-    diff_ths_256prompt_72frame_10.0thp_90ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_10.0thp_90ths/prompts.csv"
-    diff_ths_256prompt_72frame_6.4thp_70ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.4thp_70ths/prompts.csv"
-    diff_ths_256prompt_72frame_6.4thp_80ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.4thp_80ths/prompts.csv"
-    diff_ths_256prompt_72frame_6.4thp_90ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.4thp_90ths/prompts.csv"
-    diff_ths_256prompt_72frame_6.5thp_70ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.5thp_70ths/prompts.csv"
-    diff_ths_256prompt_72frame_6.5thp_80ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.5thp_80ths/prompts.csv"
-    diff_ths_256prompt_72frame_6.5thp_90ths: "pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.5thp_90ths/prompts.csv"
+    diff_thp_256prompt_72frame_10.0thp_80ths: "local/pyramid-forcing-fftv3/diff_thp_256prompt_72frame_10.0thp_80ths/prompts.csv"
+    diff_thp_256prompt_72frame_6.5thp_80ths: "local/pyramid-forcing-fftv3/diff_thp_256prompt_72frame_6.5thp_80ths/prompts.csv"
+    diff_thp_256prompt_72frame_7.0thp_80ths: "local/pyramid-forcing-fftv3/diff_thp_256prompt_72frame_7.0thp_80ths/prompts.csv"
+    diff_thp_256prompt_72frame_8.0thp_80ths: "local/pyramid-forcing-fftv3/diff_thp_256prompt_72frame_8.0thp_80ths/prompts.csv"
+    diff_thp_256prompt_72frame_9.0thp_80ths: "local/pyramid-forcing-fftv3/diff_thp_256prompt_72frame_9.0thp_80ths/prompts.csv"
+    diff_ths_256prompt_72frame_10.0thp_70ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_10.0thp_70ths/prompts.csv"
+    diff_ths_256prompt_72frame_10.0thp_80ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_10.0thp_80ths/prompts.csv"
+    diff_ths_256prompt_72frame_10.0thp_90ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_10.0thp_90ths/prompts.csv"
+    diff_ths_256prompt_72frame_6.4thp_70ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.4thp_70ths/prompts.csv"
+    diff_ths_256prompt_72frame_6.4thp_80ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.4thp_80ths/prompts.csv"
+    diff_ths_256prompt_72frame_6.4thp_90ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.4thp_90ths/prompts.csv"
+    diff_ths_256prompt_72frame_6.5thp_70ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.5thp_70ths/prompts.csv"
+    diff_ths_256prompt_72frame_6.5thp_80ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.5thp_80ths/prompts.csv"
+    diff_ths_256prompt_72frame_6.5thp_90ths: "local/pyramid-forcing-fftv3/diff_ths_256prompt_72frame_6.5thp_90ths/prompts.csv"
   # Current pipeline accepts one fallback prompt_file.
   # Assume all groups share the same prompt schema keyed by video_id.
   # If prompts differ by group, merge them first and then update prompt_file.
-  prompt_file: "pyramid-forcing-fftv3/diff_thp_256prompt_72frame_10.0thp_80ths/prompts.csv"
+  prompt_file: "local/pyramid-forcing-fftv3/diff_thp_256prompt_72frame_10.0thp_80ths/prompts.csv"
   video_dir: "videos/pyramid-forcing-fftv3"
 
 groups:
