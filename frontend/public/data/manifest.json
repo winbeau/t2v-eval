@@ -28,6 +28,7 @@
     "vbench_causal-forcing-rerun.csv",
     "vbench_classify-ablation-thpx80.csv",
     "vbench_classify-ablation.csv",
+    "vbench_classify-period-ablation.csv",
     "vbench_four-forcing-H200.csv",
     "vbench_framework-ablation.csv",
     "vbench_fullkv-30s.csv",
